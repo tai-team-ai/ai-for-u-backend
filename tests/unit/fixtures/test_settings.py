@@ -17,7 +17,6 @@ def lambda_settings() -> AIToolsLambdaSettings:
         'external_api_secret_name': "test_secret_name",
         'api_endpoint_secret_key_name': "test_endpoint_key_name",
         'api_key_secret_key_name': "test_api_key_name",
-        'lambda_role_arn': "arn:aws:lambda:us-west-2:645860363137:function:AIWriterBackendStack-openailambda49E74589-5Fya5X3TgvQD"
     }
     return AIToolsLambdaSettings(**lambda_settings_dict)
 

@@ -41,3 +41,6 @@ Werkzeug==2.2.2
 xmltodict==0.13.0
 pydantic==1.10.4
 pylint_pydantic==0.1.4
+mangum-cli==0.1.0
+uvicorn==0.20.0
+pre-commit

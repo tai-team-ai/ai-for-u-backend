@@ -86,7 +86,7 @@ class AIforUStack(Stack):
             partition_key=dynamodb.Attribute(name=dynamodb_settings.partition_key, type=dynamodb.AttributeType.STRING),
             sort_key=dynamodb.Attribute(name=dynamodb_settings.sort_key, type=dynamodb.AttributeType.STRING)
         )
-        user_table.grant_full_access(openai_lambda)
+        user_table.grant_read_data(openai_lambda)
 
         next_auth_table = self._create_next_auth_table()
         next_auth_table.grant_read_data(openai_lambda)
