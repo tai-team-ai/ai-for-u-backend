@@ -1,4 +1,9 @@
 {
     "python.linting.pylintEnabled": true,
-    "python.linting.enabled": true
+    "python.linting.enabled": true,
+    "python.analysis.extraPaths": [
+        "./cdk",
+        "./src/api/lambda/dependencies",
+        "./src/api/lambda/ai_tools_api"
+    ]
 }
