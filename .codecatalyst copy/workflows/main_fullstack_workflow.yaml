@@ -1,0 +1,79 @@
+Name: main_fullstack_workflow
+SchemaVersion: "1.0"
+Triggers:
+  - Type: PUSH
+    Branches:
+      - main
+Actions:
+  BackendTest:
+    Identifier: aws/managed-test@v1
+    Inputs:
+      Sources:
+        - WorkflowSource
+      Variables:
+        - Name: LAMBDA_ROLE_ARN
+          Value: arn:aws:iam::645860363137:role/AIWriterBackendStack-openailambdaServiceRoleEDA4A7-3L8WULRYXOP7
+        - Name: FRONTEND_CORS_URL
+          Value: https://d22zhq6xynxzgi.cloudfront.net
+        - Name: LOG_BUCKET_NAME
+          Value: ai-for-u-alpha-prview-logs
+    Outputs:
+      AutoDiscoverReports:
+        IncludePaths:
+          - "**/*"
+        ExcludePaths:
+          - "*/.aws/workflows/*"
+        ReportNamePrefix: AutoDiscovered
+        Enabled: true
+    Configuration:
+      Steps:
+        - Run: pip install -r requirements.txt
+        - Run: pytest --junitxml=test_unit_results.xml --cov-report
+            xml:test_unit_coverage.xml --cov=. tests/unit
+        - Run: echo "No test coverage step"
+    Compute:
+      Type: EC2
+  BackendCDKBootstrapAction:
+    Identifier: aws/cdk-bootstrap@v1
+    Configuration:
+      Region: us-west-2
+    Environment:
+      Connections:
+        - Role: CodeCatalystPreviewDevelopmentAdministrator-52wgjy
+          Name: "645860363137"
+      Name: development
+    DependsOn:
+      - BackendTest
+    Inputs:
+      Variables:
+        - Name: LAMBDA_ROLE_ARN
+          Value: arn:aws:iam::645860363137:role/AIWriterBackendStack-openailambdaServiceRoleEDA4A7-3L8WULRYXOP7
+        - Name: FRONTEND_CORS_URL
+          Value: https://d22zhq6xynxzgi.cloudfront.net
+        - Name: LOG_BUCKET_NAME
+          Value: ai-for-u-alpha-prview-logs
+      Sources:
+        - WorkflowSource
+  BackendCDKDeploy:
+    Identifier: aws/cdk-deploy@v1
+    Configuration:
+      Context: '{"stack_name":"AIWriterBackendStack"}'
+      Region: us-west-2
+      StackName: AIWriterBackendStack
+    Environment:
+      Connections:
+        - Role: CodeCatalystPreviewDevelopmentAdministrator-52wgjy
+          Name: "645860363137"
+      Name: development
+    DependsOn:
+      - BackendCDKBootstrapAction
+    Inputs:
+      Variables:
+        - Name: LAMBDA_ROLE_ARN
+          Value: arn:aws:iam::645860363137:role/AIWriterBackendStack-openailambdaServiceRoleEDA4A7-3L8WULRYXOP7
+        - Name: FRONTEND_CORS_URL
+          Value: https://d22zhq6xynxzgi.cloudfront.net
+        - Name: LOG_BUCKET_NAME
+          Value: ai-for-u-alpha-prview-logs
+      Sources:
+        - WorkflowSource

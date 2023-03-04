@@ -1,0 +1,4 @@
+pytest==6.2.5
+mangum-cli==0.1.0
+uvicorn==0.20.0
+pre-commit
