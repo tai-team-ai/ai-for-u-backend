@@ -75,7 +75,7 @@ class AIforUStack(Stack):
 
         next_auth_table = self._create_next_auth_table()
         next_auth_table.grant_read_data(openai_lambda)
-        
+
     def _create_rest_api(self, api_gateway_settings: APIGatewaySettings) -> api_gateway.RestApi:
         """Create a rest api with the provided id and deployment stage."""
         origins = [api_gateway_settings.frontend_cors_url]
@@ -87,7 +87,7 @@ class AIforUStack(Stack):
             default_cors_preflight_options=cors_options,
         )
         return rest_api
-    
+
     def _create_next_auth_table(self) -> dynamodb.Table:
         """Create a dynamodb table with the provided name, partition key, and sort key."""
         next_auth_table = dynamodb.Table(self,

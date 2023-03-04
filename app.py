@@ -32,8 +32,7 @@ api_gateway_settings = APIGatewaySettings(
 )
 user_data_dynamodb_settings = DynamoDBSettings(
     table_name="user_data",
-    partition_key="uuid",
-    sort_key=""
+    partition_key="uuid"
 )
 
 dynamo_db_user_data_stack = UserDataDynamoStack(

@@ -1,7 +1,7 @@
 
 
 from typing import Optional
-from pydantic import BaseSettings
+from pydantic import BaseSettings, root_validator
 
 
 class DynamoDBSettings(BaseSettings):
@@ -14,3 +14,9 @@ class DynamoDBSettings(BaseSettings):
 
     class Config:
         validate_assignment = True
+
+    @root_validator
+    def validate(cls, values):
+        for key, value in values.items():
+            if len(value) == 0:
+                raise ValueError(f"{key} cannot be an empty string")
