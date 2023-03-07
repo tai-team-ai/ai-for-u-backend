@@ -34,6 +34,7 @@ class AIforUStack(Stack):
         api_gateway_settings: APIGatewaySettings,
         user_data_table: dynamodb.Table,
         user_limits_table: dynamodb.Table,
+        next_js_auth_table: dynamodb.Table,
         **kwargs
     ) -> None:
         super().__init__(scope, stack_id, **kwargs)
@@ -73,8 +74,7 @@ class AIforUStack(Stack):
         user_data_table.grant_read_data(openai_lambda)
         user_limits_table.grant_read_write_data(openai_lambda)
 
-        next_auth_table = self._create_next_auth_table()
-        next_auth_table.grant_read_data(openai_lambda)
+        next_js_auth_table.grant_read_data(openai_lambda)
 
     def _create_rest_api(self, api_gateway_settings: APIGatewaySettings) -> api_gateway.RestApi:
         """Create a rest api with the provided id and deployment stage."""
