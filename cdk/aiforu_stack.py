@@ -33,6 +33,7 @@ class AIforUStack(Stack):
         lambda_settings: AIToolsLambdaSettings,
         api_gateway_settings: APIGatewaySettings,
         user_data_table: dynamodb.Table,
+        user_limits_table: dynamodb.Table,
         **kwargs
     ) -> None:
         super().__init__(scope, stack_id, **kwargs)
@@ -70,6 +71,7 @@ class AIforUStack(Stack):
 
 
         user_data_table.grant_read_data(openai_lambda)
+        user_limits_table.grant_read_write_data(openai_lambda)
 
         next_auth_table = self._create_next_auth_table()
         next_auth_table.grant_read_data(openai_lambda)

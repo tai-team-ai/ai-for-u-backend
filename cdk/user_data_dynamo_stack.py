@@ -3,7 +3,7 @@
 from aws_cdk import Stack
 import aws_cdk.aws_dynamodb as dynamodb
 import constructs
-from dynamo_db_settings import DynamoDBSettings
+from dynamo_db_settings import DynamoDBSettings # pylint: disable=import-error
 
 class UserDataDynamoStack(Stack):
 

@@ -37,8 +37,22 @@ user_data_dynamodb_settings = DynamoDBSettings(
 
 dynamo_db_user_data_stack = UserDataDynamoStack(
     scope=app,
-    stack_id="user-data-dynamo-stack",
+    stack_id="dynamo-stack-user-data",
     dynamodb_settings=user_data_dynamodb_settings
+)
+
+
+user_limits_dynamodb_settings = DynamoDBSettings(
+    table_name="user_limits",
+    partition_key="uuid",
+    sort_key="quota_usage"
+)
+
+
+dynamo_db_user_limits_stack = UserDataDynamoStack(
+    scope=app,
+    stack_id="dynamo-stack-user-limits",
+    dynamodb_settings=user_limits_dynamodb_settings
 )
 
 AIforUStack(
@@ -46,7 +60,8 @@ AIforUStack(
     stack_id="aiforu-api-stack",
     lambda_settings=lambda_settings,
     api_gateway_settings=api_gateway_settings,
-    user_data_table= dynamo_db_user_data_stack.user_data_table
+    user_data_table=dynamo_db_user_data_stack.user_data_table,
+    user_limits_table=dynamo_db_user_limits_stack.user_data_table
 )
 
 app.synth()
