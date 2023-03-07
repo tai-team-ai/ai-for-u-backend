@@ -31,7 +31,7 @@ api_gateway_settings = APIGatewaySettings(
     deployment_stage="dev"
 )
 user_data_dynamodb_settings = DynamoDBSettings(
-    table_name="user_data",
+    table_name="user-data",
     partition_key="uuid"
 )
 
