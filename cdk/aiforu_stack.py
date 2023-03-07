@@ -7,7 +7,6 @@ import sys
 from typing import Optional
 from aws_cdk import (
     Stack,
-    CfnOutput,
     Duration
 )
 from constructs import Construct
@@ -16,14 +15,13 @@ import aws_cdk.aws_dynamodb as dynamodb
 import aws_cdk.aws_apigateway as api_gateway
 import aws_cdk.aws_iam as iam
 from pydantic import BaseSettings
-from botocore.exceptions import ClientError
 
 parent_dir = os.path.dirname(os.path.realpath(__file__))
 sys.path.append(os.path.join(parent_dir, "src/api/lambda/lambda_dependencies"))
 sys.path.append(os.path.join(parent_dir, "src/api/lambda/ai_tools_api"))
 
-from ai_tools_lambda_settings import AIToolsLambdaSettings
-from api_gateway_settings import APIGatewaySettings
+from ai_tools_lambda_settings import AIToolsLambdaSettings # pylint: disable=import-error
+from api_gateway_settings import APIGatewaySettings # pylint: disable=import-error
 
 class DynamoDBSettings(BaseSettings):
     """Settings for the dynamodb table."""
