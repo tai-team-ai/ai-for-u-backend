@@ -43,7 +43,7 @@ dynamo_db_user_data_stack = UserDataDynamoStack(
 
 
 user_limits_dynamodb_settings = DynamoDBSettings(
-    table_name="user_limits",
+    table_name="user-limits",
     partition_key="uuid",
     sort_key="quota_usage"
 )

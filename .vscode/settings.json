@@ -1,8 +1,0 @@
-{
-    "python.linting.pylintEnabled": true,
-    "python.linting.enabled": true,
-    "python.analysis.extraPaths": [
-        "./src/api/lambda/ai_tools_api",
-        "./src/api/lambda/dependencies"
-    ]
-}
