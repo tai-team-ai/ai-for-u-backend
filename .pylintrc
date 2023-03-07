@@ -1,9 +1,0 @@
-[MASTER]
-init-hook='import sys; 
-sys.path.append("/projects/ai-writer-backend"); 
-sys.path.append("/projects/ai-writer-backend/api/lambda/dependencies");
-sys.path.append("/projects/ai-writer-backend/api/lambda/open_ai");'
-
-load-plugins=pylint_pydantic
-
-extension-pkg-whitelist='pydantic'
