@@ -25,15 +25,6 @@ sys.path.append(os.path.join(parent_dir, "src/api/lambda/ai_tools_api"))
 from ai_tools_lambda_settings import AIToolsLambdaSettings
 from api_gateway_settings import APIGatewaySettings
 
-class DynamoDBSettings(BaseSettings):
-    """Settings for the dynamodb table."""
-    table_name: str
-    partition_key: str
-    sort_key: Optional[str] = None
-
-    class Config:
-        validate_assignment = True
-
 
 class AIforUStack(Stack):
 
@@ -43,7 +34,7 @@ class AIforUStack(Stack):
         stack_id: str,
         lambda_settings: AIToolsLambdaSettings,
         api_gateway_settings: APIGatewaySettings,
-        dynamodb_settings: DynamoDBSettings,
+        user_data_table: dynamodb.Table,
         **kwargs
     ) -> None:
         super().__init__(scope, stack_id, **kwargs)
@@ -79,18 +70,12 @@ class AIforUStack(Stack):
             )
         )
 
-        user_table = dynamodb.Table(
-            self,
-            self.namer("user-table"),
-            table_name=dynamodb_settings.table_name,
-            partition_key=dynamodb.Attribute(name=dynamodb_settings.partition_key, type=dynamodb.AttributeType.STRING),
-            sort_key=dynamodb.Attribute(name=dynamodb_settings.sort_key, type=dynamodb.AttributeType.STRING)
-        )
-        user_table.grant_read_data(openai_lambda)
+
+        user_data_table.grant_read_data(openai_lambda)
 
         next_auth_table = self._create_next_auth_table()
         next_auth_table.grant_read_data(openai_lambda)
-        
+
     def _create_rest_api(self, api_gateway_settings: APIGatewaySettings) -> api_gateway.RestApi:
         """Create a rest api with the provided id and deployment stage."""
         origins = [api_gateway_settings.frontend_cors_url]
@@ -102,7 +87,7 @@ class AIforUStack(Stack):
             default_cors_preflight_options=cors_options,
         )
         return rest_api
-    
+
     def _create_next_auth_table(self) -> dynamodb.Table:
         """Create a dynamodb table with the provided name, partition key, and sort key."""
         next_auth_table = dynamodb.Table(self,

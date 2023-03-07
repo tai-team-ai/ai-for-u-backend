@@ -17,4 +17,4 @@ test_unit_results.xml
 
 test_integ_coverage.xml
 test_integ_results.xml
-
+.vscode

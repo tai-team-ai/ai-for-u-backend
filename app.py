@@ -10,13 +10,12 @@ api_dir = Path(dir_name, "src/api/lambda")
 sys.path.append(os.path.join(dir_name, "cdk"))
 sys.path.append(os.path.join(api_dir, "dependencies"))
 sys.path.append(os.path.join(api_dir, "ai_tools_api"))
-from aiforu_stack import DynamoDBSettings
 from api_gateway_settings import APIGatewaySettings
 from ai_tools_lambda_settings import AIToolsLambdaSettings
 from aiforu_stack import AIforUStack
+from user_data_dynamo_stack import UserDataDynamoStack
+from dynamo_db_settings import DynamoDBSettings
 
-
-stack_name = 'AIWriterBackendStack' if 'LOCAL_TESTING' not in os.environ else 'PythonStack'
 
 app = App()
 
@@ -31,18 +30,23 @@ api_gateway_settings = APIGatewaySettings(
     openai_route_prefix="ai-for-u",
     deployment_stage="dev"
 )
-dynamodb_settings = DynamoDBSettings(
+user_data_dynamodb_settings = DynamoDBSettings(
     table_name="user_data",
-    partition_key="user_id",
-    sort_key="setting_name"
+    partition_key="uuid"
+)
+
+dynamo_db_user_data_stack = UserDataDynamoStack(
+    scope=app,
+    stack_id="user-data-dynamo-stack",
+    dynamodb_settings=user_data_dynamodb_settings
 )
 
 AIforUStack(
     scope=app,
-    stack_id=stack_name,
+    stack_id="aiforu-api-stack",
     lambda_settings=lambda_settings,
     api_gateway_settings=api_gateway_settings,
-    dynamodb_settings=dynamodb_settings
+    user_data_table= dynamo_db_user_data_stack.user_data_table
 )
 
 app.synth()
