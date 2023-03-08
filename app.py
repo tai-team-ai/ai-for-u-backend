@@ -15,9 +15,39 @@ from ai_tools_lambda_settings import AIToolsLambdaSettings
 from aiforu_stack import AIforUStack
 from user_data_dynamo_stack import UserDataDynamoStack
 from dynamo_db_settings import DynamoDBSettings
+from nextjs_dynamodb_stack import NextJsDynamodbStack
 
 
 app = App()
+
+user_data_dynamodb_settings = DynamoDBSettings(
+    table_name="user-data",
+    partition_key="uuid"
+)
+dynamo_db_user_data_stack = UserDataDynamoStack(
+    scope=app,
+    stack_id="dynamo-stack-user-data",
+    dynamodb_settings=user_data_dynamodb_settings
+)
+
+
+user_limits_dynamodb_settings = DynamoDBSettings(
+    table_name="user-limits",
+    partition_key="uuid",
+    sort_key="quota_usage"
+)
+dynamo_db_user_limits_stack = UserDataDynamoStack(
+    scope=app,
+    stack_id="dynamo-stack-user-limits",
+    dynamodb_settings=user_limits_dynamodb_settings
+)
+
+
+dynamo_db_next_js_auth_stack = NextJsDynamodbStack(
+    scope=app,
+    stack_id="dynamo-stack-next-js-auth"
+)
+
 
 lambda_settings = AIToolsLambdaSettings(
     openai_api_dir="ai_tools_api",
@@ -30,23 +60,15 @@ api_gateway_settings = APIGatewaySettings(
     openai_route_prefix="ai-for-u",
     deployment_stage="dev"
 )
-user_data_dynamodb_settings = DynamoDBSettings(
-    table_name="user_data",
-    partition_key="uuid"
-)
-
-dynamo_db_user_data_stack = UserDataDynamoStack(
-    scope=app,
-    stack_id="user-data-dynamo-stack",
-    dynamodb_settings=user_data_dynamodb_settings
-)
 
 AIforUStack(
     scope=app,
     stack_id="aiforu-api-stack",
     lambda_settings=lambda_settings,
     api_gateway_settings=api_gateway_settings,
-    user_data_table= dynamo_db_user_data_stack.user_data_table
+    user_data_table=dynamo_db_user_data_stack.user_data_table,
+    user_limits_table=dynamo_db_user_limits_stack.user_data_table,
+    next_js_auth_table=dynamo_db_next_js_auth_stack.nextjs_auth_table
 )
 
 app.synth()

@@ -7,7 +7,6 @@ import sys
 from typing import Optional
 from aws_cdk import (
     Stack,
-    CfnOutput,
     Duration
 )
 from constructs import Construct
@@ -16,14 +15,13 @@ import aws_cdk.aws_dynamodb as dynamodb
 import aws_cdk.aws_apigateway as api_gateway
 import aws_cdk.aws_iam as iam
 from pydantic import BaseSettings
-from botocore.exceptions import ClientError
 
 parent_dir = os.path.dirname(os.path.realpath(__file__))
 sys.path.append(os.path.join(parent_dir, "src/api/lambda/lambda_dependencies"))
 sys.path.append(os.path.join(parent_dir, "src/api/lambda/ai_tools_api"))
 
-from ai_tools_lambda_settings import AIToolsLambdaSettings
-from api_gateway_settings import APIGatewaySettings
+from ai_tools_lambda_settings import AIToolsLambdaSettings # pylint: disable=import-error
+from api_gateway_settings import APIGatewaySettings # pylint: disable=import-error
 
 
 class AIforUStack(Stack):
@@ -35,6 +33,8 @@ class AIforUStack(Stack):
         lambda_settings: AIToolsLambdaSettings,
         api_gateway_settings: APIGatewaySettings,
         user_data_table: dynamodb.Table,
+        user_limits_table: dynamodb.Table,
+        next_js_auth_table: dynamodb.Table,
         **kwargs
     ) -> None:
         super().__init__(scope, stack_id, **kwargs)
@@ -72,9 +72,9 @@ class AIforUStack(Stack):
 
 
         user_data_table.grant_read_data(openai_lambda)
+        user_limits_table.grant_read_write_data(openai_lambda)
 
-        next_auth_table = self._create_next_auth_table()
-        next_auth_table.grant_read_data(openai_lambda)
+        next_js_auth_table.grant_read_data(openai_lambda)
 
     def _create_rest_api(self, api_gateway_settings: APIGatewaySettings) -> api_gateway.RestApi:
         """Create a rest api with the provided id and deployment stage."""
