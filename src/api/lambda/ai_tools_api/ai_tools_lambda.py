@@ -15,13 +15,20 @@ dir_name = os.path.dirname(os.path.realpath(__file__))
 sys.path.append(os.path.join(dir_name, "../dependencies"))
 sys.path.append(dir_name)
 from api_gateway_settings import APIGatewaySettings
-from openai_lambda_settings import AIToolsLambdaSettings
+from ai_tools_lambda_settings import AIToolsLambdaSettings
 from routers import note_summarizer, text_revisor, \
     resignation_email_generator, catchy_title_creator, \
     sales_inquiry_email_generator, dalle_prompt_coach
 sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), "utils"))
 from utils import prepare_response, UserTokenNotFoundError, initialize_openai, CamelCaseModel,\
                     log_to_s3, authenticate_user
+
+
+API_DESCRIPTION = """
+    This is the API for the AI for U project. It is a collection of endpoints that
+    use OpenAI's GPT-3 API to generate text. All requests must include a uuid header.
+    This uuid is used to check if the user is authenticated and to track usage of the API.
+    """
 
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
@@ -35,7 +42,6 @@ router = APIRouter()
 @router.get(f"/status")
 def get_status(request: Request, response: Response):
     """Return status okay."""
-    prepare_response(response, request)
     response_body = {"status": "ok"}
     return response_body
 
@@ -77,7 +83,25 @@ def create_fastapi_app():
         docs_url=f"/{api_gateway_settings.openai_route_prefix}/docs",
         openapi_url=f"/{api_gateway_settings.openai_route_prefix}/openapi.json",
         redoc_url=None
+        description=API_DESCRIPTION,
     )
+
+    @app.middleware("http")
+    async def check_if_header_is_present(request: Request, call_next):
+        """Check if user is authenticated."""
+        path = request.url.path
+        allowed_paths = {
+            f"/{api_gateway_settings.deployment_stage}/{api_gateway_settings.openai_route_prefix}/docs",
+            f"/{api_gateway_settings.deployment_stage}/{api_gateway_settings.openai_route_prefix}/openapi.json",
+        }
+        if request.headers.get("UUID") is None or request.headers.get("UUID") == "":
+            if path not in allowed_paths:
+                raise UserTokenNotFoundError(f"{path}\n{allowed_paths}User identifier not found in request headers.")
+        response = await call_next(request)
+        prepare_response(response, request)
+        return response
+
+
     routers = [
         router,
         note_summarizer.router,

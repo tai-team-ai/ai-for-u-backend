@@ -5,14 +5,14 @@ from urllib3 import response
 from fastapi import Response, Request
 import openai
 import boto3
-from openai_lambda_settings import OpenAILambdaSettings
+from ai_tools_lambda_settings import AIToolsLambdaSettings
 from botocore.exceptions import ClientError
 from pydantic import BaseModel
 from typing import Optional, Union
 
 logger = logging.getLogger()
 logger.setLevel(logging.DEBUG)
-lambda_settings = OpenAILambdaSettings()
+lambda_settings = AIToolsLambdaSettings()
 
 
 class UserTokenNotFoundError(Exception):

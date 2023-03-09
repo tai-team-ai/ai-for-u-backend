@@ -14,17 +14,16 @@ import aws_cdk.aws_lambda as lambda_
 import aws_cdk.aws_dynamodb as dynamodb
 import aws_cdk.aws_apigateway as api_gateway
 import aws_cdk.aws_iam as iam
-from pydantic import BaseSettings
 
 parent_dir = os.path.dirname(os.path.realpath(__file__))
-sys.path.append(os.path.join(parent_dir, "src/api/lambda/lambda_dependencies"))
-sys.path.append(os.path.join(parent_dir, "src/api/lambda/ai_tools_api"))
+sys.path.append(os.path.join(parent_dir, "../src/api/lambda/lambda_dependencies"))
+sys.path.append(os.path.join(parent_dir, "../src/api/lambda/ai_tools_api"))
 
 from ai_tools_lambda_settings import AIToolsLambdaSettings # pylint: disable=import-error
 from api_gateway_settings import APIGatewaySettings # pylint: disable=import-error
 
 
-class AIforUStack(Stack):
+class AIToolsStack(Stack):
 
     def __init__(
         self,
@@ -51,10 +50,6 @@ class AIforUStack(Stack):
         )
         self.api.deployment_stage = self.stage
 
-        openai_route = self.api.root \
-            .add_resource(api_gateway_settings.openai_route_prefix) \
-            .add_resource("{proxy+}")
-
         role = iam.Role(
             self,
             self.namer("lambda-role"),
@@ -62,12 +57,19 @@ class AIforUStack(Stack):
             role_name=self.namer("lambda-role")
         )
         openai_lambda = self._create_aiforu_tools_lambda(lambda_settings=lambda_settings, gateway_settings=api_gateway_settings, role=role)
-        openai_route.add_method(
-            http_method="ANY",
-            integration=api_gateway.LambdaIntegration(
-                handler=openai_lambda,
-                proxy=True,
-            )
+
+        cors_options = api_gateway.CorsOptions(
+            allow_origins=[api_gateway_settings.frontend_cors_url],
+            allow_methods=["ALL"],
+            allow_headers=["*"],
+            allow_credentials=True,
+        )
+
+        openai_route = self.api.root \
+            .add_resource(api_gateway_settings.openai_route_prefix)
+        openai_route.add_proxy(
+            default_cors_preflight_options=cors_options,
+            default_integration=api_gateway.LambdaIntegration(openai_lambda, proxy=True)
         )
 
 
@@ -88,51 +90,37 @@ class AIforUStack(Stack):
         )
         return rest_api
 
-    def _create_next_auth_table(self) -> dynamodb.Table:
-        """Create a dynamodb table with the provided name, partition key, and sort key."""
-        next_auth_table = dynamodb.Table(self,
-            self.namer("next-auth"),
-            table_name="next-auth",
-            partition_key=dynamodb.Attribute(
-                name="pk",
-                type=dynamodb.AttributeType.STRING
-            ),
-            sort_key=dynamodb.Attribute(
-                name="sk",
-                type=dynamodb.AttributeType.STRING
-            ),
-            time_to_live_attribute="expires"
-        )
-        return next_auth_table
-
     def _create_aiforu_tools_lambda(self, lambda_settings: AIToolsLambdaSettings, gateway_settings: APIGatewaySettings, role: iam.Role) -> lambda_.Function:
         """Create a lambda function with the provided id and environment variables."""
         id_ = lambda_settings.openai_lambda_id
         settings_dict = dict_keys_to_uppercase(lambda_settings.dict())
         settings_dict.update(dict_keys_to_uppercase(gateway_settings.dict()))
-        assert type(settings_dict) == dict
-        entry_dir = Path(os.path.dirname(os.path.realpath(__file__)), '../src/api/lambda/ai_tools_api')
-        
+        assert isinstance(settings_dict, dict)
+        entry_dir = Path(os.path.dirname(os.path.realpath(__file__)), "../src/api/lambda")
+        path_to_requirements = Path(entry_dir, lambda_settings.openai_api_dir, "requirements-lambda.txt")
+        asset_code = lambda_.AssetCode.from_asset(
+            str(entry_dir),
+        )
+
         function = lambda_.Function(self,
             self.namer(id_),
             runtime=lambda_.Runtime.PYTHON_3_9,
-            code=lambda_.AssetCode.from_asset(str(entry_dir)),
+            code=asset_code,
             handler=f"{lambda_settings.openai_api_dir}/{id_}.lambda_handler",
             environment=settings_dict,
             tracing=lambda_.Tracing.ACTIVE,
-            layers=[self.create_dependencies_layer(id_, entry_dir)],
+            layers=[self.create_dependencies_layer(id_, path_to_requirements)],
             timeout=Duration.seconds(20),
             role=role
         )
         return function
 
-    def create_dependencies_layer(self, lambda_id: str, entry_dir: Path) -> lambda_.LayerVersion:
+    def create_dependencies_layer(self, lambda_id: str, path_to_requirements: Path) -> lambda_.LayerVersion:
         """Create a layer with the dependencies for the lambda."""
-        requirements_file = Path(entry_dir, 'requirements-lambda.txt')
-        output_dir = f'../.build/{lambda_id}'
+        output_dir = f'.build/{lambda_id}'
         python_output_dir = Path(output_dir, 'python')
 
-        os.system(f"pip install -r {requirements_file} -t {python_output_dir}")
+        os.system(f"pip install -r {path_to_requirements} -t {python_output_dir}  --upgrade")
 
         layer_id = f'{lambda_id}-dependencies'
         layer_code = lambda_.Code.from_asset(output_dir)

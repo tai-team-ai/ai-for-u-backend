@@ -12,7 +12,7 @@ sys.path.append(os.path.join(api_dir, "dependencies"))
 sys.path.append(os.path.join(api_dir, "ai_tools_api"))
 from api_gateway_settings import APIGatewaySettings
 from ai_tools_lambda_settings import AIToolsLambdaSettings
-from aiforu_stack import AIforUStack
+from ai_tools_stack import AIToolsStack
 from user_data_dynamo_stack import UserDataDynamoStack
 from dynamo_db_settings import DynamoDBSettings
 from nextjs_dynamodb_stack import NextJsDynamodbStack
@@ -61,7 +61,7 @@ api_gateway_settings = APIGatewaySettings(
     deployment_stage="dev"
 )
 
-AIforUStack(
+AIToolsStack(
     scope=app,
     stack_id="aiforu-api-stack",
     lambda_settings=lambda_settings,
