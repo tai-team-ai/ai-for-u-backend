@@ -7,7 +7,7 @@ sys.path.append(os.path.join(parent_dir,"../../../src/api/lambda/ai_tools_api"))
 sys.path.append(os.path.join(parent_dir,"../../../cdk"))
 from ai_tools_lambda_settings import AIToolsLambdaSettings
 from api_gateway_settings import APIGatewaySettings
-from aiforu_stack import DynamoDBSettings
+from dynamo_db_settings import DynamoDBSettings
 
 @pytest.fixture
 def lambda_settings() -> AIToolsLambdaSettings:
