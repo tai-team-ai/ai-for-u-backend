@@ -1,5 +1,6 @@
 import logging
 import os
+from pathlib import Path
 import sys
 import threading
 from typing import Optional
@@ -7,7 +8,7 @@ from fastapi import APIRouter, Response, status, Request
 import openai
 from pydantic import BaseModel, Field
 
-sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), "../utils"))
+sys.path.append(Path(__file__, "../utils").absolute())
 from utils import initialize_openai, prepare_response, CamelCaseModel, log_to_s3
 
 logger = logging.getLogger()

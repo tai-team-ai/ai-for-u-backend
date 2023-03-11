@@ -14,7 +14,7 @@ from api_gateway_settings import APIGatewaySettings
 from ai_tools_lambda_settings import AIToolsLambdaSettings
 from routers import note_summarizer, text_revisor, \
     resignation_email_generator, catchy_title_creator, \
-    sales_inquiry_email_generator, dalle_prompt_coach
+    sales_inquiry_email_generator, dalle_prompt_coach, sandbox_chatgpt
 sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), "utils"))
 from utils import prepare_response, UserTokenNotFoundError, initialize_openai, CamelCaseModel,\
                     log_to_s3, authenticate_user
@@ -105,7 +105,8 @@ def create_fastapi_app():
         catchy_title_creator.router,
         resignation_email_generator.router,
         sales_inquiry_email_generator.router,
-        dalle_prompt_coach.router
+        dalle_prompt_coach.router,
+        sandbox_chatgpt.router
     ] 
     for router_ in routers:
         add_router_with_prefix(app, router_, f"/{api_gateway_settings.openai_route_prefix}")
