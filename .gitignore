@@ -21,3 +21,5 @@ test_integ_results.xml
 .pylintrc
 .vscode/settings.json
 .vscode/settings.json
+
+.build
