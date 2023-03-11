@@ -1,6 +1,3 @@
-import traceback
-from pydantic import BaseModel
-import openai
 import logging
 import os
 import sys
@@ -8,8 +5,7 @@ from mangum import Mangum
 from fastapi import FastAPI, APIRouter, Request, status , Response
 from fastapi.responses import JSONResponse
 from fastapi.exceptions import RequestValidationError
-from fastapi.middleware.cors import CORSMiddleware
-from fastapi.middleware import Middleware
+
 
 dir_name = os.path.dirname(os.path.realpath(__file__))
 sys.path.append(os.path.join(dir_name, "../dependencies"))
