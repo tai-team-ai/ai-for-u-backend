@@ -82,7 +82,7 @@ def create_fastapi_app():
         root_path=f"/{api_gateway_settings.deployment_stage}",
         docs_url=f"/{api_gateway_settings.openai_route_prefix}/docs",
         openapi_url=f"/{api_gateway_settings.openai_route_prefix}/openapi.json",
-        redoc_url=None
+        redoc_url=None,
         description=API_DESCRIPTION,
     )
 
