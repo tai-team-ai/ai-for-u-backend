@@ -101,11 +101,11 @@ def create_fastapi_app():
     routers = [
         router,
         note_summarizer.router,
-        text_revisor.router,
-        catchy_title_creator.router,
-        resignation_email_generator.router,
-        sales_inquiry_email_generator.router,
-        dalle_prompt_coach.router,
+        # text_revisor.router,
+        # catchy_title_creator.router,
+        # resignation_email_generator.router,
+        # sales_inquiry_email_generator.router,
+        # dalle_prompt_coach.router,
         sandbox_chatgpt.router
     ] 
     for router_ in routers:
