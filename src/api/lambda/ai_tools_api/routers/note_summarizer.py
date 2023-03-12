@@ -62,7 +62,7 @@ def get_openai_response(prompt: str) -> str:
     logger.info(f"openai response: {openai_response}")
     return openai_response.choices[0].text.strip()
 
-@router.post("/note_summarizer", response_model=NoteSummarizerResponseModel, status_code=status.HTTP_200_OK)
+@router.post("/note-summarizer", response_model=NoteSummarizerResponseModel, status_code=status.HTTP_200_OK)
 async def note_summarizer(note_summarizer_request: NoteSummarizerModel, response: Response, request: Request):
     """
     Method uses openai model text-curie-001 to summarize notes.

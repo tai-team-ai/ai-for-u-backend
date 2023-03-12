@@ -1,7 +1,9 @@
 import logging
 import os
 import sys
+import traceback
 from mangum import Mangum
+from uuid import UUID
 from fastapi import FastAPI, APIRouter, Request, status , Response
 from fastapi.responses import JSONResponse
 from fastapi.exceptions import RequestValidationError
@@ -10,7 +12,7 @@ from fastapi.exceptions import RequestValidationError
 dir_name = os.path.dirname(os.path.realpath(__file__))
 sys.path.append(os.path.join(dir_name, "../dependencies"))
 sys.path.append(dir_name)
-from api_gateway_settings import APIGatewaySettings
+from api_gateway_settings import APIGatewaySettings, DeploymentStage
 from ai_tools_lambda_settings import AIToolsLambdaSettings
 from routers import note_summarizer, text_revisor, \
     resignation_email_generator, catchy_title_creator, \
@@ -41,34 +43,40 @@ def get_status(request: Request, response: Response):
     response_body = {"status": "ok"}
     return response_body
 
+
+def get_error_message(error: Exception) -> str:
+    """Return error message."""
+    traceback_str = "\n".join(traceback.format_exception(type(error), error, error.__traceback__))
+    logger.error(traceback_str)
+    if api_gateway_settings.deployment_stage == DeploymentStage.DEVELOPMENT.value:
+        return traceback_str
+    return str(error)
+
 def handle_request_validation_error(request: Request, exc: RequestValidationError):
     """Handle exception."""
-    logger.error(exc)
+    msg = get_error_message(exc)
     response = JSONResponse(
         status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-        content={"Validation Exception": str(exc)}
+        content={"Validation Exception": msg}
     )
-    prepare_response(response, request)
     return response
 
 def handle_user_token_error(request: Request, exc: UserTokenNotFoundError):
     """Handle exception."""
-    logger.error(exc)
+    msg = get_error_message(exc)
     response = JSONResponse(
         status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-        content={"userTokenException": str(exc)}
+        content={"userTokenException": msg}
     )
-    prepare_response(response, request)
     return response
 
 def handle_generic_exception(request: Request, exc: Exception):
     """Handle exception."""
-    logger.error(exc)
+    msg = get_error_message(exc)
     response = JSONResponse(
         status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-        content={"Exception Raised": str(exc)}
+        content={"Exception Raised": msg}
     )
-    prepare_response(response, request)
     return response
 
 
@@ -90,10 +98,13 @@ def create_fastapi_app():
             f"/{api_gateway_settings.deployment_stage}/{api_gateway_settings.openai_route_prefix}/docs",
             f"/{api_gateway_settings.deployment_stage}/{api_gateway_settings.openai_route_prefix}/openapi.json",
         }
-        if request.headers.get(UUID_HEADER_NAME) is None or request.headers.get(UUID_HEADER_NAME) == "":
+        uuid_str = request.headers.get(UUID_HEADER_NAME)
+        logger.info("uuid_str: %s", uuid_str)
+        try:
+            UUID(uuid_str, version=4)
+        except Exception:
             if path not in allowed_paths:
-                raise UserTokenNotFoundError(f"{path}\n{allowed_paths}User identifier not found in request headers.")
-        
+                raise UserTokenNotFoundError("User token not found.")
         authenticated = True
         if authenticated:
             os.environ[AUTHENTICATED_USER_ENV_VAR_NAME] = "TRUE"
@@ -131,4 +142,3 @@ def lambda_handler(event, context):
     app = create_fastapi_app()
     handler = Mangum(app=app)
     return handler(event, context)
-    

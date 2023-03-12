@@ -18,6 +18,7 @@ class APIGatewaySettings(BaseSettings):
 
     class Config:
         case_sensitive = False
+        use_enum_values = True
 
     @validator("development_cors_url")
     def validate_cors_urls(cls, development_cors_url: Optional[str], values: Dict[str, Any]) -> Optional[str]:

@@ -1,5 +1,6 @@
 from pathlib import Path
 import sys
+import logging
 from typing import Optional
 from uuid import UUID
 from fastapi import APIRouter, Request, status
@@ -12,6 +13,8 @@ from gpt_turbo import GPTTurboChatSession, get_gpt_turbo_response, GPTTurboChat,
 
 router = APIRouter()
 
+logger = logging.getLogger()
+logger.setLevel(logging.INFO)
 
 SYSTEM_PROMPT = (
     "You are a friendly assist named Roo. You are to act as someone who is friendly and "
@@ -108,6 +111,7 @@ async def sandbox_chatgpt(sandbox_chatgpt_request: SandBoxChatGPTRequest, reques
         messages=(message,)
     )
     uuid = request.headers.get(UUID_HEADER_NAME)
+    logger.info("uuid: %s", uuid)
 
     chat_session = get_gpt_turbo_response(
         system_prompt=SYSTEM_PROMPT,
@@ -116,6 +120,8 @@ async def sandbox_chatgpt(sandbox_chatgpt_request: SandBoxChatGPTRequest, reques
         temperature=0.9,
         uuid=uuid
     )
+    logger.info("chat_session: %s", chat_session)
 
-    latest_message = chat_session.messages[-1]
+    latest_gpt_chat_model = chat_session.messages[-1]
+    latest_message = latest_gpt_chat_model.content
     return SandBoxChatGPTResponse(gpt_response=latest_message)

@@ -45,7 +45,7 @@ class GPTTurboChatSession(BaseModel):
     def add_message(self, message: GPTTurboChat) -> GPTTurboChatSession:
         """Add a message to the chat session and return a new chat session model"""
         new_messages = self.messages + (message,)
-        return GPTTurboChatSession(message_uuid=self.message_uuid, messages=new_messages)
+        return GPTTurboChatSession(messages=new_messages)
     
 
 
@@ -73,12 +73,12 @@ def get_gpt_turbo_response(
         response: Response from GPT Turbo.
     """
     prompt_messages = [
-        {"role": "system", "text": system_prompt}
+        {"role": "system", "content": system_prompt}
     ]
     for message in chat_session.messages:
-        prompt_messages.append({"role": message.role.value, "text": message.content})
+        prompt_messages.append({"role": message.role.value, "content": message.content})
 
-    response = openai.Completion.create(
+    response = openai.ChatCompletion.create(
         model="gpt-3.5-turbo",
         messages=prompt_messages,
         temperature=temperature,

@@ -14,6 +14,7 @@ import aws_cdk.aws_lambda as lambda_
 import aws_cdk.aws_dynamodb as dynamodb
 import aws_cdk.aws_apigateway as api_gateway
 import aws_cdk.aws_iam as iam
+import aws_cdk.aws_secretsmanager as secretsmanager
 
 parent_dir = os.path.dirname(os.path.realpath(__file__))
 sys.path.append(os.path.join(parent_dir, "../src/api/lambda/lambda_dependencies"))
@@ -38,7 +39,7 @@ class AIToolsStack(Stack):
     ) -> None:
         super().__init__(scope, stack_id, **kwargs)
         self.namer = lambda x: stack_id + "-" + x
-        self.api = self._create_rest_api(api_gateway_settings=api_gateway_settings)
+        self.api, self.cors_options = self._create_rest_api(api_gateway_settings=api_gateway_settings)
 
         self.deployment = api_gateway.Deployment(self, self.namer("deployment"), api=self.api)
 
@@ -50,18 +51,38 @@ class AIToolsStack(Stack):
         )
         self.api.deployment_stage = self.stage
 
+        open_ai_secret = secretsmanager.Secret.from_secret_complete_arn(
+            self,
+            id=self.namer("openai-secret"),
+            secret_complete_arn="arn:aws:secretsmanager:us-west-2:645860363137:secret:openai/apikey-gXnzTj"
+        )
+
         role = iam.Role(
             self,
             self.namer("lambda-role"),
             assumed_by=iam.ServicePrincipal("lambda.amazonaws.com"),
             role_name=self.namer("lambda-role")
         )
+        role.add_to_policy(
+            statement=iam.PolicyStatement(
+                actions=["secretsmanager:GetSecretValue"],
+                resources=[open_ai_secret.secret_arn]
+            )
+        )
+        # add ability to write to cloudwatch logs
+        role.add_to_policy(
+            statement=iam.PolicyStatement(
+                actions=["logs:CreateLogGroup", "logs:CreateLogStream", "logs:PutLogEvents"],
+                resources=["*"]
+            )
+        )
         openai_lambda = self._create_aiforu_tools_lambda(lambda_settings=lambda_settings, gateway_settings=api_gateway_settings, role=role)
 
         openai_route = self.api.root \
             .add_resource(api_gateway_settings.openai_route_prefix)
         openai_route.add_proxy(
-            default_integration=api_gateway.LambdaIntegration(openai_lambda, proxy=True)
+            default_integration=api_gateway.LambdaIntegration(openai_lambda, proxy=True),
+            default_cors_preflight_options=self.cors_options
         )
 
 
@@ -70,7 +91,7 @@ class AIToolsStack(Stack):
 
         next_js_auth_table.grant_read_data(openai_lambda)
 
-    def _create_rest_api(self, api_gateway_settings: APIGatewaySettings) -> api_gateway.RestApi:
+    def _create_rest_api(self, api_gateway_settings: APIGatewaySettings) -> tuple[api_gateway.RestApi, api_gateway.CorsOptions]:
         """Create a rest api with the provided id and deployment stage."""
         origins = [api_gateway_settings.frontend_cors_url]
         if api_gateway_settings.development_cors_url != "":
@@ -84,9 +105,9 @@ class AIToolsStack(Stack):
         )
         rest_api = api_gateway.RestApi(self, "RestApi",
             rest_api_name=self.namer("rest-api"),
-            default_cors_preflight_options=cors_options,
+            default_cors_preflight_options=cors_options
         )
-        return rest_api
+        return rest_api, cors_options
 
     def _create_aiforu_tools_lambda(self, lambda_settings: AIToolsLambdaSettings, gateway_settings: APIGatewaySettings, role: iam.Role) -> lambda_.Function:
         """Create a lambda function with the provided id and environment variables."""
