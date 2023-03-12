@@ -1,5 +1,7 @@
 from typing import NamedTuple
 from enum import Enum
+import openai
+
 
 class Role(Enum):
     USER = "user"
@@ -22,7 +24,8 @@ def get_gpt_turbo_response(
     frequency_penalty: float = 0.0,
     presence_penalty: float = 0.0,
     stream: bool = False,
-) -> list[dict[str, str]]:
+    uuid: str = None,
+) -> list[GPTTurboMessage]:
     """
     Get response from GPT Turbo.
 
@@ -38,10 +41,21 @@ def get_gpt_turbo_response(
         response: Response from GPT Turbo.
     """
     prompt_messages = [
-        {"role": "system", "text": message.content}
+        {"role": "system", "text": system_prompt}
     ]
     for message in messages:
-        if message.role == Role.ASSISTANT:
-            system_prompt += f"\n{message.content}"
-        else:
-            system_prompt += f"\nUser: {message.content}"
+        prompt_messages.append({"role": message.role.value, "text": message.content})
+
+    response = openai.Completion.create(
+        model="gpt-3.5-turbo",
+        messages=prompt_messages,
+        temperature=temperature,
+        frequency_penalty=frequency_penalty,
+        presence_penalty=presence_penalty,
+        stream=stream,
+        user=uuid
+    )
+
+    message = response.choices[0].message.content
+    messages.append(GPTTurboMessage(Role.ASSISTANT, message))
+    return messages

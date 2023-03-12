@@ -108,6 +108,7 @@ def create_fastapi_app():
         # dalle_prompt_coach.router,
         sandbox_chatgpt.router
     ] 
+    initialize_openai()
     for router_ in routers:
         add_router_with_prefix(app, router_, f"/{api_gateway_settings.openai_route_prefix}")
     app.add_exception_handler(RequestValidationError, handle_request_validation_error)
