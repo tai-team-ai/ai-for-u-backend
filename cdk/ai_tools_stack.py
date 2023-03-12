@@ -58,17 +58,9 @@ class AIToolsStack(Stack):
         )
         openai_lambda = self._create_aiforu_tools_lambda(lambda_settings=lambda_settings, gateway_settings=api_gateway_settings, role=role)
 
-        cors_options = api_gateway.CorsOptions(
-            allow_origins=[api_gateway_settings.frontend_cors_url],
-            allow_methods=["ALL"],
-            allow_headers=["*"],
-            allow_credentials=True,
-        )
-
         openai_route = self.api.root \
             .add_resource(api_gateway_settings.openai_route_prefix)
         openai_route.add_proxy(
-            default_cors_preflight_options=cors_options,
             default_integration=api_gateway.LambdaIntegration(openai_lambda, proxy=True)
         )
 
@@ -81,9 +73,15 @@ class AIToolsStack(Stack):
     def _create_rest_api(self, api_gateway_settings: APIGatewaySettings) -> api_gateway.RestApi:
         """Create a rest api with the provided id and deployment stage."""
         origins = [api_gateway_settings.frontend_cors_url]
-        if api_gateway_settings.development_cors_urls:
-            origins.append(api_gateway_settings.development_cors_urls)
-        cors_options = api_gateway.CorsOptions(allow_origins=origins)
+        if api_gateway_settings.development_cors_url != "":
+            origins.append(api_gateway_settings.development_cors_url)
+
+        cors_options = api_gateway.CorsOptions(
+            allow_origins=origins,
+            allow_methods=["ALL"],
+            allow_headers=["*"],
+            allow_credentials=True,
+        )
         rest_api = api_gateway.RestApi(self, "RestApi",
             rest_api_name=self.namer("rest-api"),
             default_cors_preflight_options=cors_options,

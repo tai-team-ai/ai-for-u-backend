@@ -75,7 +75,7 @@ def get_gpt_turbo_response(
     prompt_messages = [
         {"role": "system", "text": system_prompt}
     ]
-    for message in chat_session:
+    for message in chat_session.messages:
         prompt_messages.append({"role": message.role.value, "text": message.content})
 
     response = openai.Completion.create(

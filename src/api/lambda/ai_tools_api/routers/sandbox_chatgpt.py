@@ -8,7 +8,7 @@ from fastapi import APIRouter, Request, status
 sys.path.append(Path(__file__, "../utils").absolute())
 sys.path.append(Path(__file__, "../gpt_turbo").absolute())
 from utils import CamelCaseModel, UUID_HEADER_NAME
-from gpt_turbo import GPTTurboChatSession, get_gpt_turbo_response
+from gpt_turbo import GPTTurboChatSession, get_gpt_turbo_response, GPTTurboChat, Role
 
 router = APIRouter()
 
@@ -88,7 +88,7 @@ async def sandbox_chatgpt_examples() -> SandBoxChatGPTExamplesResponse:
     Returns:
         examples: Examples for sandbox-chatgpt.
     """
-    return SandBoxChatGPTExamplesResponse(example_names=[], examples=[])
+    return SandBoxChatGPTExamplesResponse(example_names=["How to Cook Ramen"], examples=["I want to cook ramen. What ingredients do I need?"])
 
 
 @router.post("/sandbox-chatgpt", response_model=SandBoxChatGPTResponse, status_code=status.HTTP_200_OK)
@@ -102,9 +102,10 @@ async def sandbox_chatgpt(sandbox_chatgpt_request: SandBoxChatGPTRequest, reques
     Returns:
         gpt_response: Response from openAI Turbo GPT-3 model.
     """
-    chat_session = SandBoxChatHistory(
-        message_uuid=sandbox_chatgpt_request.conversation_uuid,
-        prompt=sandbox_chatgpt_request.user_message
+    message = GPTTurboChat(role=Role.USER, content=sandbox_chatgpt_request.user_message)
+
+    chat_session = GPTTurboChatSession(
+        messages=(message,)
     )
     uuid = request.headers.get(UUID_HEADER_NAME)
 
