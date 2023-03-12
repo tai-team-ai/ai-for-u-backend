@@ -1,10 +1,18 @@
 from pydantic import BaseSettings, validator
 from typing import Dict, List, Any, Optional
+from enum import Enum
+
+
+class DeploymentStage(Enum):
+    """Deployment Stage Enum"""
+    DEVELOPMENT = "dev"
+    PRODUCTION = "prod"
+
 
 class APIGatewaySettings(BaseSettings):
     """Lambda Environment Model"""
     openai_route_prefix: str = "openai"
-    deployment_stage: str = "dev"
+    deployment_stage: DeploymentStage = DeploymentStage.DEVELOPMENT
     frontend_cors_url: str = "https://aiforu.com"
     development_cors_url: str = ""
 
