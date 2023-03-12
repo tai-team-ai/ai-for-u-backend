@@ -1,6 +1,8 @@
-from typing import NamedTuple
+from __future__ import annotations
+from pydantic import BaseModel
 from enum import Enum
 import openai
+from uuid import UUID
 
 
 class Role(Enum):
@@ -8,13 +10,40 @@ class Role(Enum):
     ASSISTANT = "assistant"
 
 
-class GPTTurboMessage(NamedTuple):
+class GPTTurboMessage(BaseModel):
     """
     GPT Turbo message.
     """
 
     role: Role
     content: str
+
+
+class GPTTurboMessageHistory(BaseModel):
+    """
+    GPT Turbo message history.
+    """
+
+    message_uuid: UUID
+    messages: tuple[GPTTurboMessage, ...]
+
+    class Config:
+        """Set configuration for GPT Turbo message history model"""
+
+        schema_extra = {
+            "example": {
+                "messages": [
+                    {"role": "user", "content": "Hello"},
+                    {"role": "assistant", "content": "Hello, how can I help?"},
+                ]
+            }
+        }
+        allow_mutation = False
+
+    def add_message(self, message: GPTTurboMessage) -> GPTTurboMessageHistory:
+        """Add message to message history and return new message history model"""
+        new_messages = self.messages + (message,)
+        return GPTTurboMessageHistory(message_uuid=self.message_uuid, messages=new_messages)
 
 
 def get_gpt_turbo_response(
