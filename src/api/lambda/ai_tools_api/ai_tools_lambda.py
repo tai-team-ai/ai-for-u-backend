@@ -17,14 +17,14 @@ from routers import note_summarizer, text_revisor, \
     sales_inquiry_email_generator, dalle_prompt_coach, sandbox_chatgpt
 sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), "utils"))
 from utils import prepare_response, UserTokenNotFoundError, initialize_openai, CamelCaseModel,\
-                    log_to_s3, authenticate_user
+                    log_to_s3, authenticate_user, AUTHENTICATED_USER_ENV_VAR_NAME, UUID_HEADER_NAME
 
 
 API_DESCRIPTION = """
-    This is the API for the AI for U project. It is a collection of endpoints that
-    use OpenAI's GPT-3 API to generate text. All requests must include a uuid header.
-    This uuid is used to check if the user is authenticated and to track usage of the API.
-    """
+This is the API for the AI for U project. It is a collection of endpoints that
+use OpenAI's GPT-3 API to generate text. All requests must include a uuid header.
+This uuid is used to check if the user is authenticated and to track usage of the API.
+"""
 
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
@@ -90,9 +90,15 @@ def create_fastapi_app():
             f"/{api_gateway_settings.deployment_stage}/{api_gateway_settings.openai_route_prefix}/docs",
             f"/{api_gateway_settings.deployment_stage}/{api_gateway_settings.openai_route_prefix}/openapi.json",
         }
-        if request.headers.get("UUID") is None or request.headers.get("UUID") == "":
+        if request.headers.get(UUID_HEADER_NAME) is None or request.headers.get(UUID_HEADER_NAME) == "":
             if path not in allowed_paths:
                 raise UserTokenNotFoundError(f"{path}\n{allowed_paths}User identifier not found in request headers.")
+        
+        authenticated = True
+        if authenticated:
+            os.environ[AUTHENTICATED_USER_ENV_VAR_NAME] = "TRUE"
+        else:
+            os.environ[AUTHENTICATED_USER_ENV_VAR_NAME] = "FALSE"
         response = await call_next(request)
         prepare_response(response, request)
         return response

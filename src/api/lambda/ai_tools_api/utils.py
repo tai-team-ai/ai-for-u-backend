@@ -15,6 +15,10 @@ logger.setLevel(logging.DEBUG)
 lambda_settings = AIToolsLambdaSettings()
 
 
+AUTHENTICATED_USER_ENV_VAR_NAME = "AUTHENTICATED_USER"
+UUID_HEADER_NAME = "UUID"
+
+
 class UserTokenNotFoundError(Exception):
     """User token not found in request headers."""
     pass

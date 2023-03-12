@@ -2,7 +2,6 @@ from __future__ import annotations
 from pydantic import BaseModel
 from enum import Enum
 import openai
-from uuid import UUID
 
 
 class Role(Enum):
@@ -10,25 +9,28 @@ class Role(Enum):
     ASSISTANT = "assistant"
 
 
-class GPTTurboMessage(BaseModel):
+class GPTTurboChat(BaseModel):
     """
-    GPT Turbo message.
+    GPT Turbo chat message.
+
+    Attributes:
+        role: The role of the message.
+        content: The content of the message.
     """
 
     role: Role
     content: str
 
 
-class GPTTurboMessageHistory(BaseModel):
+class GPTTurboChatSession(BaseModel):
     """
     GPT Turbo message history.
     """
 
-    message_uuid: UUID
-    messages: tuple[GPTTurboMessage, ...]
+    messages: tuple[GPTTurboChat, ...]
 
     class Config:
-        """Set configuration for GPT Turbo message history model"""
+        """Config for GPT Turbo message history."""
 
         schema_extra = {
             "example": {
@@ -39,22 +41,23 @@ class GPTTurboMessageHistory(BaseModel):
             }
         }
         allow_mutation = False
-
-    def add_message(self, message: GPTTurboMessage) -> GPTTurboMessageHistory:
-        """Add message to message history and return new message history model"""
+    
+    def add_message(self, message: GPTTurboChat) -> GPTTurboChatSession:
+        """Add a message to the chat session and return a new chat session model"""
         new_messages = self.messages + (message,)
-        return GPTTurboMessageHistory(message_uuid=self.message_uuid, messages=new_messages)
+        return GPTTurboChatSession(message_uuid=self.message_uuid, messages=new_messages)
+    
 
 
 def get_gpt_turbo_response(
     system_prompt: str,
-    messages: list[GPTTurboMessage],
+    chat_session: GPTTurboChatSession,
     temperature: float = 0.9,
     frequency_penalty: float = 0.0,
     presence_penalty: float = 0.0,
     stream: bool = False,
     uuid: str = None,
-) -> list[GPTTurboMessage]:
+) -> GPTTurboChatSession:
     """
     Get response from GPT Turbo.
 
@@ -72,7 +75,7 @@ def get_gpt_turbo_response(
     prompt_messages = [
         {"role": "system", "text": system_prompt}
     ]
-    for message in messages:
+    for message in chat_session:
         prompt_messages.append({"role": message.role.value, "text": message.content})
 
     response = openai.Completion.create(
@@ -86,5 +89,5 @@ def get_gpt_turbo_response(
     )
 
     message = response.choices[0].message.content
-    messages.append(GPTTurboMessage(Role.ASSISTANT, message))
-    return messages
+    chat_session = chat_session.add_message(GPTTurboChat(role=Role.ASSISTANT, content=message))
+    return chat_session
