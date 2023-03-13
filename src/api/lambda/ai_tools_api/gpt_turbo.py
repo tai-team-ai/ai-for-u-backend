@@ -21,6 +21,9 @@ class GPTTurboChat(BaseModel):
     role: Role
     content: str
 
+    class Config:
+        use_enum_values = True
+
 
 class GPTTurboChatSession(BaseModel):
     """
@@ -56,7 +59,7 @@ def get_gpt_turbo_response(
     frequency_penalty: float = 0.0,
     presence_penalty: float = 0.0,
     stream: bool = False,
-    uuid: str = None,
+    uuid: str = "",
 ) -> GPTTurboChatSession:
     """
     Get response from GPT Turbo.
@@ -75,8 +78,9 @@ def get_gpt_turbo_response(
     prompt_messages = [
         {"role": "system", "content": system_prompt}
     ]
-    for message in chat_session.messages:
-        prompt_messages.append({"role": message.role.value, "content": message.content})
+
+    for chat in chat_session.messages:
+        prompt_messages.append(chat.dict())
 
     response = openai.ChatCompletion.create(
         model="gpt-3.5-turbo",
