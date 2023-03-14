@@ -1,34 +1,32 @@
-import traceback
-from pydantic import BaseModel
-import openai
 import logging
 import os
 import sys
+import traceback
 from mangum import Mangum
+from uuid import UUID
 from fastapi import FastAPI, APIRouter, Request, status , Response
 from fastapi.responses import JSONResponse
 from fastapi.exceptions import RequestValidationError
-from fastapi.middleware.cors import CORSMiddleware
-from fastapi.middleware import Middleware
+
 
 dir_name = os.path.dirname(os.path.realpath(__file__))
 sys.path.append(os.path.join(dir_name, "../dependencies"))
 sys.path.append(dir_name)
-from api_gateway_settings import APIGatewaySettings
+from api_gateway_settings import APIGatewaySettings, DeploymentStage
 from ai_tools_lambda_settings import AIToolsLambdaSettings
 from routers import note_summarizer, text_revisor, \
     resignation_email_generator, catchy_title_creator, \
-    sales_inquiry_email_generator, dalle_prompt_coach
+    sales_inquiry_email_generator, dalle_prompt_coach, sandbox_chatgpt
 sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), "utils"))
 from utils import prepare_response, UserTokenNotFoundError, initialize_openai, CamelCaseModel,\
-                    log_to_s3, authenticate_user
+                    log_to_s3, authenticate_user, AUTHENTICATED_USER_ENV_VAR_NAME, UUID_HEADER_NAME
 
 
 API_DESCRIPTION = """
-    This is the API for the AI for U project. It is a collection of endpoints that
-    use OpenAI's GPT-3 API to generate text. All requests must include a uuid header.
-    This uuid is used to check if the user is authenticated and to track usage of the API.
-    """
+This is the API for the AI for U project. It is a collection of endpoints that
+use OpenAI's GPT-3 API to generate text. All requests must include a uuid header.
+This uuid is used to check if the user is authenticated and to track usage of the API.
+"""
 
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
@@ -45,35 +43,40 @@ def get_status(request: Request, response: Response):
     response_body = {"status": "ok"}
     return response_body
 
-def handle_request_validation_error(request: Request, exc: RequestValidationError):
-    """Handle exception."""
-    logger.error(exc)
+def get_error_message(error: Exception) -> str:
+    """Return error message."""
+    traceback_str = "\n".join(traceback.format_exception(type(error), error, error.__traceback__))
+    logger.error(traceback_str)
+    if api_gateway_settings.deployment_stage == DeploymentStage.DEVELOPMENT.value:
+        return traceback_str
+    return str(error)
+
+def get_error_response(request: Request, content: dict) -> Response:
+    """Return error response."""
     response = JSONResponse(
         status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-        content={"Validation Exception": str(exc)}
+        content=content
     )
     prepare_response(response, request)
     return response
+
+def handle_request_validation_error(request: Request, exc: RequestValidationError):
+    """Handle exception."""
+    msg = get_error_message(exc)
+    content = {"Validation Exception": msg}
+    return get_error_response(request, content)
 
 def handle_user_token_error(request: Request, exc: UserTokenNotFoundError):
     """Handle exception."""
-    logger.error(exc)
-    response = JSONResponse(
-        status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-        content={"userTokenException": str(exc)}
-    )
-    prepare_response(response, request)
-    return response
+    msg = get_error_message(exc)
+    content = {"userTokenException": msg}
+    return get_error_response(request, content)
 
 def handle_generic_exception(request: Request, exc: Exception):
     """Handle exception."""
-    logger.error(exc)
-    response = JSONResponse(
-        status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-        content={"Exception Raised": str(exc)}
-    )
-    prepare_response(response, request)
-    return response
+    msg = get_error_message(exc)
+    content = {"Exception Raised": msg}
+    return get_error_response(request, content)
 
 
 def create_fastapi_app():
@@ -82,7 +85,7 @@ def create_fastapi_app():
         root_path=f"/{api_gateway_settings.deployment_stage}",
         docs_url=f"/{api_gateway_settings.openai_route_prefix}/docs",
         openapi_url=f"/{api_gateway_settings.openai_route_prefix}/openapi.json",
-        redoc_url=None
+        redoc_url=None,
         description=API_DESCRIPTION,
     )
 
@@ -94,9 +97,18 @@ def create_fastapi_app():
             f"/{api_gateway_settings.deployment_stage}/{api_gateway_settings.openai_route_prefix}/docs",
             f"/{api_gateway_settings.deployment_stage}/{api_gateway_settings.openai_route_prefix}/openapi.json",
         }
-        if request.headers.get("UUID") is None or request.headers.get("UUID") == "":
+        uuid_str = request.headers.get(UUID_HEADER_NAME)
+        logger.info("uuid_str: %s", uuid_str)
+        try:
+            UUID(uuid_str, version=4)
+        except Exception:
             if path not in allowed_paths:
-                raise UserTokenNotFoundError(f"{path}\n{allowed_paths}User identifier not found in request headers.")
+                raise UserTokenNotFoundError("User token not found.")
+        authenticated = True
+        if authenticated:
+            os.environ[AUTHENTICATED_USER_ENV_VAR_NAME] = "TRUE"
+        else:
+            os.environ[AUTHENTICATED_USER_ENV_VAR_NAME] = "FALSE"
         response = await call_next(request)
         prepare_response(response, request)
         return response
@@ -105,12 +117,14 @@ def create_fastapi_app():
     routers = [
         router,
         note_summarizer.router,
-        text_revisor.router,
-        catchy_title_creator.router,
-        resignation_email_generator.router,
-        sales_inquiry_email_generator.router,
-        dalle_prompt_coach.router
+        # text_revisor.router,
+        # catchy_title_creator.router,
+        # resignation_email_generator.router,
+        # sales_inquiry_email_generator.router,
+        # dalle_prompt_coach.router,
+        sandbox_chatgpt.router
     ] 
+    initialize_openai()
     for router_ in routers:
         add_router_with_prefix(app, router_, f"/{api_gateway_settings.openai_route_prefix}")
     app.add_exception_handler(RequestValidationError, handle_request_validation_error)
@@ -127,4 +141,3 @@ def lambda_handler(event, context):
     app = create_fastapi_app()
     handler = Mangum(app=app)
     return handler(event, context)
-    

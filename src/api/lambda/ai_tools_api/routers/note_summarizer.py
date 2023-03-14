@@ -1,5 +1,6 @@
 import logging
 import os
+from pathlib import Path
 import sys
 import threading
 from typing import Optional
@@ -7,7 +8,7 @@ from fastapi import APIRouter, Response, status, Request
 import openai
 from pydantic import BaseModel, Field
 
-sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), "../utils"))
+sys.path.append(Path(__file__, "../utils").absolute())
 from utils import initialize_openai, prepare_response, CamelCaseModel, log_to_s3
 
 logger = logging.getLogger()
@@ -61,7 +62,7 @@ def get_openai_response(prompt: str) -> str:
     logger.info(f"openai response: {openai_response}")
     return openai_response.choices[0].text.strip()
 
-@router.post("/note_summarizer", response_model=NoteSummarizerResponseModel, status_code=status.HTTP_200_OK)
+@router.post("/note-summarizer", response_model=NoteSummarizerResponseModel, status_code=status.HTTP_200_OK)
 async def note_summarizer(note_summarizer_request: NoteSummarizerModel, response: Response, request: Request):
     """
     Method uses openai model text-curie-001 to summarize notes.

@@ -58,7 +58,9 @@ lambda_settings = AIToolsLambdaSettings(
 )
 api_gateway_settings = APIGatewaySettings(
     openai_route_prefix="ai-for-u",
-    deployment_stage="dev"
+    deployment_stage="dev",
+    frontend_cors_url="https://aiforu.com",
+    development_cors_url="http://localhost:3000"
 )
 
 AIToolsStack(
