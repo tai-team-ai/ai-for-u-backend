@@ -82,7 +82,7 @@ async def log_to_s3(
         for key, value in prompts.items():
             bucket = s3.Object(lambda_settings.log_bucket_name, f"{user_token}/{current_time}{path}/PROMPT-{key}.log")
             bucket.put(Body=value)
-    
+
     if image_raw_sockets:
         for i, image_raw_socket in enumerate(image_raw_sockets):
             key = f"{user_token}/{current_time}{path}/IMAGE-{i}.png"
@@ -98,7 +98,7 @@ def add_header(response: Response, origin_url: Optional[str]) -> None:
 
 def prepare_response(response: Response, request: Request) -> None:
     """Prepare response."""
-    origin_url = request.headers.get("origin", None)
+    origin_url = request.headers.get("Origin", None)
     add_header(response, origin_url)
 
 

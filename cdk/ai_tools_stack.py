@@ -98,7 +98,7 @@ class AIToolsStack(Stack):
             origins.append(api_gateway_settings.development_cors_url)
 
         cors_options = api_gateway.CorsOptions(
-            allow_origins=origins,
+            allow_origins=["*"],
             allow_methods=["ALL"],
             allow_headers=["*"],
             allow_credentials=True,

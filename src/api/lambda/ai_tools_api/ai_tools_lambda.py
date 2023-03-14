@@ -43,7 +43,6 @@ def get_status(request: Request, response: Response):
     response_body = {"status": "ok"}
     return response_body
 
-
 def get_error_message(error: Exception) -> str:
     """Return error message."""
     traceback_str = "\n".join(traceback.format_exception(type(error), error, error.__traceback__))
@@ -52,32 +51,32 @@ def get_error_message(error: Exception) -> str:
         return traceback_str
     return str(error)
 
+def get_error_response(request: Request, content: dict) -> Response:
+    """Return error response."""
+    response = JSONResponse(
+        status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        content=content
+    )
+    prepare_response(response, request)
+    return response
+
 def handle_request_validation_error(request: Request, exc: RequestValidationError):
     """Handle exception."""
     msg = get_error_message(exc)
-    response = JSONResponse(
-        status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-        content={"Validation Exception": msg}
-    )
-    return response
+    content = {"Validation Exception": msg}
+    return get_error_response(request, content)
 
 def handle_user_token_error(request: Request, exc: UserTokenNotFoundError):
     """Handle exception."""
     msg = get_error_message(exc)
-    response = JSONResponse(
-        status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-        content={"userTokenException": msg}
-    )
-    return response
+    content = {"userTokenException": msg}
+    return get_error_response(request, content)
 
 def handle_generic_exception(request: Request, exc: Exception):
     """Handle exception."""
     msg = get_error_message(exc)
-    response = JSONResponse(
-        status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-        content={"Exception Raised": msg}
-    )
-    return response
+    content = {"Exception Raised": msg}
+    return get_error_response(request, content)
 
 
 def create_fastapi_app():
