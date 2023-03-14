@@ -1,15 +1,21 @@
+import sys
+from pathlib import Path
 from aws_cdk import (
     Stack,
     aws_dynamodb as dynamodb
 )
 from constructs import Construct
 
+sys.path.append(Path(__file__).parent.parent, "src/api/lambda/ai_tools_api")
+from dynamodb_models import DynamoDBSettings
 
-class NextJsDynamodbStack(Stack):
+
+class DynamodbStack(Stack):
 
     def __init__(self,
         scope: Construct,
         stack_id: str,
+        dynamodb_settings: 
         **kwargs
     ) -> None:
         super().__init__(scope, stack_id, **kwargs)

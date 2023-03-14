@@ -14,32 +14,17 @@ from api_gateway_settings import APIGatewaySettings
 from ai_tools_lambda_settings import AIToolsLambdaSettings
 from ai_tools_stack import AIToolsStack
 from user_data_dynamo_stack import UserDataDynamoStack
-from dynamo_db_settings import DynamoDBSettings
+from dynamodb_models import USER_DATA_TABLE_SETTINGS
+
 from nextjs_dynamodb_stack import NextJsDynamodbStack
 
 
 app = App()
 
-user_data_dynamodb_settings = DynamoDBSettings(
-    table_name="user-data",
-    partition_key="uuid"
-)
 dynamo_db_user_data_stack = UserDataDynamoStack(
     scope=app,
     stack_id="dynamo-stack-user-data",
-    dynamodb_settings=user_data_dynamodb_settings
-)
-
-
-user_limits_dynamodb_settings = DynamoDBSettings(
-    table_name="user-limits",
-    partition_key="uuid",
-    sort_key="quota_usage"
-)
-dynamo_db_user_limits_stack = UserDataDynamoStack(
-    scope=app,
-    stack_id="dynamo-stack-user-limits",
-    dynamodb_settings=user_limits_dynamodb_settings
+    dynamodb_settings=USER_DATA_TABLE_SETTINGS
 )
 
 
