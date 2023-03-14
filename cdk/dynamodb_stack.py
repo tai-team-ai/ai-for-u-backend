@@ -6,7 +6,7 @@ from aws_cdk import (
 )
 from constructs import Construct
 
-sys.path.append(Path(__file__).parent.parent, "src/api/lambda/ai_tools_api")
+sys.path.append(Path(__file__).parent.parent / "src/api/lambda/ai_tools_api")
 from dynamodb_models import DynamoDBSettings
 
 

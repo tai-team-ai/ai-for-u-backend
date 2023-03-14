@@ -33,7 +33,6 @@ class AIToolsStack(Stack):
         lambda_settings: AIToolsLambdaSettings,
         api_gateway_settings: APIGatewaySettings,
         user_data_table: dynamodb.Table,
-        user_limits_table: dynamodb.Table,
         next_js_auth_table: dynamodb.Table,
         **kwargs
     ) -> None:
@@ -87,7 +86,6 @@ class AIToolsStack(Stack):
 
 
         user_data_table.grant_read_data(openai_lambda)
-        user_limits_table.grant_read_write_data(openai_lambda)
 
         next_js_auth_table.grant_read_data(openai_lambda)
 

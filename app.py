@@ -52,9 +52,8 @@ AIToolsStack(
     stack_id="aiforu-api-stack",
     lambda_settings=lambda_settings,
     api_gateway_settings=api_gateway_settings,
-    user_data_table=dynamo_db_user_data_stack.user_data_table,
-    user_limits_table=dynamo_db_user_limits_stack.user_data_table,
-    next_js_auth_table=dynamo_db_next_js_auth_stack.nextjs_auth_table
+    user_data_table=dynamo_db_user_data_stack.table,
+    next_js_auth_table=dynamo_db_next_js_auth_stack.table
 )
 
 app.synth()
