@@ -15,7 +15,7 @@ sys.path.append(Path(__file__, "../gpt_turbo").absolute())
 sys.path.append(Path(__file__, "../dynamodb_models").absolute())
 from utils import CamelCaseModel, UUID_HEADER_NAME
 from gpt_turbo import GPTTurboChatSession, get_gpt_turbo_response, GPTTurboChat, Role
-from dynamodb_models import AuthenticatedUserData
+from dynamodb_models import UserDataTableModel
 
 router = APIRouter()
 
@@ -33,16 +33,6 @@ SYSTEM_PROMPT = (
     "You should also ask questions to make sure you understand what the user is saying. "
     "You MUST get to know them as a human being and understand their needs in order to be successful."
 )
-
-
-class SandBoxChatHistory(GPTTurboChatSession):
-    """
-    Define the chat history for user sandbox-chatgpt sessions.
-
-    ### Attributes:
-        message_uuid: A unique identifier for the message.\n\n
-    """
-    chat_uuid: UUID
 
 
 class SandBoxChatGPTRequest(CamelCaseModel):
@@ -103,7 +93,7 @@ async def sandbox_chatgpt_examples() -> SandBoxChatGPTExamplesResponse:
     )
 
 
-def load_sandbox_chat_history(user_id: UUID, conversation_uuid: UUID) -> GPTTurboChatSession:
+def load_sandbox_chat_history(user_uuid: UUID, conversation_uuid: UUID) -> GPTTurboChatSession:
     """
     Load the chat history for a sandbox-chatgpt session.
 
@@ -113,23 +103,30 @@ def load_sandbox_chat_history(user_id: UUID, conversation_uuid: UUID) -> GPTTurb
     Returns:
         chat_history: Chat history for a sandbox-chatgpt session.
     """
-    chat_session_dict = {"chat_uuid": conversation_uuid}
+    chat_session_dict = {}
     try:
-        chat_history = AuthenticatedUserData.get(user_id).sandbox_chat_history
-        chat_session_dict = chat_history.get(str(conversation_uuid), chat_session_dict)
+        chat_history: dict = UserDataTableModel.get(user_uuid).sandbox_chat_history
     except Model.DoesNotExist:
         pass
+    if chat_history:
+        chat_session_dict["messages"] = chat_history.get(conversation_uuid, ())
     return GPTTurboChatSession(**chat_session_dict)
 
-def save_sandbox_chat_history(user_uuid: UUID, sandbox_chat_history: SandBoxChatHistory) -> None:
+
+def save_sandbox_chat_history(user_uuid: UUID, sandbox_chat_history: GPTTurboChatSession, conversation_uuid: UUID) -> None:
     """
     Save the chat history for a sandbox-chatgpt session.
 
     Args:
         chat_session: Chat history for a sandbox-chatgpt session.
     """
-    pass
-    
+    try:
+        user_data_table_model: UserDataTableModel = UserDataTableModel.get(user_uuid)
+    except Model.DoesNotExist:
+        user_data_table_model = UserDataTableModel(user_uuid)
+    user_data_table_model.sandbox_chat_history = {conversation_uuid: sandbox_chat_history.dict()}
+    user_data_table_model.save()
+
 
 @router.post("/sandbox-chatgpt", response_model=SandBoxChatGPTResponse, status_code=status.HTTP_200_OK)
 async def sandbox_chatgpt(sandbox_chatgpt_request: SandBoxChatGPTRequest, request: Request) -> SandBoxChatGPTResponse:
@@ -144,10 +141,7 @@ async def sandbox_chatgpt(sandbox_chatgpt_request: SandBoxChatGPTRequest, reques
     """
     uuid = request.headers.get(UUID_HEADER_NAME)
     logger.info("uuid: %s", uuid)
-    chat_session = load_sandbox_chat_history(
-        user_id=uuid,
-        conversation_uuid=sandbox_chatgpt_request.conversation_uuid
-    )
+    chat_session = load_sandbox_chat_history(user_uuid=uuid, conversation_uuid=sandbox_chatgpt_request.conversation_uuid)
     logger.info("chat_session before response: %s", chat_session)
 
     chat_session = get_gpt_turbo_response(
@@ -158,7 +152,7 @@ async def sandbox_chatgpt(sandbox_chatgpt_request: SandBoxChatGPTRequest, reques
         uuid=uuid
     )
     logger.info("chat_session after response: %s", chat_session)
-    save_sandbox_chat_history(user_uuid=uuid, sandbox_chat_history=chat_session)
+    save_sandbox_chat_history(user_uuid=uuid, sandbox_chat_history=chat_session, conversation_uuid=sandbox_chatgpt_request.conversation_uuid)
 
     latest_gpt_chat_model = chat_session.messages[-1]
     latest_message = latest_gpt_chat_model.content
