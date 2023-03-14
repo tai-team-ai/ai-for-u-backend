@@ -30,7 +30,7 @@ class GPTTurboChatSession(BaseModel):
     GPT Turbo message history.
     """
 
-    messages: tuple[GPTTurboChat, ...]
+    messages: tuple[GPTTurboChat, ...] = ()
 
     class Config:
         """Config for GPT Turbo message history."""
