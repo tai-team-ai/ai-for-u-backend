@@ -103,14 +103,13 @@ def load_sandbox_chat_history(user_uuid: UUID, conversation_uuid: UUID) -> GPTTu
     Returns:
         chat_history: Chat history for a sandbox-chatgpt session.
     """
-    chat_session_dict = {}
     try:
         chat_history: dict = UserDataTableModel.get(user_uuid).sandbox_chat_history
     except Model.DoesNotExist:
         pass
     if chat_history:
-        chat_session_dict["messages"] = chat_history.get(conversation_uuid, ())
-    return GPTTurboChatSession(**chat_session_dict)
+        return GPTTurboChatSession(**chat_history[conversation_uuid])
+    return GPTTurboChatSession()
 
 
 def save_sandbox_chat_history(user_uuid: UUID, sandbox_chat_history: GPTTurboChatSession, conversation_uuid: UUID) -> None:
