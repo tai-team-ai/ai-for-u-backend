@@ -17,7 +17,7 @@ class DynamoDBSettings(BaseSettings):
 
     class Config:
         allow_mutation = False
-        
+
     @validator("sort_key")
     def _ensure_sort_key_string_greater_than_1(cls, v):
         if v is not None and len(v) < 1:

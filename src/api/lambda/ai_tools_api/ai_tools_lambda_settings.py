@@ -22,7 +22,6 @@ class AIToolsLambdaSettings(BaseLambdaSettings):
     external_api_secret_name: Optional[str]
     api_endpoint_secret_key_name: Optional[str]
     api_key_secret_key_name: Optional[str]
-    aws_region: str
 
 
     @root_validator()

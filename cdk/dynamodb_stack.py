@@ -15,41 +15,46 @@ class DynamodbStack(Stack):
     def __init__(self,
         scope: Construct,
         stack_id: str,
-        dynamodb_settings: 
+        dynamodb_settings: DynamoDBSettings,
         **kwargs
     ) -> None:
         super().__init__(scope, stack_id, **kwargs)
         self.namer = lambda x: stack_id + "-" + x
 
         partition_key = dynamodb.Attribute(
-            name="pk",
+            name=dynamodb_settings.partition_key,
             type=dynamodb.AttributeType.STRING
         )
 
         sort_key = dynamodb.Attribute(
-            name="sk",
+            name=dynamodb_settings.sort_key,
             type=dynamodb.AttributeType.STRING
         )
 
-        self.nextjs_auth_table = dynamodb.Table(self,
-            self.namer("next-auth-table"),
-            table_name="next-auth",
+        self.table = dynamodb.Table(self,
+            self.namer(stack_id),
+            table_name=dynamodb_settings.table_name,
             partition_key=partition_key,
             sort_key=sort_key,
             time_to_live_attribute="expires"
         )
 
+        if dynamodb_settings.secondary_index_name:
+            self._add_secondary_index(self.table, dynamodb_settings)
+
+
+    def _add_secondary_index(self, table: dynamodb.Table, settings: DynamoDBSettings) -> None:
         secondary_partition_key = dynamodb.Attribute(
-            name="GSI1PK",
+            name=settings.secondary_partition_key,
             type=dynamodb.AttributeType.STRING
         )
         secondary_sort_key = dynamodb.Attribute(
-            name="GSI1SK",
+            name=settings.secondary_sort_key,
             type=dynamodb.AttributeType.STRING
         )
 
-        self.nextjs_auth_table.add_global_secondary_index(
-            index_name="GSI1",
+        table.add_global_secondary_index(
+            index_name=settings.secondary_index_name,
             partition_key=secondary_partition_key,
             sort_key=secondary_sort_key
         )
