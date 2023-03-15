@@ -7,7 +7,7 @@ from aws_cdk import (
 from constructs import Construct
 
 sys.path.append(Path(__file__).parent.parent / "src/api/lambda/ai_tools_api")
-from dynamodb_models import DynamoDBSettings
+from dynamodb_models import DynamoDBSettings, SupportedKeyTypes
 
 
 class DynamodbStack(Stack):
@@ -20,15 +20,20 @@ class DynamodbStack(Stack):
     ) -> None:
         super().__init__(scope, stack_id, **kwargs)
         self.namer = lambda x: stack_id + "-" + x
+        
+        settings_to_cdk_map = {
+            SupportedKeyTypes.STRING: dynamodb.AttributeType.STRING,
+            SupportedKeyTypes.NUMBER: dynamodb.AttributeType.NUMBER
+        }
 
         partition_key = dynamodb.Attribute(
             name=dynamodb_settings.partition_key,
-            type=dynamodb.AttributeType.STRING
+            type=settings_to_cdk_map[dynamodb_settings.partition_key_type]
         )
 
         sort_key = dynamodb.Attribute(
             name=dynamodb_settings.sort_key,
-            type=dynamodb.AttributeType.STRING
+            type=settings_to_cdk_map[dynamodb_settings.sort_key_type]
         )
 
         self.table = dynamodb.Table(self,

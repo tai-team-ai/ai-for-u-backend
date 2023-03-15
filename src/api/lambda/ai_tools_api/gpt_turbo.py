@@ -20,6 +20,7 @@ class GPTTurboChat(BaseModel):
 
     role: Role
     content: str
+    token_count: int
 
     class Config:
         use_enum_values = True
@@ -60,6 +61,7 @@ def get_gpt_turbo_response(
     presence_penalty: float = 0.0,
     stream: bool = False,
     uuid: str = "",
+    max_tokens: int = 400,
 ) -> GPTTurboChatSession:
     """
     Get response from GPT Turbo.
@@ -80,7 +82,7 @@ def get_gpt_turbo_response(
     ]
 
     for chat in chat_session.messages:
-        prompt_messages.append(chat.dict())
+        prompt_messages.append(chat.dict(exclude={"token_count"}))
 
     response = openai.ChatCompletion.create(
         model="gpt-3.5-turbo",
@@ -89,9 +91,15 @@ def get_gpt_turbo_response(
         frequency_penalty=frequency_penalty,
         presence_penalty=presence_penalty,
         stream=stream,
-        user=uuid
+        user=uuid,
+        max_tokens=max_tokens,
     )
 
     message = response.choices[0].message.content
-    chat_session = chat_session.add_message(GPTTurboChat(role=Role.ASSISTANT, content=message))
+    token_count = response.usage.total_tokens
+    chat_session = chat_session.add_message(GPTTurboChat(
+        role=Role.ASSISTANT,
+        content=message,
+        token_count=token_count
+    ))
     return chat_session

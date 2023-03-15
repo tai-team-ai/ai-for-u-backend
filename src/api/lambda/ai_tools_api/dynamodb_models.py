@@ -1,15 +1,24 @@
 from typing import Optional
 from datetime import datetime
+from enum import Enum
 from pynamodb.models import Model
 from pynamodb.attributes import UnicodeAttribute, BooleanAttribute, NumberAttribute, JSONAttribute
-from pydantic import BaseSettings, AnyUrl, constr, validator
+from pydantic import BaseSettings, AnyUrl, constr, validator, Field
+
+CDK_DEFAULT_REGION_VAR_NAME = "CDK_DEFAULT_REGION"
+
+class SupportedKeyTypes(Enum):
+    STRING = "STRING"
+    NUMBER = "NUMBER"
 
 
 class DynamoDBSettings(BaseSettings):
-    cdk_default_region: constr(min_length=1, max_length=63)
+    aws_region: constr(min_length=1, max_length=63) = Field(..., env=CDK_DEFAULT_REGION_VAR_NAME)
     table_name: constr(min_length=1, max_length=63)
     partition_key: constr(min_length=1, max_length=63)
+    partition_key_type: SupportedKeyTypes = SupportedKeyTypes.STRING
     sort_key: Optional[str] = None
+    sort_key_type: Optional[SupportedKeyTypes] = SupportedKeyTypes.STRING
     secondary_index_name: Optional[str] = None
     secondary_partition_key: Optional[str] = None
     secondary_sort_key: Optional[str] = None
@@ -28,7 +37,8 @@ class DynamoDBSettings(BaseSettings):
 USER_DATA_TABLE_SETTINGS = DynamoDBSettings(
     table_name="user-data",
     partition_key="UUID",
-    sort_key="cummulative_token_count"
+    sort_key="cumulative_token_count",
+    sort_key_type=SupportedKeyTypes.NUMBER
 )
 
 NEXT_JS_AUTH_TABLE_SETTINGS = DynamoDBSettings(
@@ -48,19 +58,19 @@ FEEDBACK_TABLE_SETTINGS = DynamoDBSettings(
 
 class UserDataTableModel(Model):
     class Meta:
-        region = USER_DATA_TABLE_SETTINGS.cdk_default_region
+        region = USER_DATA_TABLE_SETTINGS.aws_region
         table_name = USER_DATA_TABLE_SETTINGS.table_name
         host = USER_DATA_TABLE_SETTINGS.host
 
     UUID = UnicodeAttribute(hash_key=True, attr_name=USER_DATA_TABLE_SETTINGS.partition_key)
-    cumulative_token_count = NumberAttribute(range_key=True, default=0, attr_name=USER_DATA_TABLE_SETTINGS.sort_key)
+    cumulative_token_count = NumberAttribute(range_key=True, default_for_new=0, attr_name=USER_DATA_TABLE_SETTINGS.sort_key)
     is_subscribed = BooleanAttribute(null=True)
     sandbox_chat_history = JSONAttribute(null=True)
 
 
 class FeedbackTableModel(Model):
     class Meta:
-        region = FEEDBACK_TABLE_SETTINGS.cdk_default_region
+        region = FEEDBACK_TABLE_SETTINGS.aws_region
         table_name = FEEDBACK_TABLE_SETTINGS.table_name
         host = FEEDBACK_TABLE_SETTINGS.host
 

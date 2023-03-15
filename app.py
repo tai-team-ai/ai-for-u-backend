@@ -3,7 +3,7 @@ import os
 from pathlib import Path
 import sys
 
-from aws_cdk import App
+from aws_cdk import App, Environment
 
 dir_name = os.path.dirname(os.path.realpath(__file__))
 api_dir = Path(dir_name, "src/api/lambda")
@@ -13,7 +13,7 @@ sys.path.append(os.path.join(api_dir, "ai_tools_api"))
 from api_gateway_settings import APIGatewaySettings
 from ai_tools_lambda_settings import AIToolsLambdaSettings
 from ai_tools_stack import AIToolsStack
-from dynamodb_models import USER_DATA_TABLE_SETTINGS, NEXT_JS_AUTH_TABLE_SETTINGS
+from dynamodb_models import USER_DATA_TABLE_SETTINGS, NEXT_JS_AUTH_TABLE_SETTINGS, CDK_DEFAULT_REGION_VAR_NAME
 from dynamodb_stack import DynamodbStack
 
 
@@ -47,13 +47,19 @@ api_gateway_settings = APIGatewaySettings(
     development_cors_url="http://localhost:3000"
 )
 
+CDK_DEFAULT_REGION = os.environ.get(CDK_DEFAULT_REGION_VAR_NAME)
+environment = {
+    CDK_DEFAULT_REGION_VAR_NAME: CDK_DEFAULT_REGION
+}
+
 AIToolsStack(
     scope=app,
     stack_id="aiforu-api-stack",
     lambda_settings=lambda_settings,
     api_gateway_settings=api_gateway_settings,
     user_data_table=dynamo_db_user_data_stack.table,
-    next_js_auth_table=dynamo_db_next_js_auth_stack.table
+    next_js_auth_table=dynamo_db_next_js_auth_stack.table,
+    environment_vars=environment
 )
 
 app.synth()

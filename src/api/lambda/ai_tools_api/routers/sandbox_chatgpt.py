@@ -7,6 +7,7 @@ from uuid import UUID
 from fastapi import APIRouter, Request, status
 from typing import Any
 from pynamodb.models import Model
+from pynamodb.pagination import ResultIterator
 
 
 
@@ -104,13 +105,14 @@ def load_sandbox_chat_history(user_uuid: UUID, conversation_uuid: UUID) -> GPTTu
         chat_history: Chat history for a sandbox-chatgpt session.
     """
     try:
-        chat_history: dict = UserDataTableModel.get(user_uuid).sandbox_chat_history
-    except Model.DoesNotExist:
+        results: ResultIterator[UserDataTableModel] = UserDataTableModel.query(str(user_uuid))
+        chat_history = next(results).sandbox_chat_history
+        logger.info(f"chat_history: {chat_history}")
+        if chat_history:
+            return GPTTurboChatSession(**chat_history[conversation_uuid])
+    except (Model.DoesNotExist, StopIteration, KeyError):
         pass
-    if chat_history:
-        return GPTTurboChatSession(**chat_history[conversation_uuid])
     return GPTTurboChatSession()
-
 
 def save_sandbox_chat_history(user_uuid: UUID, sandbox_chat_history: GPTTurboChatSession, conversation_uuid: UUID) -> None:
     """
@@ -120,15 +122,20 @@ def save_sandbox_chat_history(user_uuid: UUID, sandbox_chat_history: GPTTurboCha
         chat_session: Chat history for a sandbox-chatgpt session.
     """
     try:
-        user_data_table_model: UserDataTableModel = UserDataTableModel.get(user_uuid)
-    except Model.DoesNotExist:
-        user_data_table_model = UserDataTableModel(user_uuid)
-    user_data_table_model.sandbox_chat_history = {conversation_uuid: sandbox_chat_history.dict()}
-    user_data_table_model.save()
+        results: ResultIterator[UserDataTableModel] = UserDataTableModel.query(str(user_uuid))
+        user_data_table_model = next(results)
+    except (Model.DoesNotExist, StopIteration):
+        user_data_table_model = UserDataTableModel(str(user_uuid))
+        user_data_table_model.save()
+        return
+    chat_dict = sandbox_chat_history.dict()
+    chat_dict["conversation_uuid"] = str(conversation_uuid)
+    UserDataTableModel.sandbox_chat_history.set(chat_dict)
+    UserDataTableModel.cumulative_token_count.add(sandbox_chat_history.messages[-1].token_count)
 
 
 @router.post("/sandbox-chatgpt", response_model=SandBoxChatGPTResponse, status_code=status.HTTP_200_OK)
-async def sandbox_chatgpt(sandbox_chatgpt_request: SandBoxChatGPTRequest, request: Request) -> SandBoxChatGPTResponse:
+def sandbox_chatgpt(sandbox_chatgpt_request: SandBoxChatGPTRequest, request: Request) -> SandBoxChatGPTResponse:
     """
     Get response from openAI Turbo GPT-3 model.
 
@@ -148,7 +155,8 @@ async def sandbox_chatgpt(sandbox_chatgpt_request: SandBoxChatGPTRequest, reques
         chat_session=chat_session,
         frequency_penalty=0.9,
         temperature=0.9,
-        uuid=uuid
+        uuid=uuid,
+        max_tokens=400
     )
     logger.info("chat_session after response: %s", chat_session)
     save_sandbox_chat_history(user_uuid=uuid, sandbox_chat_history=chat_session, conversation_uuid=sandbox_chatgpt_request.conversation_uuid)
