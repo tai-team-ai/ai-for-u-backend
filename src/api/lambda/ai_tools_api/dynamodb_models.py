@@ -81,3 +81,5 @@ class FeedbackTableModel(Model):
     tool_logs = JSONAttribute()
     rating = NumberAttribute(null=True)
     feedback = UnicodeAttribute(null=True)
+
+

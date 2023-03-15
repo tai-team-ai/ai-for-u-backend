@@ -20,7 +20,7 @@ class GPTTurboChat(BaseModel):
 
     role: Role
     content: str
-    token_count: int
+    token_count: int = 0
 
     class Config:
         use_enum_values = True
