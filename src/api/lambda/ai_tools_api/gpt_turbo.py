@@ -145,4 +145,4 @@ def get_gpt_turbo_response(
             content=message,
             token_count=token_count
         ))
-        return chat_session
+        yield chat_session

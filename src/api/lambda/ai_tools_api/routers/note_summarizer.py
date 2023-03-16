@@ -26,10 +26,10 @@ KEYWORDS_FOR_PROMPT ={
 }
 
 SECTIONS_FOR_RESPONSE = {
-    "summary_sentence": "Summary Sentence:\n",
-    "bullets": "Bullet Points:\n",
-    "action_items": "Action Items:\n",
-    "freeform_command": "Freeform Text Analysis:\n"
+    "summary_sentence": "Summary Sentence: ",
+    "bullets": "Bullet Points: \n",
+    "action_items": "Action Items: \n",
+    "freeform_command": "Freeform Text Analysis: \n"
 }
 
 MAX_TOKENS = 400
@@ -109,8 +109,7 @@ async def text_summarizer(text_summarizer_request: TextSummarizerRequestModel, r
         content=text_summarizer_request.text_to_summarize
     )
     chat_session = GPTTurboChatSession(messages=[user_chat])
-    generator = GeneratorWrapper(
-        get_gpt_turbo_response(
+    generator = get_gpt_turbo_response(
             system_prompt=system_prompt,
             chat_session=chat_session,
             frequency_penalty=0.0,
@@ -119,11 +118,10 @@ async def text_summarizer(text_summarizer_request: TextSummarizerRequestModel, r
             uuid=uuid,
             max_tokens=MAX_TOKENS
         )
-    )
     try:
-        next(generator)
+        chat_session = next(generator)
     except StopIteration:
-        chat_session = generator.value
+        pass
     latest_gpt_chat_model = chat_session.messages[-1]
     update_user_token_count(uuid, latest_gpt_chat_model.token_count)
     latest_chat = latest_gpt_chat_model.content

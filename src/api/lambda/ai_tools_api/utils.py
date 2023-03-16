@@ -45,7 +45,6 @@ def initialize_openai():
 
 def sanitize_string(string: str) -> str:
     """Replace '\\n' with '\n' and remove whitespace at the end and beginning of the string."""
-    string = string.replace("\\n", "\n")
     return string.strip()
 
 
