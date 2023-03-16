@@ -9,7 +9,7 @@ import openai
 from pydantic import constr
 
 sys.path.append(Path(__file__, "../").absolute())
-from gpt_turbo import GPTTurboChatSession, GPTTurboChat, Role, get_gpt_turbo_response
+from gpt_turbo import GPTTurboChatSession, GPTTurboChat, Role, get_gpt_turbo_response, GeneratorWrapper
 from utils import CamelCaseModel, UUID_HEADER_NAME, update_user_token_count, sanitize_string
 
 router = APIRouter()
@@ -108,16 +108,22 @@ async def text_summarizer(text_summarizer_request: TextSummarizerRequestModel, r
         role=Role.USER,
         content=text_summarizer_request.text_to_summarize
     )
-    chat_session = get_gpt_turbo_response(
-        system_prompt=system_prompt,
-        chat_session=GPTTurboChatSession(messages=[user_chat]),
-        frequency_penalty=0.0,
-        presence_penalty=0.0,
-        temperature=0.3,
-        uuid=uuid,
-        max_tokens=MAX_TOKENS
+    chat_session = GPTTurboChatSession(messages=[user_chat])
+    generator = GeneratorWrapper(
+        get_gpt_turbo_response(
+            system_prompt=system_prompt,
+            chat_session=chat_session,
+            frequency_penalty=0.0,
+            presence_penalty=0.0,
+            temperature=0.3,
+            uuid=uuid,
+            max_tokens=MAX_TOKENS
+        )
     )
-
+    try:
+        next(generator)
+    except StopIteration:
+        chat_session = generator.value
     latest_gpt_chat_model = chat_session.messages[-1]
     update_user_token_count(uuid, latest_gpt_chat_model.token_count)
     latest_chat = latest_gpt_chat_model.content

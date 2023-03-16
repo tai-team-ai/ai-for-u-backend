@@ -18,7 +18,7 @@ import sys
 import openai
 
 sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), "../utils"))
-from utils import initialize_openai, prepare_response, CamelCaseModel, sanitize_string, log_to_s3
+from utils import initialize_openai, prepare_response, CamelCaseModel, sanitize_string
 
 logger = logging.getLogger()
 logger.setLevel(logging.DEBUG)
@@ -258,14 +258,5 @@ You should not assume about the image, but instead ask the user for clarity. You
         dialogue = dialogue + suggestion + "\n"
         response_model = DallePromptCoachResponseModel(dialogue=dialogue)
     logger.info("Returning response: %s", response_model)
-
-    prompts = {
-        'prompt': prompt
-    }
-
-    try:
-        await log_to_s3(request, response, response_model, prompts, image_raw_sockets=image_raw_sockets)
-    except Exception as e:
-        logger.error("Error logging to s3: %s", e)
     
     return response_model

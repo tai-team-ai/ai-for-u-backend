@@ -7,7 +7,7 @@ import openai
 from pydantic import conint
 import requests
 sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), "../utils"))
-from utils import initialize_openai, prepare_response, CamelCaseModel, log_to_s3
+from utils import initialize_openai, prepare_response, CamelCaseModel
 
 logger = logging.getLogger()
 logger.setLevel(logging.DEBUG)
@@ -93,16 +93,5 @@ async def text_revisor(text_revision_request: TextRevisorModel, request: Request
 
     response_model = TextRevisorResponseModel(**response_dict)
     logger.info(f"response_model: {response_model}")
-
-    prompts = {
-        'text_to_revise': text_revision_request.text_to_revise,
-        'instruction': instruction,
-        'number_of_revisions': text_revision_request.number_of_revisions,
-        'creativity': text_revision_request.creativity
-    }
-    try:
-        await log_to_s3(request, response, response_model, prompts)
-    except Exception as e:
-        logger.error(f"Error logging to s3: {e}")
     return response_model
 

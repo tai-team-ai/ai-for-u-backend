@@ -1,6 +1,7 @@
 from __future__ import annotations
-from pydantic import BaseModel
+from typing import Generator
 from enum import Enum
+from pydantic import BaseModel
 import openai
 
 
@@ -46,14 +47,40 @@ class GPTTurboChatSession(BaseModel):
         }
         allow_mutation = False
     
-    def add_message(self, message: GPTTurboChat) -> GPTTurboChatSession:
+    def add_message(self, chat: GPTTurboChat) -> GPTTurboChatSession:
         """Add a message to the chat session and return a new chat session model"""
-        new_messages = self.messages + (message,)
+        new_messages = self.messages + (chat,)
         return GPTTurboChatSession(messages=new_messages)
     
+    def merge_last_message_and_tokens_if_same_role(self, chat: GPTTurboChat) -> GPTTurboChatSession:
+        """Merge the last message and tokens if the last message has the same role as the chat message"""
+        if self.messages[-1].role == chat.role:
+            new_messages = self.messages[:-1] + (GPTTurboChat(
+                role=chat.role,
+                content=self.messages[-1].content + chat.content,
+                token_count=self.messages[-1].token_count + chat.token_count,
+            ),)
+            return GPTTurboChatSession(messages=new_messages)
+        else:
+            return self.add_message(chat)
 
 
-async def get_gpt_turbo_response(
+def count_tokens(messages: str) -> int:
+    return len(messages.split())
+
+class GeneratorWrapper:
+    def __init__(self, generator):
+        self.generator = generator
+        self.value = None
+    
+    def __iter__(self):
+        self.value = yield from self.generator
+        
+    def __next__(self):
+        return next(self.generator)
+
+
+def get_gpt_turbo_response(
     system_prompt: str,
     chat_session: GPTTurboChatSession,
     temperature: float = 0.9,
@@ -62,7 +89,7 @@ async def get_gpt_turbo_response(
     stream: bool = False,
     uuid: str = "",
     max_tokens: int = 400,
-) -> GPTTurboChatSession:
+) -> Generator[GPTTurboChatSession, None, GPTTurboChatSession]:
     """
     Get response from GPT Turbo.
 
@@ -84,8 +111,6 @@ async def get_gpt_turbo_response(
     for chat in chat_session.messages:
         prompt_messages.append(chat.dict(exclude={"token_count"}))
 
-    
-    
     response = openai.ChatCompletion.create(
         model="gpt-3.5-turbo",
         messages=prompt_messages,
@@ -98,20 +123,26 @@ async def get_gpt_turbo_response(
     )
     if stream:
         for chunk in response:
+            delta = chunk.choices[0].delta
+            if delta == {}:
+                return chat_session
             message = chunk.choices[0].delta.get("content", None)
             if message:
-                token_count = chunk.usage.total_tokens
-                chat_session = chat_session.add_message(GPTTurboChat(
-                    role=Role.ASSISTANT,
-                    content=message,
-                    token_count=token_count
-                ))
-
-    message = response.choices[0].message.content
-    token_count = response.usage.total_tokens
-    chat_session = chat_session.add_message(GPTTurboChat(
-        role=Role.ASSISTANT,
-        content=message,
-        token_count=token_count
-    ))
-    return chat_session
+                token_count = count_tokens(message)
+                chat_session = chat_session.merge_last_message_and_tokens_if_same_role(
+                    GPTTurboChat(
+                        role=Role.ASSISTANT,
+                        content=message,
+                        token_count=token_count,
+                    )
+                )
+                yield chat_session
+    else:
+        message = response.choices[0].message.content
+        token_count = response.usage.total_tokens
+        chat_session = chat_session.add_message(GPTTurboChat(
+            role=Role.ASSISTANT,
+            content=message,
+            token_count=token_count
+        ))
+        return chat_session

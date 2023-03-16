@@ -2,7 +2,7 @@ from pathlib import Path
 import sys
 import logging
 import traceback
-from typing import Optional, Generator, Union
+from typing import Optional, Generator
 from uuid import UUID
 from fastapi import APIRouter, Request, status
 from fastapi.responses import StreamingResponse
@@ -16,7 +16,7 @@ sys.path.append(Path(__file__, "../utils").absolute())
 sys.path.append(Path(__file__, "../gpt_turbo").absolute())
 sys.path.append(Path(__file__, "../dynamodb_models").absolute())
 from utils import CamelCaseModel, UUID_HEADER_NAME, sanitize_string
-from gpt_turbo import GPTTurboChatSession, get_gpt_turbo_response, GPTTurboChat, Role
+from gpt_turbo import GPTTurboChatSession, get_gpt_turbo_response, GPTTurboChat, Role, GeneratorWrapper
 from dynamodb_models import UserDataTableModel
 
 router = APIRouter()
@@ -143,21 +143,7 @@ def save_sandbox_chat_history(user_uuid: UUID, sandbox_chat_history: GPTChatHist
     except (Model.DoesNotExist, StopIteration):
         new_user_model = UserDataTableModel(str(user_uuid), token_count, sandbox_chat_history=chat_dict)
     new_user_model.save()
-
-
-def event_stream(chat_session: GPTTurboChatSession) -> Generator[str, None, None]:
-    """
-    Stream response from GPT Turbo to client.
-
-    Args:
-        chat_session: GPTTurboChatSession object.
-
-    Returns:
-        response: Generator object that streams the response.
-    """
-    for message in chat_session.messages[len(chat_session.messages)-1:]:
-        yield f"data: {message.content}\n\n"
-
+    
 
 @router.post("/sandbox-chatgpt", response_model=SandBoxChatGPTResponse, status_code=status.HTTP_200_OK)
 def sandbox_chatgpt(sandbox_chatgpt_request: SandBoxChatGPTRequest, request: Request) -> SandBoxChatGPTResponse:
@@ -174,62 +160,32 @@ def sandbox_chatgpt(sandbox_chatgpt_request: SandBoxChatGPTRequest, request: Req
     logger.info("User Request: %s", sandbox_chatgpt_request)
     chat_history = load_sandbox_chat_history(user_uuid=uuid, conversation_uuid=sandbox_chatgpt_request.conversation_uuid)
     chat_history = chat_history.add_message(GPTTurboChat(role=Role.USER, content=sandbox_chatgpt_request.user_message))
-    chat_session = get_gpt_turbo_response(
-        system_prompt=SYSTEM_PROMPT,
-        chat_session=GPTTurboChatSession(**chat_history.dict()),
-        frequency_penalty=0.9,
-        temperature=0.9,
-        uuid=uuid,
-        max_tokens=MAX_TOKENS,
-        stream=sandbox_chatgpt_request.stream_messages
-    )
-    logger.info("chat_session after response: %s", chat_session)
-    chat_history = GPTChatHistory(**chat_session.dict(), conversation_uuid=sandbox_chatgpt_request.conversation_uuid)
-    save_sandbox_chat_history(user_uuid=uuid, sandbox_chat_history=chat_history)
-
-    latest_gpt_chat_model = chat_session.messages[-1]
-    latest_message = latest_gpt_chat_model.content
-    latest_message = sanitize_string(latest_message)
-    response = SandBoxChatGPTResponse(gpt_response=latest_message)
-    logger.info("Response: %s", response)
-    return response
-
-
-@router.post("/sandbox-chatgpt", response_model=Union[SandBoxChatGPTResponse, StreamingResponse], status_code=status.HTTP_200_OK)
-def sandbox_chatgpt(sandbox_chatgpt_request: SandBoxChatGPTRequest, request: Request) -> Union[SandBoxChatGPTResponse, StreamingResponse]:
-    """
-    Get response from openAI Turbo GPT-3 model.
-
-    Args:
-        sandbox_chatgpt_request: Request containing conversation_id and prompt.
-
-    Returns:
-        gpt_response: Response from openAI Turbo GPT-3 model.
-    """
-    chat_session = GPTTurboChatSession()
-
-    # Get system prompt
-    system_prompt = "Hello, how may I assist you today?"
-    chat_session = get_gpt_turbo_response(system_prompt, chat_session, stream=False)
-
-    # Add user message to chat session
-    chat_session = chat_session.add_message(GPTTurboChat(
-        role=Role.USER,
-        content=sandbox_chatgpt_request.user_message
-    ))
-
-    # Stream messages
-    if sandbox_chatgpt_request.stream_messages:
-        return StreamingResponse(
-            event_stream(chat_session),
-            media_type="text/event-stream",
+    chat_session = GPTTurboChatSession(**chat_history.dict())
+    generator = GeneratorWrapper( 
+        get_gpt_turbo_response(
+            system_prompt=SYSTEM_PROMPT,
+            chat_session=chat_session,
+            frequency_penalty=0.9,
+            temperature=0.9,
+            uuid=uuid,
+            max_tokens=MAX_TOKENS,
+            stream=sandbox_chatgpt_request.stream_messages
         )
+    )
+    try:
+        chat_session = next(generator)
+    except StopIteration:
+        chat_session = generator.value
+    finally:
+        chat_history = GPTChatHistory(**chat_session.dict(), conversation_uuid=sandbox_chatgpt_request.conversation_uuid)
+        save_sandbox_chat_history(user_uuid=uuid, sandbox_chat_history=chat_history)
 
-    # Get GPT Turbo response
-    chat_session = get_gpt_turbo_response(system_prompt, chat_session, stream=False)
-
-    # Log response to database
-    <database call>
-
-    # Return response
-    return SandBoxChatGPTResponse(gpt_response=chat_session.messages[-1].content)
+    if sandbox_chatgpt_request.stream_messages:
+        return StreamingResponse(generator, media_type="text/event-stream")
+    else:
+        latest_gpt_chat_model = chat_session.messages[-1]
+        latest_message = latest_gpt_chat_model.content
+        latest_message = sanitize_string(latest_message)
+        response = SandBoxChatGPTResponse(gpt_response=latest_message)
+        logger.info("Response: %s", response)
+        return response

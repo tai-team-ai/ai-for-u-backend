@@ -23,7 +23,7 @@ import sys
 import openai
 
 sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), "../utils"))
-from utils import initialize_openai, prepare_response, CamelCaseModel, sanitize_string, log_to_s3
+from utils import initialize_openai, prepare_response, CamelCaseModel, sanitize_string
 
 logger = logging.getLogger()
 logger.setLevel(logging.DEBUG)
@@ -103,8 +103,4 @@ async def catchy_title_creator(catchy_title_creator_request: CatchyTitleCreatorM
         'prompt': prompt,
         'num_titles': catchy_title_creator_request.num_titles,
     }
-    try:
-        await log_to_s3(request, response, response_model, prompts)
-    except Exception as e:
-        logger.error(f"Error logging to s3: {e}")
     return response_model
