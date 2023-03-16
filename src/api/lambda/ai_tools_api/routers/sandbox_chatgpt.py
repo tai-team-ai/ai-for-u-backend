@@ -2,9 +2,10 @@ from pathlib import Path
 import sys
 import logging
 import traceback
-from typing import Optional
+from typing import Optional, Generator, Union
 from uuid import UUID
 from fastapi import APIRouter, Request, status
+from fastapi.responses import StreamingResponse
 from typing import Any, Dict
 from pynamodb.models import Model
 from pynamodb.pagination import ResultIterator
@@ -14,7 +15,7 @@ from pynamodb.pagination import ResultIterator
 sys.path.append(Path(__file__, "../utils").absolute())
 sys.path.append(Path(__file__, "../gpt_turbo").absolute())
 sys.path.append(Path(__file__, "../dynamodb_models").absolute())
-from utils import CamelCaseModel, UUID_HEADER_NAME
+from utils import CamelCaseModel, UUID_HEADER_NAME, sanitize_string
 from gpt_turbo import GPTTurboChatSession, get_gpt_turbo_response, GPTTurboChat, Role
 from dynamodb_models import UserDataTableModel
 
@@ -22,6 +23,8 @@ router = APIRouter()
 
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
+
+MAX_TOKENS = 400
 
 SYSTEM_PROMPT = (
     "You are a friendly assist named Roo. You are to act as someone who is friendly and "
@@ -58,6 +61,7 @@ class SandBoxChatGPTRequest(CamelCaseModel):
 
     conversation_uuid: UUID
     user_message: Optional[str] = ""
+    stream_messages: Optional[bool] = False
 
 
 class SandBoxChatGPTResponse(CamelCaseModel):
@@ -81,7 +85,7 @@ class SandBoxChatGPTExamplesResponse(CamelCaseModel):
         examples: List of corresponding example prompts.
     """
     example_names: list[str]
-    examples: list[str]
+    examples: list[SandBoxChatGPTRequest]
 
 
 @router.get("/sandbox-chatgpt-examples", response_model=SandBoxChatGPTExamplesResponse, status_code=status.HTTP_200_OK)
@@ -92,10 +96,11 @@ async def sandbox_chatgpt_examples() -> SandBoxChatGPTExamplesResponse:
     Returns:
         examples: Examples for sandbox-chatgpt.
     """
-    return SandBoxChatGPTExamplesResponse(
+    response = SandBoxChatGPTExamplesResponse(
         example_names=["How to Cook Ramen"],
         examples=["I want to cook ramen. What ingredients do I need?"]
     )
+    return response
 
 
 def load_sandbox_chat_history(user_uuid: UUID, conversation_uuid: UUID) -> GPTChatHistory:
@@ -140,6 +145,20 @@ def save_sandbox_chat_history(user_uuid: UUID, sandbox_chat_history: GPTChatHist
     new_user_model.save()
 
 
+def event_stream(chat_session: GPTTurboChatSession) -> Generator[str, None, None]:
+    """
+    Stream response from GPT Turbo to client.
+
+    Args:
+        chat_session: GPTTurboChatSession object.
+
+    Returns:
+        response: Generator object that streams the response.
+    """
+    for message in chat_session.messages[len(chat_session.messages)-1:]:
+        yield f"data: {message.content}\n\n"
+
+
 @router.post("/sandbox-chatgpt", response_model=SandBoxChatGPTResponse, status_code=status.HTTP_200_OK)
 def sandbox_chatgpt(sandbox_chatgpt_request: SandBoxChatGPTRequest, request: Request) -> SandBoxChatGPTResponse:
     """
@@ -152,9 +171,8 @@ def sandbox_chatgpt(sandbox_chatgpt_request: SandBoxChatGPTRequest, request: Req
         gpt_response: Response from openAI Turbo GPT-3 model.
     """
     uuid = request.headers.get(UUID_HEADER_NAME)
-    logger.info("uuid: %s", uuid)
+    logger.info("User Request: %s", sandbox_chatgpt_request)
     chat_history = load_sandbox_chat_history(user_uuid=uuid, conversation_uuid=sandbox_chatgpt_request.conversation_uuid)
-    logger.info("chat_session before response: %s", chat_history)
     chat_history = chat_history.add_message(GPTTurboChat(role=Role.USER, content=sandbox_chatgpt_request.user_message))
     chat_session = get_gpt_turbo_response(
         system_prompt=SYSTEM_PROMPT,
@@ -162,7 +180,8 @@ def sandbox_chatgpt(sandbox_chatgpt_request: SandBoxChatGPTRequest, request: Req
         frequency_penalty=0.9,
         temperature=0.9,
         uuid=uuid,
-        max_tokens=400
+        max_tokens=MAX_TOKENS,
+        stream=sandbox_chatgpt_request.stream_messages
     )
     logger.info("chat_session after response: %s", chat_session)
     chat_history = GPTChatHistory(**chat_session.dict(), conversation_uuid=sandbox_chatgpt_request.conversation_uuid)
@@ -170,4 +189,47 @@ def sandbox_chatgpt(sandbox_chatgpt_request: SandBoxChatGPTRequest, request: Req
 
     latest_gpt_chat_model = chat_session.messages[-1]
     latest_message = latest_gpt_chat_model.content
-    return SandBoxChatGPTResponse(gpt_response=latest_message)
+    latest_message = sanitize_string(latest_message)
+    response = SandBoxChatGPTResponse(gpt_response=latest_message)
+    logger.info("Response: %s", response)
+    return response
+
+
+@router.post("/sandbox-chatgpt", response_model=Union[SandBoxChatGPTResponse, StreamingResponse], status_code=status.HTTP_200_OK)
+def sandbox_chatgpt(sandbox_chatgpt_request: SandBoxChatGPTRequest, request: Request) -> Union[SandBoxChatGPTResponse, StreamingResponse]:
+    """
+    Get response from openAI Turbo GPT-3 model.
+
+    Args:
+        sandbox_chatgpt_request: Request containing conversation_id and prompt.
+
+    Returns:
+        gpt_response: Response from openAI Turbo GPT-3 model.
+    """
+    chat_session = GPTTurboChatSession()
+
+    # Get system prompt
+    system_prompt = "Hello, how may I assist you today?"
+    chat_session = get_gpt_turbo_response(system_prompt, chat_session, stream=False)
+
+    # Add user message to chat session
+    chat_session = chat_session.add_message(GPTTurboChat(
+        role=Role.USER,
+        content=sandbox_chatgpt_request.user_message
+    ))
+
+    # Stream messages
+    if sandbox_chatgpt_request.stream_messages:
+        return StreamingResponse(
+            event_stream(chat_session),
+            media_type="text/event-stream",
+        )
+
+    # Get GPT Turbo response
+    chat_session = get_gpt_turbo_response(system_prompt, chat_session, stream=False)
+
+    # Log response to database
+    <database call>
+
+    # Return response
+    return SandBoxChatGPTResponse(gpt_response=chat_session.messages[-1].content)

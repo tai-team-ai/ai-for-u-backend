@@ -53,7 +53,7 @@ class GPTTurboChatSession(BaseModel):
     
 
 
-def get_gpt_turbo_response(
+async def get_gpt_turbo_response(
     system_prompt: str,
     chat_session: GPTTurboChatSession,
     temperature: float = 0.9,
@@ -84,6 +84,8 @@ def get_gpt_turbo_response(
     for chat in chat_session.messages:
         prompt_messages.append(chat.dict(exclude={"token_count"}))
 
+    
+    
     response = openai.ChatCompletion.create(
         model="gpt-3.5-turbo",
         messages=prompt_messages,
@@ -94,6 +96,16 @@ def get_gpt_turbo_response(
         user=uuid,
         max_tokens=max_tokens,
     )
+    if stream:
+        for chunk in response:
+            message = chunk.choices[0].delta.get("content", None)
+            if message:
+                token_count = chunk.usage.total_tokens
+                chat_session = chat_session.add_message(GPTTurboChat(
+                    role=Role.ASSISTANT,
+                    content=message,
+                    token_count=token_count
+                ))
 
     message = response.choices[0].message.content
     token_count = response.usage.total_tokens
