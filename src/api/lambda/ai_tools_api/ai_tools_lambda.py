@@ -2,6 +2,7 @@ import logging
 import os
 import sys
 import traceback
+from openai.error import RateLimitError
 from mangum import Mangum
 from uuid import UUID
 from fastapi import FastAPI, APIRouter, Request, status , Response
@@ -78,6 +79,12 @@ def handle_generic_exception(request: Request, exc: Exception):
     content = {"Exception Raised": msg}
     return get_error_response(request, content)
 
+def handle_rate_limit_exception(request: Request, exc: RateLimitError):
+    """Handle exception."""
+    msg = get_error_message(exc)
+    content = {"Rate Limit Exception": msg}
+    return get_error_response(request, content)
+
 
 def create_fastapi_app():
     """Create FastAPI app."""
@@ -129,6 +136,8 @@ def create_fastapi_app():
         add_router_with_prefix(app, router_, f"/{api_gateway_settings.openai_route_prefix}")
     app.add_exception_handler(RequestValidationError, handle_request_validation_error)
     app.add_exception_handler(Exception, handle_generic_exception)
+    app.add_exception_handler(UserTokenNotFoundError, handle_user_token_error)
+    app.add_exception_handler(RateLimitError, handle_rate_limit_exception)
     
     return app
 

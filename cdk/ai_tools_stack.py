@@ -33,8 +33,8 @@ class AIToolsStack(Stack):
         lambda_settings: AIToolsLambdaSettings,
         api_gateway_settings: APIGatewaySettings,
         user_data_table: dynamodb.Table,
-        user_limits_table: dynamodb.Table,
         next_js_auth_table: dynamodb.Table,
+        environment_vars: dict[str, str],
         **kwargs
     ) -> None:
         super().__init__(scope, stack_id, **kwargs)
@@ -73,10 +73,10 @@ class AIToolsStack(Stack):
         role.add_to_policy(
             statement=iam.PolicyStatement(
                 actions=["logs:CreateLogGroup", "logs:CreateLogStream", "logs:PutLogEvents"],
-                resources=["*"]
+                resources=["arn:aws:logs:*:*:*"]
             )
         )
-        openai_lambda = self._create_aiforu_tools_lambda(lambda_settings=lambda_settings, gateway_settings=api_gateway_settings, role=role)
+        openai_lambda = self._create_aiforu_tools_lambda(lambda_settings=lambda_settings, gateway_settings=api_gateway_settings, role=role, environment_vars=environment_vars)
 
         openai_route = self.api.root \
             .add_resource(api_gateway_settings.openai_route_prefix)
@@ -86,8 +86,8 @@ class AIToolsStack(Stack):
         )
 
 
-        user_data_table.grant_read_data(openai_lambda)
-        user_limits_table.grant_read_write_data(openai_lambda)
+        user_data_table.grant_read_write_data(openai_lambda)
+        
 
         next_js_auth_table.grant_read_data(openai_lambda)
 
@@ -109,11 +109,12 @@ class AIToolsStack(Stack):
         )
         return rest_api, cors_options
 
-    def _create_aiforu_tools_lambda(self, lambda_settings: AIToolsLambdaSettings, gateway_settings: APIGatewaySettings, role: iam.Role) -> lambda_.Function:
+    def _create_aiforu_tools_lambda(self, lambda_settings: AIToolsLambdaSettings, gateway_settings: APIGatewaySettings, role: iam.Role, environment_vars: dict[str, str]) -> lambda_.Function:
         """Create a lambda function with the provided id and environment variables."""
         id_ = lambda_settings.openai_lambda_id
         settings_dict = dict_keys_to_uppercase(lambda_settings.dict())
         settings_dict.update(dict_keys_to_uppercase(gateway_settings.dict()))
+        settings_dict.update(dict_keys_to_uppercase(environment_vars))
         assert isinstance(settings_dict, dict)
         entry_dir = Path(os.path.dirname(os.path.realpath(__file__)), "../src/api/lambda")
         path_to_requirements = Path(entry_dir, lambda_settings.openai_api_dir, "requirements-lambda.txt")

@@ -1,12 +1,13 @@
 from pathlib import Path
 import sys
 import logging
-import json
+import traceback
 from typing import Optional
 from uuid import UUID
 from fastapi import APIRouter, Request, status
-from typing import Any
+from typing import Any, Dict
 from pynamodb.models import Model
+from pynamodb.pagination import ResultIterator
 
 
 
@@ -15,7 +16,7 @@ sys.path.append(Path(__file__, "../gpt_turbo").absolute())
 sys.path.append(Path(__file__, "../dynamodb_models").absolute())
 from utils import CamelCaseModel, UUID_HEADER_NAME
 from gpt_turbo import GPTTurboChatSession, get_gpt_turbo_response, GPTTurboChat, Role
-from dynamodb_models import AuthenticatedUserData
+from dynamodb_models import UserDataTableModel
 
 router = APIRouter()
 
@@ -33,16 +34,6 @@ SYSTEM_PROMPT = (
     "You should also ask questions to make sure you understand what the user is saying. "
     "You MUST get to know them as a human being and understand their needs in order to be successful."
 )
-
-
-class SandBoxChatHistory(GPTTurboChatSession):
-    """
-    Define the chat history for user sandbox-chatgpt sessions.
-
-    ### Attributes:
-        message_uuid: A unique identifier for the message.\n\n
-    """
-    chat_uuid: UUID
 
 
 class SandBoxChatGPTRequest(CamelCaseModel):
@@ -71,6 +62,10 @@ class SandBoxChatGPTRequest(CamelCaseModel):
 
 class SandBoxChatGPTResponse(CamelCaseModel):
     gpt_response: str
+    
+    
+class GPTChatHistory(GPTTurboChatSession):
+    conversation_uuid: UUID
 
 
 class SandBoxChatGPTExamplesResponse(CamelCaseModel):
@@ -103,7 +98,7 @@ async def sandbox_chatgpt_examples() -> SandBoxChatGPTExamplesResponse:
     )
 
 
-def load_sandbox_chat_history(user_id: UUID, conversation_uuid: UUID) -> GPTTurboChatSession:
+def load_sandbox_chat_history(user_uuid: UUID, conversation_uuid: UUID) -> GPTChatHistory:
     """
     Load the chat history for a sandbox-chatgpt session.
 
@@ -113,26 +108,40 @@ def load_sandbox_chat_history(user_id: UUID, conversation_uuid: UUID) -> GPTTurb
     Returns:
         chat_history: Chat history for a sandbox-chatgpt session.
     """
-    chat_session_dict = {"chat_uuid": conversation_uuid}
     try:
-        chat_history = AuthenticatedUserData.get(user_id).sandbox_chat_history
-        chat_session_dict = chat_history.get(str(conversation_uuid), chat_session_dict)
-    except Model.DoesNotExist:
-        pass
-    return GPTTurboChatSession(**chat_session_dict)
+        results: ResultIterator[UserDataTableModel] = UserDataTableModel.query(str(user_uuid))
+        chat_history: Dict[str, Any] = next(results).sandbox_chat_history
+        if chat_history:
+            chat_history = GPTChatHistory(**chat_history)
+            if chat_history.conversation_uuid == conversation_uuid:
+                return chat_history
+    except (Model.DoesNotExist, StopIteration, KeyError):
+        logger.error(traceback.format_exc())
+    return GPTChatHistory(conversation_uuid=conversation_uuid)
 
-def save_sandbox_chat_history(user_uuid: UUID, sandbox_chat_history: SandBoxChatHistory) -> None:
+def save_sandbox_chat_history(user_uuid: UUID, sandbox_chat_history: GPTChatHistory) -> None:
     """
     Save the chat history for a sandbox-chatgpt session.
 
     Args:
         chat_session: Chat history for a sandbox-chatgpt session.
     """
-    pass
-    
+    token_count = sandbox_chat_history.messages[-1].token_count
+    chat_dict = sandbox_chat_history.dict()
+    chat_dict["conversation_uuid"] = str(sandbox_chat_history.conversation_uuid)
+    try:
+        results: ResultIterator[UserDataTableModel] = UserDataTableModel.query(str(user_uuid))
+        user_data_table_model = next(results)
+        new_token_count = token_count + user_data_table_model.cumulative_token_count
+        new_user_model = UserDataTableModel(str(user_uuid), new_token_count, sandbox_chat_history=chat_dict)
+        user_data_table_model.delete()
+    except (Model.DoesNotExist, StopIteration):
+        new_user_model = UserDataTableModel(str(user_uuid), token_count, sandbox_chat_history=chat_dict)
+    new_user_model.save()
+
 
 @router.post("/sandbox-chatgpt", response_model=SandBoxChatGPTResponse, status_code=status.HTTP_200_OK)
-async def sandbox_chatgpt(sandbox_chatgpt_request: SandBoxChatGPTRequest, request: Request) -> SandBoxChatGPTResponse:
+def sandbox_chatgpt(sandbox_chatgpt_request: SandBoxChatGPTRequest, request: Request) -> SandBoxChatGPTResponse:
     """
     Get response from openAI Turbo GPT-3 model.
 
@@ -144,21 +153,20 @@ async def sandbox_chatgpt(sandbox_chatgpt_request: SandBoxChatGPTRequest, reques
     """
     uuid = request.headers.get(UUID_HEADER_NAME)
     logger.info("uuid: %s", uuid)
-    chat_session = load_sandbox_chat_history(
-        user_id=uuid,
-        conversation_uuid=sandbox_chatgpt_request.conversation_uuid
-    )
-    logger.info("chat_session before response: %s", chat_session)
-
+    chat_history = load_sandbox_chat_history(user_uuid=uuid, conversation_uuid=sandbox_chatgpt_request.conversation_uuid)
+    logger.info("chat_session before response: %s", chat_history)
+    chat_history = chat_history.add_message(GPTTurboChat(role=Role.USER, content=sandbox_chatgpt_request.user_message))
     chat_session = get_gpt_turbo_response(
         system_prompt=SYSTEM_PROMPT,
-        chat_session=chat_session,
+        chat_session=GPTTurboChatSession(**chat_history.dict()),
         frequency_penalty=0.9,
         temperature=0.9,
-        uuid=uuid
+        uuid=uuid,
+        max_tokens=400
     )
     logger.info("chat_session after response: %s", chat_session)
-    save_sandbox_chat_history(user_uuid=uuid, sandbox_chat_history=chat_session)
+    chat_history = GPTChatHistory(**chat_session.dict(), conversation_uuid=sandbox_chatgpt_request.conversation_uuid)
+    save_sandbox_chat_history(user_uuid=uuid, sandbox_chat_history=chat_history)
 
     latest_gpt_chat_model = chat_session.messages[-1]
     latest_message = latest_gpt_chat_model.content

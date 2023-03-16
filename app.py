@@ -3,7 +3,7 @@ import os
 from pathlib import Path
 import sys
 
-from aws_cdk import App
+from aws_cdk import App, Environment
 
 dir_name = os.path.dirname(os.path.realpath(__file__))
 api_dir = Path(dir_name, "src/api/lambda")
@@ -13,39 +13,23 @@ sys.path.append(os.path.join(api_dir, "ai_tools_api"))
 from api_gateway_settings import APIGatewaySettings
 from ai_tools_lambda_settings import AIToolsLambdaSettings
 from ai_tools_stack import AIToolsStack
-from user_data_dynamo_stack import UserDataDynamoStack
-from dynamo_db_settings import DynamoDBSettings
-from nextjs_dynamodb_stack import NextJsDynamodbStack
+from dynamodb_models import USER_DATA_TABLE_SETTINGS, NEXT_JS_AUTH_TABLE_SETTINGS, CDK_DEFAULT_REGION_VAR_NAME
+from dynamodb_stack import DynamodbStack
 
 
 app = App()
 
-user_data_dynamodb_settings = DynamoDBSettings(
-    table_name="user-data",
-    partition_key="uuid"
-)
-dynamo_db_user_data_stack = UserDataDynamoStack(
+dynamo_db_user_data_stack = DynamodbStack(
     scope=app,
     stack_id="dynamo-stack-user-data",
-    dynamodb_settings=user_data_dynamodb_settings
+    dynamodb_settings=USER_DATA_TABLE_SETTINGS
 )
 
 
-user_limits_dynamodb_settings = DynamoDBSettings(
-    table_name="user-limits",
-    partition_key="uuid",
-    sort_key="quota_usage"
-)
-dynamo_db_user_limits_stack = UserDataDynamoStack(
+dynamo_db_next_js_auth_stack = DynamodbStack(
     scope=app,
-    stack_id="dynamo-stack-user-limits",
-    dynamodb_settings=user_limits_dynamodb_settings
-)
-
-
-dynamo_db_next_js_auth_stack = NextJsDynamodbStack(
-    scope=app,
-    stack_id="dynamo-stack-next-js-auth"
+    stack_id="dynamo-stack-next-js-auth",
+    dynamodb_settings=NEXT_JS_AUTH_TABLE_SETTINGS
 )
 
 
@@ -63,14 +47,19 @@ api_gateway_settings = APIGatewaySettings(
     development_cors_url="http://localhost:3000"
 )
 
+CDK_DEFAULT_REGION = os.environ.get(CDK_DEFAULT_REGION_VAR_NAME)
+environment = {
+    CDK_DEFAULT_REGION_VAR_NAME: CDK_DEFAULT_REGION
+}
+
 AIToolsStack(
     scope=app,
     stack_id="aiforu-api-stack",
     lambda_settings=lambda_settings,
     api_gateway_settings=api_gateway_settings,
-    user_data_table=dynamo_db_user_data_stack.user_data_table,
-    user_limits_table=dynamo_db_user_limits_stack.user_data_table,
-    next_js_auth_table=dynamo_db_next_js_auth_stack.nextjs_auth_table
+    user_data_table=dynamo_db_user_data_stack.table,
+    next_js_auth_table=dynamo_db_next_js_auth_stack.table,
+    environment_vars=environment
 )
 
 app.synth()
