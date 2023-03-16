@@ -21,7 +21,7 @@ from typing import Optional
 from fastapi import APIRouter, Response, status, Request
 from pydantic import conint, constr
 sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), "../utils"))
-from utils import initialize_openai, prepare_response, CamelCaseModel, sanitize_string, log_to_s3
+from utils import initialize_openai, prepare_response, CamelCaseModel, sanitize_string
 
 router = APIRouter()
 
@@ -98,8 +98,4 @@ async def sales_inquiry_email_generator(request_model: SalesInquiryEmailGenerato
     prompt = sanitize_string(prompt)
     open_ai_response = get_openai_response(prompt).strip()
     response_model = SalesInquiryEmailGeneratorResponseModel(sales_inquiry_email=open_ai_response)
-    try:
-        await log_to_s3(request, response, response_model, {'prompt': prompt})
-    except Exception as e:
-        Logger.error(f"Error logging to s3: {e}")
     return response_model

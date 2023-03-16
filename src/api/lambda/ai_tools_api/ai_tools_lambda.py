@@ -19,8 +19,7 @@ from routers import note_summarizer, text_revisor, \
     resignation_email_generator, catchy_title_creator, \
     sales_inquiry_email_generator, dalle_prompt_coach, sandbox_chatgpt
 sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), "utils"))
-from utils import prepare_response, UserTokenNotFoundError, initialize_openai, CamelCaseModel,\
-                    log_to_s3, authenticate_user, AUTHENTICATED_USER_ENV_VAR_NAME, UUID_HEADER_NAME
+from utils import prepare_response, UserTokenNotFoundError, initialize_openai, AUTHENTICATED_USER_ENV_VAR_NAME, UUID_HEADER_NAME
 
 
 API_DESCRIPTION = """

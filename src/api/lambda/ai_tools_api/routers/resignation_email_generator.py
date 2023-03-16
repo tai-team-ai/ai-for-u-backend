@@ -24,7 +24,7 @@ from fastapi import APIRouter, Response, status,Request
 from pydantic import conint, constr
 import openai
 sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), "../utils"))
-from utils import initialize_openai, prepare_response, CamelCaseModel, sanitize_string, log_to_s3
+from utils import initialize_openai, prepare_response, CamelCaseModel, sanitize_string
 
 logger = logging.getLogger()
 logger.setLevel(logging.DEBUG)
@@ -122,15 +122,6 @@ async def resignation_email_generator(resignation_email_generator_model: Resigna
     resignation_email_generator_response_model = ResignationEmailGeneratorResponseModel(**response_dict)
 
     logger.info(f"resignation_email_generator_response_model: {resignation_email_generator_response_model}")
-    
-    prompts = {
-        'prompt': prompt,
-        'bluntness': resignation_email_generator_model.bluntness,
-    }
-    try:
-        await log_to_s3(request, response, resignation_email_generator_response_model, prompts)
-    except Exception as e:
-        logger.error(f"Error logging to s3: {e}")
     return resignation_email_generator_response_model
 
 
