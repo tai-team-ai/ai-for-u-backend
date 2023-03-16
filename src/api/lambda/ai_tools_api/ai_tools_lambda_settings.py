@@ -5,9 +5,10 @@ import sys
 from pydantic import  root_validator
 from typing import Optional
 sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)),"../dependencies"))
+
 from base_lambda_settings import BaseLambdaSettings
 
-    
+
 class AIToolsLambdaSettings(BaseLambdaSettings):
     """
     Lambda Environment Settings.

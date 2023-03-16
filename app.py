@@ -12,8 +12,8 @@ sys.path.append(os.path.join(api_dir, "dependencies"))
 sys.path.append(os.path.join(api_dir, "ai_tools_api"))
 from api_gateway_settings import APIGatewaySettings
 from ai_tools_lambda_settings import AIToolsLambdaSettings
-from ai_tools_stack import AIToolsStack
-from dynamodb_models import USER_DATA_TABLE_SETTINGS, NEXT_JS_AUTH_TABLE_SETTINGS, CDK_DEFAULT_REGION_VAR_NAME
+from ai_tools_stack import AIToolsStack, AIToolsStackSettings
+from dynamodb_models import USER_DATA_TABLE_SETTINGS, NEXT_JS_AUTH_TABLE_SETTINGS
 from dynamodb_stack import DynamodbStack
 
 
@@ -32,13 +32,14 @@ dynamo_db_next_js_auth_stack = DynamodbStack(
     dynamodb_settings=NEXT_JS_AUTH_TABLE_SETTINGS
 )
 
-
+# arn:aws:secretsmanager:us-east-1:645860363137:secret:openai/apikey-fMd6JZ
+# arn:aws:secretsmanager:us-west-2:645860363137:secret:openai/apikey-gXnzTj
 lambda_settings = AIToolsLambdaSettings(
     openai_api_dir="ai_tools_api",
     openai_lambda_id="ai_tools_lambda",
     external_api_secret_name="openai/apikey",
     api_endpoint_secret_key_name="openai_org_id",
-    api_key_secret_key_name="openai_api_key",
+    api_key_secret_key_name="openai_api_key"
 )
 api_gateway_settings = APIGatewaySettings(
     openai_route_prefix="ai-for-u",
@@ -47,19 +48,16 @@ api_gateway_settings = APIGatewaySettings(
     development_cors_url="http://localhost:3000"
 )
 
-CDK_DEFAULT_REGION = os.environ.get(CDK_DEFAULT_REGION_VAR_NAME)
-environment = {
-    CDK_DEFAULT_REGION_VAR_NAME: CDK_DEFAULT_REGION
-}
+stack_settings = AIToolsStackSettings()
 
 AIToolsStack(
     scope=app,
-    stack_id="aiforu-api-stack",
+    stack_id="aiforu-api-stack-east-1",
     lambda_settings=lambda_settings,
     api_gateway_settings=api_gateway_settings,
     user_data_table=dynamo_db_user_data_stack.table,
     next_js_auth_table=dynamo_db_next_js_auth_stack.table,
-    environment_vars=environment
+    stack_settings=stack_settings
 )
 
 app.synth()
