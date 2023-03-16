@@ -6,131 +6,144 @@ import threading
 from typing import Optional
 from fastapi import APIRouter, Response, status, Request
 import openai
-from pydantic import BaseModel, Field
+from pydantic import constr
 
-sys.path.append(Path(__file__, "../utils").absolute())
-from utils import initialize_openai, prepare_response, CamelCaseModel, log_to_s3
+sys.path.append(Path(__file__, "../").absolute())
+from gpt_turbo import GPTTurboChatSession, GPTTurboChat, Role, get_gpt_turbo_response
+from utils import CamelCaseModel, UUID_HEADER_NAME, update_user_token_count, sanitize_string
+
+router = APIRouter()
 
 logger = logging.getLogger()
 logger.setLevel(logging.DEBUG)
 
-router = APIRouter()
+
+KEYWORDS_FOR_PROMPT ={
+    "summary_sentence": "1-3 sentence summary",
+    "bullets": "bullet points",
+    "action_items": "action items",
+    "freeform_command": "freeform text analysis command"
+}
+
+SECTIONS_FOR_RESPONSE = {
+    "summary_sentence": "Summary Sentence:\n",
+    "bullets": "Bullet Points:\n",
+    "action_items": "Action Items:\n",
+    "freeform_command": "Freeform Text Analysis:\n"
+}
+
+MAX_TOKENS = 400
+
+SYSTEM_PROMPT = (
+    "You are a professional text summarizer. You job is to summarize & analyze the text for me in order to help me "
+    f"understand the text better. I may optional ask you to provide me with a {KEYWORDS_FOR_PROMPT['summary_sentence']}, "
+    f"{KEYWORDS_FOR_PROMPT['bullets']}, {KEYWORDS_FOR_PROMPT['action_items']}, and a {KEYWORDS_FOR_PROMPT['freeform_command']}. "
+    f"You should only include these sections if I ask for them. If I provide a {KEYWORDS_FOR_PROMPT['freeform_command']}, "
+    "you should analyze the text using the command I provide. However, if the command is not related to text analysis, "
+    "you should ignore it. You should also ignore any commands that are not related to text analysis. For each of the "
+    f"sections I provide you should title the section as follows: {SECTIONS_FOR_RESPONSE['summary_sentence']}, "
+    f"{SECTIONS_FOR_RESPONSE['bullets']}, {SECTIONS_FOR_RESPONSE['action_items']}, and {SECTIONS_FOR_RESPONSE['freeform_command']}. "
+)
+
+ENDPOINT_NAME = "text-summarizer"
 
 
-class NoteSummarizerModel(CamelCaseModel):
-    notes_to_summarize: str
-    include_summary_sentence: Optional[bool] = True
-    number_of_bullets: Optional[int] = 3
+class TextSummarizerRequestModel(CamelCaseModel):
+    text_to_summarize: str
+    include_summary_sentence: Optional[bool]
+    number_of_bullets: Optional[int]
     number_of_action_items: Optional[int]
+    freeform_command: Optional[constr(min_length=1, max_length=200)]
 
-class NoteSummarizerResponseModel(CamelCaseModel):
+class TextSummarizerResponseModel(CamelCaseModel):
     summary_sentence: Optional[str]
     bullet_points: Optional[str]
     action_items: Optional[str]
-
-
-def get_openai_response(prompt: str) -> str:
-    """
-    Method uses openai model text-curie-001 to summarize notes.
+    freeform_section: Optional[str]
     
-    The method takes a string of notes and returns a summary of the notes. Optionally, 
-    the number of action items and bullets can be specified. This method forwards notes with
-    options to openai for processing. The response from openai is then returned to the client.
 
-    :param prompt: Request containing notes and options for summarization.
-
-    :return: response to prompt
-    """
-    initialize_openai()
-    prompt_len = 500
-    max_tokens = min(600, prompt_len / 1.3)
-    logger.info(f"prompt: {prompt}")
-    logger.info(f"max_tokens: {max_tokens}")
-    openai_response = openai.Completion.create(
-        engine="text-curie-001",
-        prompt=prompt,
-        temperature=0.0,
-        max_tokens=int(max_tokens),
-        top_p=1,
-        frequency_penalty=0.4,
-        presence_penalty=0,
-        best_of=2,
-        stream=False,
-        logprobs=None,
-        echo=False,
+class TextSummarizerExampleResponse(CamelCaseModel):
+    example_names: list[str]
+    examples: list[TextSummarizerRequestModel]
+    
+    
+@router.get(f"/{ENDPOINT_NAME}-examples", response_model=TextSummarizerExampleResponse, status_code=status.HTTP_200_OK)
+async def sandbox_chatgpt_examples() -> TextSummarizerExampleResponse:
+    """Return examples for the text summarizer endpoint."""
+    examples = [
+        TextSummarizerRequestModel(
+            text_to_summarize="This is a test. This is only a test. This is a test of the emergency broadcast system. ",
+            include_summary_sentence=True,
+            number_of_bullets=3,
+            number_of_action_items=2,
+            freeform_command="Count the number of characters and group them by character."
+        )
+    ]
+    response = TextSummarizerExampleResponse(
+        example_names=["Example 1"],
+        examples=examples
     )
-    logger.info(f"openai response: {openai_response}")
-    return openai_response.choices[0].text.strip()
+    return response
 
-@router.post("/note-summarizer", response_model=NoteSummarizerResponseModel, status_code=status.HTTP_200_OK)
-async def note_summarizer(note_summarizer_request: NoteSummarizerModel, response: Response, request: Request):
-    """
-    Method uses openai model text-curie-001 to summarize notes.
-    
-    The method takes a string of notes and returns a summary of the notes. Optionally, 
-    the number of action items and bullets can be specified. This method forwards notes with
-    options to openai for processing. The response from openai is then returned to the client.
-
-    :param note_summarizer: Request containing notes and options for summarization.
-    :param response: Response object to add headers to.
-
-    :return: Summary of notes 
-    """
-    logger.info(f"note_summarizer_request: {note_summarizer_request}")
-    for field_name, value in note_summarizer_request:
+@router.post(f"/{ENDPOINT_NAME}", response_model=TextSummarizerResponseModel, status_code=status.HTTP_200_OK)
+async def text_summarizer(text_summarizer_request: TextSummarizerRequestModel, request: Request):
+    logger.info(f"Text Summarizer Request Model: {text_summarizer_request}")
+    for field_name, value in text_summarizer_request:
         if isinstance(value, str):
-            setattr(note_summarizer_request, field_name, value.strip())
-    prepare_response(response, request)
-    prompts = {}
-    if note_summarizer_request.include_summary_sentence:
-        prompts['summary_sentence'] = f"Summarize these notes in a few sentences:\n\n\"{note_summarizer_request.notes_to_summarize}\"\n"
-    if note_summarizer_request.number_of_bullets > 0:
-        prompts['bullet_points'] = f"Summarize these notes in {note_summarizer_request.number_of_bullets} bullet point:\n\n{note_summarizer_request.notes_to_summarize}\n\nBullet Point:\n1."
-    if note_summarizer_request.number_of_action_items > 0:
-        prompts['action_items'] = f"Create {note_summarizer_request.number_of_action_items} action item from these notes:"\
-                        f"\n\n{note_summarizer_request.notes_to_summarize}\n\nAction Item(s):\n1."
+            setattr(text_summarizer_request, field_name, value.strip())
+    system_prompt = SYSTEM_PROMPT
+    if text_summarizer_request.include_summary_sentence:
+        system_prompt += f"Please provide me with a {KEYWORDS_FOR_PROMPT['summary_sentence']}. "
+    if text_summarizer_request.number_of_bullets:
+        system_prompt += f"Please provide me with {text_summarizer_request.number_of_bullets} {KEYWORDS_FOR_PROMPT['bullets']}. "
+    if text_summarizer_request.number_of_action_items:
+        system_prompt += f"Please provide me with {text_summarizer_request.number_of_action_items} {KEYWORDS_FOR_PROMPT['action_items']}. "
+    if text_summarizer_request.freeform_command:
+        system_prompt += f"Here's my {KEYWORDS_FOR_PROMPT['freeform_command']}: {text_summarizer_request.freeform_command}. "
 
-    response_model = NoteSummarizerResponseModel(**prompts)
+    system_prompt += "Finally, here's the text I want you to summarize: "
 
-    threads = []
-    for field_name, value in response_model:
-        if not value:
-            continue
-        thread = threading.Thread(target=get_openai_response_thread_wrapper, args=(response_model, field_name, value))
-        thread.start()
-        threads.append(thread)
-    
-    for thread in threads:
-        thread.join()
-    
-    for field_name, value in response_model:
-        # When there is only one bullet point or action item, openai returns a list of bullet points or action items instead of a single string.
-        # This code handles that case and returns a single string instead of a list.
-        if note_summarizer_request.number_of_bullets ==1 and field_name == 'bullet_points':
-            value = value.split('\n')[0]
-            setattr(response_model, field_name, value)
-        if note_summarizer_request.number_of_action_items ==1 and field_name == 'action_items':
-            value = value.split('\n')[0]
-            setattr(response_model, field_name, value)
-        if field_name == 'bullet_points' or field_name == 'action_items':
-            setattr(response_model, field_name, f"1. {value}")
+    uuid = request.headers.get(UUID_HEADER_NAME)
+    user_chat = GPTTurboChat(
+        role=Role.USER,
+        content=text_summarizer_request.text_to_summarize
+    )
+    chat_session = get_gpt_turbo_response(
+        system_prompt=system_prompt,
+        chat_session=GPTTurboChatSession(messages=[user_chat]),
+        frequency_penalty=0.0,
+        presence_penalty=0.0,
+        temperature=0.3,
+        uuid=uuid,
+        max_tokens=MAX_TOKENS
+    )
 
-    logger.info(f"response_model: {response_model}")
+    latest_gpt_chat_model = chat_session.messages[-1]
+    update_user_token_count(uuid, latest_gpt_chat_model.token_count)
+    latest_chat = latest_gpt_chat_model.content
+    latest_chat = sanitize_string(latest_chat)
+
     try:
-        await log_to_s3(request, response, response_model, prompts)
-    except Exception as e:
-        logger.error(f"Error logging to s3: {e}")
-    return response_model
+        summary_sentence = latest_chat.split(SECTIONS_FOR_RESPONSE["summary_sentence"])[-1].split(SECTIONS_FOR_RESPONSE["bullets"])[0].strip()
+    except:
+        summary_sentence = None
+    try:
+        bullet_points = latest_chat.split(SECTIONS_FOR_RESPONSE["bullets"])[-1].split(SECTIONS_FOR_RESPONSE["action_items"])[0].strip()
+    except:
+        bullet_points = None
+    try:
+        action_items = latest_chat.split(SECTIONS_FOR_RESPONSE["action_items"])[-1].split(SECTIONS_FOR_RESPONSE["freeform_command"])[0].strip()
+    except:
+        action_items = None
+    try:
+        freeform_section = latest_chat.split(SECTIONS_FOR_RESPONSE["freeform_command"])[-1].strip()
+    except:
+        freeform_section = None
 
-
-def get_openai_response_thread_wrapper(response_model: NoteSummarizerResponseModel, field_name: str, prompt: str) -> None:
-    """
-    Wrapper method to call get_openai_response in a thread.
-
-    :param response_model: Response model to update with openai response.
-    :param prompts: Prompt to send to openai.
-
-    :return: None
-    """
-    setattr(response_model, field_name, get_openai_response(prompt))
-
+    reponse_model = TextSummarizerResponseModel(
+        summary_sentence=summary_sentence,
+        bullet_points=bullet_points,
+        action_items=action_items,
+        freeform_section=freeform_section
+    )
+    return reponse_model
