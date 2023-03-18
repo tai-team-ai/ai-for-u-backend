@@ -87,8 +87,12 @@ def handle_rate_limit_exception(request: Request, exc: RateLimitError):
 
 def create_fastapi_app():
     """Create FastAPI app."""
+    root_path = f"/{api_gateway_settings.deployment_stage}"
+    if api_gateway_settings.deployment_stage == DeploymentStage.LOCAL.value:
+        root_path = ""
+
     app = FastAPI(
-        root_path=f"/{api_gateway_settings.deployment_stage}",
+        root_path=root_path,
         docs_url=f"/{api_gateway_settings.openai_route_prefix}/docs",
         openapi_url=f"/{api_gateway_settings.openai_route_prefix}/openapi.json",
         redoc_url=None,
@@ -100,8 +104,8 @@ def create_fastapi_app():
         """Check if user is authenticated."""
         path = request.url.path
         allowed_paths = {
-            f"/{api_gateway_settings.deployment_stage}/{api_gateway_settings.openai_route_prefix}/docs",
-            f"/{api_gateway_settings.deployment_stage}/{api_gateway_settings.openai_route_prefix}/openapi.json",
+            f"{root_path}/{api_gateway_settings.openai_route_prefix}/docs",
+            f"{root_path}/{api_gateway_settings.openai_route_prefix}/openapi.json",
         }
         uuid_str = request.headers.get(UUID_HEADER_NAME)
         logger.info("uuid_str: %s", uuid_str)
@@ -123,7 +127,7 @@ def create_fastapi_app():
     routers = [
         router,
         note_summarizer.router,
-        # text_revisor.router,
+        text_revisor.router,
         # catchy_title_creator.router,
         # resignation_email_generator.router,
         # sales_inquiry_email_generator.router,

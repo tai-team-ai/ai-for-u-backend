@@ -10,7 +10,15 @@ from pydantic import constr
 
 sys.path.append(Path(__file__, "../").absolute())
 from gpt_turbo import GPTTurboChatSession, GPTTurboChat, Role, get_gpt_turbo_response
-from utils import CamelCaseModel, UUID_HEADER_NAME, update_user_token_count, sanitize_string
+from utils import (
+    CamelCaseModel,
+    BaseRequest,
+    UUID_HEADER_NAME,
+    update_user_token_count,
+    sanitize_string,
+    EXAMPLES_ENDPOINT_POSTFIX,
+    ExamplesResponse
+)
 
 router = APIRouter()
 
@@ -48,30 +56,28 @@ SYSTEM_PROMPT = (
 ENDPOINT_NAME = "text-summarizer"
 
 
-class TextSummarizerRequestModel(CamelCaseModel):
+class TextSummarizerRequest(BaseRequest):
     text_to_summarize: str
     include_summary_sentence: Optional[bool]
     number_of_bullets: Optional[int]
     number_of_action_items: Optional[int]
-    freeform_command: Optional[constr(min_length=1, max_length=200)]
 
-class TextSummarizerResponseModel(CamelCaseModel):
+class TextSummarizerResponse(CamelCaseModel):
     summary_sentence: Optional[str]
     bullet_points: Optional[str]
     action_items: Optional[str]
     freeform_section: Optional[str]
     
 
-class TextSummarizerExampleResponse(CamelCaseModel):
-    example_names: list[str]
-    examples: list[TextSummarizerRequestModel]
+class TextSummarizerExampleResponse(ExamplesResponse):
+    examples: list[TextSummarizerRequest]
     
     
-@router.get(f"/{ENDPOINT_NAME}-examples", response_model=TextSummarizerExampleResponse, status_code=status.HTTP_200_OK)
+@router.get(f"/{ENDPOINT_NAME}-{EXAMPLES_ENDPOINT_POSTFIX}", response_model=TextSummarizerExampleResponse, status_code=status.HTTP_200_OK)
 async def sandbox_chatgpt_examples() -> TextSummarizerExampleResponse:
     """Return examples for the text summarizer endpoint."""
     examples = [
-        TextSummarizerRequestModel(
+        TextSummarizerRequest(
             text_to_summarize="This is a test. This is only a test. This is a test of the emergency broadcast system. ",
             include_summary_sentence=True,
             number_of_bullets=3,
@@ -85,9 +91,9 @@ async def sandbox_chatgpt_examples() -> TextSummarizerExampleResponse:
     )
     return response
 
-@router.post(f"/{ENDPOINT_NAME}", response_model=TextSummarizerResponseModel, status_code=status.HTTP_200_OK)
-async def text_summarizer(text_summarizer_request: TextSummarizerRequestModel, request: Request):
-    logger.info(f"Text Summarizer Request Model: {text_summarizer_request}")
+@router.post(f"/{ENDPOINT_NAME}", response_model=TextSummarizerResponse, status_code=status.HTTP_200_OK)
+async def text_summarizer(text_summarizer_request: TextSummarizerRequest, request: Request):
+    logger.info("Text Summarizer Request Model: %s", text_summarizer_request)
     for field_name, value in text_summarizer_request:
         if isinstance(value, str):
             setattr(text_summarizer_request, field_name, value.strip())
@@ -140,7 +146,7 @@ async def text_summarizer(text_summarizer_request: TextSummarizerRequestModel, r
     except:
         freeform_section = None
 
-    reponse_model = TextSummarizerResponseModel(
+    reponse_model = TextSummarizerResponse(
         summary_sentence=summary_sentence,
         bullet_points=bullet_points,
         action_items=action_items,

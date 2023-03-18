@@ -8,7 +8,7 @@ import boto3
 from uuid import UUID
 from ai_tools_lambda_settings import AIToolsLambdaSettings
 from botocore.exceptions import ClientError
-from pydantic import BaseModel
+from pydantic import BaseModel, constr
 from typing import Optional, Union
 from dynamodb_models import UserDataTableModel
 from pynamodb.pagination import ResultIterator
@@ -21,7 +21,7 @@ lambda_settings = AIToolsLambdaSettings()
 
 AUTHENTICATED_USER_ENV_VAR_NAME = "AUTHENTICATED_USER"
 UUID_HEADER_NAME = "UUID"
-EXAMPLES_ENDPOINT_POSTFIX = "-examples"
+EXAMPLES_ENDPOINT_POSTFIX = "examples"
 
 class UserTokenNotFoundError(Exception):
     """User token not found in request headers."""
@@ -36,6 +36,16 @@ class CamelCaseModel(BaseModel):
     class Config:
         alias_generator = to_camel_case
         allow_population_by_field_name = True
+
+
+class BaseRequest(CamelCaseModel):
+    """Base request."""
+    freeform_command: Optional[constr(min_length=1, max_length=200)] = ""
+
+
+class ExamplesResponse(CamelCaseModel):
+    """Examples response."""
+    example_names: list[str]
 
 def initialize_openai():
     """Initialize OpenAI."""
