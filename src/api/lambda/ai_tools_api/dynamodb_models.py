@@ -13,7 +13,7 @@ class SupportedKeyTypes(Enum):
 
 
 class DynamoDBSettings(BaseSettings):
-    aws_region: constr(min_length=1, max_length=63) = Field(..., env=CDK_DEFAULT_REGION_VAR_NAME)
+    aws_region: constr(min_length=1, max_length=63) = "us-west-2"
     table_name: constr(min_length=1, max_length=63)
     partition_key: constr(min_length=1, max_length=63)
     partition_key_type: SupportedKeyTypes = SupportedKeyTypes.STRING
