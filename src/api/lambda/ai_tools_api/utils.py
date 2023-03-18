@@ -21,7 +21,7 @@ lambda_settings = AIToolsLambdaSettings()
 
 AUTHENTICATED_USER_ENV_VAR_NAME = "AUTHENTICATED_USER"
 UUID_HEADER_NAME = "UUID"
-
+EXAMPLES_ENDPOINT_POSTFIX = "-examples"
 
 class UserTokenNotFoundError(Exception):
     """User token not found in request headers."""
@@ -98,3 +98,10 @@ def update_user_token_count(user_uuid: UUID, token_count: int) -> None:
     except (Model.DoesNotExist, StopIteration):
         new_user_model = UserDataTableModel(str(user_uuid), token_count)
     new_user_model.save()
+
+
+def docstring_parameter(*sub):
+    def dec(obj):
+        obj.__doc__ = obj.__doc__.format(*sub)
+        return obj
+    return dec
