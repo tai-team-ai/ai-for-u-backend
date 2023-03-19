@@ -58,3 +58,5 @@ AIToolsStack(
     next_js_auth_table=dynamo_db_next_js_auth_stack.table,
     stack_settings=stack_settings
 )
+
+app.synth()

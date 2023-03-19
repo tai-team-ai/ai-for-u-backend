@@ -73,7 +73,7 @@ class TextRevisorResponse(CamelCaseModel):
 class TextRevisorExamplesResponse(ExamplesResponse):
     """**Define examples for the {0} endpoint.**"""
     examples: list[TextRevisorRequest]
-    
+
 
 @router.get(f"/{ENDPOINT_NAME}-{EXAMPLES_ENDPOINT_POSTFIX}", response_model=TextRevisorExamplesResponse, status_code=status.HTTP_200_OK)
 async def text_revisor_examples():
