@@ -12,7 +12,7 @@ sys.path.append(Path(__file__, "../").absolute())
 from gpt_turbo import GPTTurboChatSession, GPTTurboChat, Role, get_gpt_turbo_response
 from utils import (
     CamelCaseModel,
-    BaseRequest,
+    BaseTemplateRequest,
     UUID_HEADER_NAME,
     update_user_token_count,
     sanitize_string,
@@ -56,11 +56,25 @@ SYSTEM_PROMPT = (
 ENDPOINT_NAME = "text-summarizer"
 
 
-class TextSummarizerRequest(BaseRequest):
+class TextSummarizerRequest(BaseTemplateRequest):
+    """
+    **Define the request model for the text summarizer endpoint.**
+    
+    **Attributes:**
+    - text_to_summarize: text for the endpoint to summarize
+    - include_summary_sentence: whether or not to include a summary sentence in the response
+    - number_of_bullets: number of bullet points to include in the response
+    - number_of_action_items: number of action items to include in the response (this is suggested to use with 
+        summaries of things such as meeting minutes)
+    
+    Inherit from BaseTemplateRequest:    
+    """
+    __doc__ += BaseTemplateRequest.__doc__
     text_to_summarize: str
     include_summary_sentence: Optional[bool]
     number_of_bullets: Optional[int]
     number_of_action_items: Optional[int]
+
 
 class TextSummarizerResponse(CamelCaseModel):
     summary_sentence: Optional[str]

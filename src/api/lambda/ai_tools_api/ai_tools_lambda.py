@@ -10,14 +10,22 @@ from fastapi.responses import JSONResponse
 from fastapi.exceptions import RequestValidationError
 
 
+
+
 dir_name = os.path.dirname(os.path.realpath(__file__))
 sys.path.append(os.path.join(dir_name, "../dependencies"))
 sys.path.append(dir_name)
 from api_gateway_settings import APIGatewaySettings, DeploymentStage
 from ai_tools_lambda_settings import AIToolsLambdaSettings
-from routers import note_summarizer, text_revisor, \
-    resignation_email_generator, catchy_title_creator, \
-    sales_inquiry_email_generator, dalle_prompt_coach, sandbox_chatgpt
+from routers import ( 
+    text_revisor,
+    resignation_email_generator,
+    catchy_title_creator,
+    sales_inquiry_email_generator,
+    dalle_prompt_coach,
+    sandbox_chatgpt,
+    text_summarizer
+)
 sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), "utils"))
 from utils import prepare_response, UserTokenNotFoundError, initialize_openai, AUTHENTICATED_USER_ENV_VAR_NAME, UUID_HEADER_NAME
 
@@ -126,9 +134,9 @@ def create_fastapi_app():
 
     routers = [
         router,
-        note_summarizer.router,
+        text_summarizer.router,
         text_revisor.router,
-        # catchy_title_creator.router,
+        catchy_title_creator.router,
         # resignation_email_generator.router,
         # sales_inquiry_email_generator.router,
         # dalle_prompt_coach.router,

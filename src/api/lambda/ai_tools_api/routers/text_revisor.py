@@ -10,8 +10,9 @@ from utils import (
     CamelCaseModel,
     EXAMPLES_ENDPOINT_POSTFIX,
     docstring_parameter,
-    BaseRequest,
+    BaseTemplateRequest,
     ExamplesResponse,
+    Tone
 )
 
 logger = logging.getLogger()
@@ -31,21 +32,8 @@ class RevisionType(str, Enum):
     PUNCTUATION = "punctuation"
 
 
-class Tone(str, Enum):
-    FORMAL = "formal"
-    INFORMAL = "informal"
-    OPTIMISTIC = "optimistic"
-    WORRIED = "worried"
-    FRIENDLY = "friendly"
-    CURIOUS = "curious"
-    ASSERTIVE = "assertive"
-    ENCOURAGING = "encouraging"
-    SURPRISED = "surprised"
-    COOPERATIVE = "cooperative"
-
-
 @docstring_parameter(ENDPOINT_NAME)
-class TextRevisorRequest(BaseRequest):
+class TextRevisorRequest(BaseTemplateRequest):
     """
     **Define the model for the request body for {0} endpoint.**
     
@@ -55,7 +43,10 @@ class TextRevisorRequest(BaseRequest):
     - revision_types: The types of revisions to make.
     - tone: The tone that the revised text should have.
     - creativity: The creativity of the revised text. Where 0 is the least creative and 100 is the most creative.
+    
+    Inherit from BaseRequest:
     """
+    __doc__ += BaseTemplateRequest.__doc__
     text_to_revise: str
     number_of_revisions: Optional[int] = 1
     revision_types: Optional[list[RevisionType]] = [revision_type for revision_type in RevisionType]
@@ -71,17 +62,27 @@ class TextRevisorResponse(CamelCaseModel):
 
 @docstring_parameter(ENDPOINT_NAME)
 class TextRevisorExamplesResponse(ExamplesResponse):
-    """**Define examples for the {0} endpoint.**"""
+    """
+    **Define examples for the {0} endpoint.**
+    
+    **Attributes:**
+    - examples: A list of TextRevisorRequest objects. Can post these examples to the {0} endpoint without
+        modification.
+    
+    Inherit from ExamplesResponse:
+    """
+    __doc__ += ExamplesResponse.__doc__
     examples: list[TextRevisorRequest]
 
 
+@docstring_parameter(ENDPOINT_NAME)
 @router.get(f"/{ENDPOINT_NAME}-{EXAMPLES_ENDPOINT_POSTFIX}", response_model=TextRevisorExamplesResponse, status_code=status.HTTP_200_OK)
 async def text_revisor_examples():
     """
-    Method returns examples for the text-revisor endpoint.
+    **Get examples for the {0} endpoint.**
 
-    This method returns examples for the text-revisor endpoint. The examples are returned as a list of
-    TextRevisorRequest objects.
+    This method returns examples for the {0} endpoint. These examples can be posted to the {0} endpoint
+    without modification.
     """
     text_revisor_example = TextRevisorRequest(
         text_to_revise="This are some porrly written text. Its probaly needing to be revised in order to help it sound much more better.",

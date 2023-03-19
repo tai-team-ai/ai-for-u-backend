@@ -6,6 +6,7 @@ from fastapi import Response, Request
 import openai
 import boto3
 from uuid import UUID
+from enum import Enum
 from ai_tools_lambda_settings import AIToolsLambdaSettings
 from botocore.exceptions import ClientError
 from pydantic import BaseModel, constr
@@ -38,13 +39,39 @@ class CamelCaseModel(BaseModel):
         allow_population_by_field_name = True
 
 
-class BaseRequest(CamelCaseModel):
-    """Base request."""
+class Tone(str, Enum):
+    FORMAL = "formal"
+    INFORMAL = "informal"
+    OPTIMISTIC = "optimistic"
+    WORRIED = "worried"
+    FRIENDLY = "friendly"
+    CURIOUS = "curious"
+    ASSERTIVE = "assertive"
+    ENCOURAGING = "encouraging"
+    SURPRISED = "surprised"
+    COOPERATIVE = "cooperative"
+
+
+class BaseTemplateRequest(CamelCaseModel):
+    """
+    **Base request for all templtates.**
+    
+    **Attributes:**
+    - freeform_command: This command allows the user to specify any command they would like, 
+        to be appended to the end of the prompt. This could be dangerous, but for now will allow 
+        it will help prevent bottlenecks in the users ability to use the templates
+    """
     freeform_command: Optional[constr(min_length=1, max_length=200)] = ""
 
 
 class ExamplesResponse(CamelCaseModel):
-    """Examples response."""
+    """
+    **Base Response for all examples endpoints.**
+    
+    **Attributes:**
+    - example_names: The names of the examples. This is to be used as parallel list 
+        to the examples defined in child classes.
+    """
     example_names: list[str]
 
 def initialize_openai():
