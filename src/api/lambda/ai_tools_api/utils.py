@@ -61,7 +61,8 @@ class BaseTemplateRequest(CamelCaseModel):
         to be appended to the end of the prompt. This could be dangerous, but for now will allow 
         it will help prevent bottlenecks in the users ability to use the templates
     """
-    freeform_command: Optional[constr(min_length=1, max_length=200)] = ""
+    freeform_command: Optional[constr(min_length=0, max_length=200)] = ""
+    tone: Optional[Tone] = Tone.FORMAL
 
 
 class ExamplesResponse(CamelCaseModel):

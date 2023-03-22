@@ -19,9 +19,7 @@ from fastapi import APIRouter, Response, status, Request
 from typing import Optional, List
 from pathlib import Path
 import logging
-import os
 import sys
-import openai
 
 sys.path.append(Path(__file__).parent / "../utils")
 from utils import (
@@ -57,8 +55,9 @@ class CatchyTitleCreatorRequest(BaseTemplateRequest):
     - creativity: The creativity of the title; where 0 is the least creative and 100 is the most creative
 
 
-    Inherit from BaseRequest:
+    Inherit from BaseTemplateRequest:
     """
+
     __doc__ += BaseTemplateRequest.__doc__
     text: constr(min_length=1, max_length=10000)
     text_type: Optional[constr(min_length=1, max_length=50)] = "document"
@@ -78,7 +77,7 @@ class CatchyTitleCreatorResponse(CamelCaseModel):
     - titles: The list of titles generated for the text. They are not in any particular order.
     """
     titles: List[str] = []
-    
+
 
 @docstring_parameter(ENDPOINT_NAME)
 class CatchyTitleCreatorExamplesReponse(ExamplesResponse):
