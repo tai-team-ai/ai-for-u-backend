@@ -6,7 +6,7 @@ from pydantic import constr
 from fastapi import APIRouter, Request, Response, status
 sys.path.append(Path(__file__).parent / "../utils")
 from utils import (
-    CamelCaseModel,
+    AIToolModel,
     sanitize_string,
     BaseTemplateRequest,
     Tone,
@@ -108,7 +108,7 @@ class CoverLetterWriterRequest(BaseTemplateRequest):
 
 
 @docstring_parameter(ENDPOINT_NAME)
-class CoverLetterWriterResponse(CamelCaseModel):
+class CoverLetterWriterResponse(AIToolModel):
     """
     **Define the model for the response body for {0} endpoint.**
     

@@ -7,7 +7,7 @@ from enum import Enum
 from pydantic import conint
 sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), "../utils"))
 from utils import (
-    CamelCaseModel,
+    AIToolModel,
     EXAMPLES_ENDPOINT_POSTFIX,
     docstring_parameter,
     BaseTemplateRequest,
@@ -55,7 +55,7 @@ class TextRevisorRequest(BaseTemplateRequest):
 
 
 @docstring_parameter(ENDPOINT_NAME)
-class TextRevisorResponse(CamelCaseModel):
+class TextRevisorResponse(AIToolModel):
     """**Define the model for the response body for the {0} endpoint.**"""
     revised_text_list: List[str] = []
 
@@ -114,6 +114,7 @@ async def text_revisor(text_revision_request: TextRevisorRequest, request: Reque
         revised_text_list=[
             "This is a revised text that is probably much better than the original text.",
             "This is a revised text that is probably much better than the original text.",
+        ]
     )
     return response
 

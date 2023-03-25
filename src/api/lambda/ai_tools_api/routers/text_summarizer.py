@@ -11,7 +11,7 @@ from pydantic import constr
 sys.path.append(Path(__file__, "../").absolute())
 from gpt_turbo import GPTTurboChatSession, GPTTurboChat, Role, get_gpt_turbo_response
 from utils import (
-    CamelCaseModel,
+    AIToolModel,
     BaseTemplateRequest,
     UUID_HEADER_NAME,
     update_user_token_count,
@@ -76,7 +76,7 @@ class TextSummarizerRequest(BaseTemplateRequest):
     number_of_action_items: Optional[int]
 
 
-class TextSummarizerResponse(CamelCaseModel):
+class TextSummarizerResponse(AIToolModel):
     summary_sentence: Optional[str]
     bullet_points: Optional[str]
     action_items: Optional[str]

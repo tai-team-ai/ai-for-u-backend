@@ -14,7 +14,7 @@ from pynamodb.pagination import ResultIterator
 sys.path.append(Path(__file__, "../utils").absolute())
 sys.path.append(Path(__file__, "../gpt_turbo").absolute())
 sys.path.append(Path(__file__, "../dynamodb_models").absolute())
-from utils import CamelCaseModel, UUID_HEADER_NAME, EXAMPLES_ENDPOINT_POSTFIX
+from utils import AIToolModel, UUID_HEADER_NAME, EXAMPLES_ENDPOINT_POSTFIX
 from gpt_turbo import GPTTurboChatSession, get_gpt_turbo_response, GPTTurboChat, Role
 from dynamodb_models import UserDataTableModel
 
@@ -39,7 +39,7 @@ SYSTEM_PROMPT = (
 )
 
 
-class SandBoxChatGPTRequest(CamelCaseModel):
+class SandBoxChatGPTRequest(AIToolModel):
     """
     ## Define the request body for sandbox-chatgpt endpoint.
 
@@ -63,7 +63,7 @@ class SandBoxChatGPTRequest(CamelCaseModel):
     user_message: Optional[str] = ""
 
 
-class SandBoxChatGPTResponse(CamelCaseModel):
+class SandBoxChatGPTResponse(AIToolModel):
     gpt_response: str
     
     
@@ -71,7 +71,7 @@ class GPTChatHistory(GPTTurboChatSession):
     conversation_uuid: UUID
 
 
-class SandBoxChatGPTExamplesResponse(CamelCaseModel):
+class SandBoxChatGPTExamplesResponse(AIToolModel):
     """
     **Define example starter prompts for sandbox-chatgpt endpoint.**
 

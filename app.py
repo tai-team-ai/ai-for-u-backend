@@ -51,7 +51,7 @@ stack_settings = AIToolsStackSettings()
 
 AIToolsStack(
     scope=app,
-    stack_id="aiforu-api-stack-east-1",
+    stack_id="aiforu-api-stack",
     lambda_settings=lambda_settings,
     api_gateway_settings=api_gateway_settings,
     user_data_table=dynamo_db_user_data_stack.table,

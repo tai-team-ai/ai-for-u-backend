@@ -23,7 +23,7 @@ import sys
 
 sys.path.append(Path(__file__).parent / "../utils")
 from utils import (
-    CamelCaseModel,
+    AIToolModel,
     sanitize_string,
     BaseTemplateRequest,
     Tone,
@@ -69,7 +69,7 @@ class CatchyTitleCreatorRequest(BaseTemplateRequest):
 
 
 @docstring_parameter(ENDPOINT_NAME)
-class CatchyTitleCreatorResponse(CamelCaseModel):
+class CatchyTitleCreatorResponse(AIToolModel):
     """
     **Define the model for the response body for {0} endpoint.**
     
