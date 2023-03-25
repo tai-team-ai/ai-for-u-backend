@@ -110,8 +110,8 @@ def load_sandbox_chat_history(user_uuid: UUID, conversation_uuid: UUID) -> GPTCh
         chat_history: Chat history for a sandbox-chatgpt session.
     """
     try:
-        results: ResultIterator[UserDataTableModel] = UserDataTableModel.get(str(user_uuid))
-        chat_history: Dict[str, Any] = next(results).sandbox_chat_history
+        user_data_table_model = UserDataTableModel.get(str(user_uuid))
+        chat_history: Dict[str, Any] = user_data_table_model.sandbox_chat_history
         if chat_history:
             chat_history = GPTChatHistory(**chat_history)
             if chat_history.conversation_uuid == conversation_uuid:
@@ -131,13 +131,12 @@ def save_sandbox_chat_history(user_uuid: UUID, sandbox_chat_history: GPTChatHist
     chat_dict = sandbox_chat_history.dict()
     chat_dict["conversation_uuid"] = str(sandbox_chat_history.conversation_uuid)
     try:
-        results: ResultIterator[UserDataTableModel] = UserDataTableModel.get(str(user_uuid))
-        user_data_table_model = next(results)
+        user_data_table_model: UserDataTableModel = UserDataTableModel.get(str(user_uuid))
         new_token_count = token_count + user_data_table_model.cumulative_token_count
-        new_user_model = UserDataTableModel(str(user_uuid), new_token_count, sandbox_chat_history=chat_dict)
+        new_user_model = UserDataTableModel(str(user_uuid), cumulative_token_count=new_token_count, sandbox_chat_history=chat_dict)
         user_data_table_model.delete()
     except (Model.DoesNotExist, StopIteration):
-        new_user_model = UserDataTableModel(str(user_uuid), token_count=token_count, sandbox_chat_history=chat_dict)
+        new_user_model = UserDataTableModel(str(user_uuid), cumulative_token_count=token_count, sandbox_chat_history=chat_dict)
     new_user_model.save()
 
 
