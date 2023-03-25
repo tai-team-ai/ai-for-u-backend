@@ -132,7 +132,7 @@ class CoverLetterWriterExamplesResponse(ExamplesResponse):
 
 
 @docstring_parameter(ENDPOINT_NAME)
-@router.post(f"/{ENDPOINT_NAME}-{EXAMPLES_ENDPOINT_POSTFIX}", response_model=CoverLetterWriterExamplesResponse)
+@router.get(f"/{ENDPOINT_NAME}-{EXAMPLES_ENDPOINT_POSTFIX}", response_model=CoverLetterWriterExamplesResponse)
 async def cover_letter_writer_examples(request: Request):
     """
     **Get examples for the {0} endpoint.**

@@ -19,10 +19,8 @@ from api_gateway_settings import APIGatewaySettings, DeploymentStage
 from ai_tools_lambda_settings import AIToolsLambdaSettings
 from routers import ( 
     text_revisor,
-    resignation_email_generator,
+    cover_letter_writer,
     catchy_title_creator,
-    sales_inquiry_email_generator,
-    dalle_prompt_coach,
     sandbox_chatgpt,
     text_summarizer
 )
@@ -137,9 +135,7 @@ def create_fastapi_app():
         text_summarizer.router,
         text_revisor.router,
         catchy_title_creator.router,
-        # resignation_email_generator.router,
-        # sales_inquiry_email_generator.router,
-        # dalle_prompt_coach.router,
+        cover_letter_writer.router,
         sandbox_chatgpt.router
     ] 
     initialize_openai()

@@ -110,5 +110,10 @@ async def text_revisor(text_revision_request: TextRevisorRequest, request: Reque
 
     :param text_revision_request: Request containing text and options for revision.
     """
-    return TextRevisorResponse()
+    response = TextRevisorResponse(
+        revised_text_list=[
+            "This is a revised text that is probably much better than the original text.",
+            "This is a revised text that is probably much better than the original text.",
+    )
+    return response
 
