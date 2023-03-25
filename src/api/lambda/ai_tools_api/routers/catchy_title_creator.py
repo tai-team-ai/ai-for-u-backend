@@ -29,7 +29,8 @@ from utils import (
     Tone,
     EXAMPLES_ENDPOINT_POSTFIX,
     docstring_parameter,
-    ExamplesResponse
+    ExamplesResponse,
+    AIToolsEndpointName,
 )
 
 logger = logging.getLogger()
@@ -37,7 +38,7 @@ logger.setLevel(logging.DEBUG)
 
 router = APIRouter()
 
-ENDPOINT_NAME = "catchy-title-creator"
+ENDPOINT_NAME = AIToolsEndpointName.CATCHY_TITLE_CREATOR.value
 
 
 @docstring_parameter(ENDPOINT_NAME)

@@ -52,6 +52,14 @@ class Tone(str, Enum):
     COOPERATIVE = "cooperative"
 
 
+class AIToolsEndpointName(str, Enum):
+    TEXT_REVISOR = "text-revisor"
+    COVER_LETTER_WRITER = "cover-letter-writer"
+    CATCHY_TITLE_CREATOR = "catchy-title-creator"
+    TEXT_SUMMARIZER = "text-summarizer"
+    SANDBOX_CHATGPT = "sandbox-chatgpt"
+
+
 class BaseTemplateRequest(AIToolModel):
     """
     **Base request for all templtates.**

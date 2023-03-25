@@ -12,7 +12,8 @@ from utils import (
     docstring_parameter,
     BaseTemplateRequest,
     ExamplesResponse,
-    Tone
+    Tone,
+    AIToolsEndpointName,
 )
 
 logger = logging.getLogger()
@@ -21,7 +22,7 @@ logger.setLevel(logging.DEBUG)
 
 router = APIRouter()
 
-ENDPOINT_NAME = "text-revisor"
+ENDPOINT_NAME = AIToolsEndpointName.TEXT_REVISOR.value
 
 class RevisionType(str, Enum):
     SPELLING = "spelling"

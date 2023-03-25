@@ -37,8 +37,6 @@ class DynamoDBSettings(BaseSettings):
 USER_DATA_TABLE_SETTINGS = DynamoDBSettings(
     table_name="user-data",
     partition_key="UUID",
-    sort_key="cumulative_token_count",
-    sort_key_type=SupportedKeyTypes.NUMBER
 )
 
 NEXT_JS_AUTH_TABLE_SETTINGS = DynamoDBSettings(
@@ -53,7 +51,6 @@ NEXT_JS_AUTH_TABLE_SETTINGS = DynamoDBSettings(
 FEEDBACK_TABLE_SETTINGS = DynamoDBSettings(
     table_name="feedback",
     partition_key="feedback_UUID",
-    sort_key="timestamp"
 )
 
 class UserDataTableModel(Model):
@@ -63,7 +60,7 @@ class UserDataTableModel(Model):
         host = USER_DATA_TABLE_SETTINGS.host
 
     UUID = UnicodeAttribute(hash_key=True, attr_name=USER_DATA_TABLE_SETTINGS.partition_key)
-    cumulative_token_count = NumberAttribute(range_key=True, default_for_new=0, attr_name=USER_DATA_TABLE_SETTINGS.sort_key)
+    cumulative_token_count = NumberAttribute(default_for_new=0)
     is_subscribed = BooleanAttribute(null=True)
     sandbox_chat_history = JSONAttribute(null=True)
 
@@ -74,12 +71,11 @@ class FeedbackTableModel(Model):
         table_name = FEEDBACK_TABLE_SETTINGS.table_name
         host = FEEDBACK_TABLE_SETTINGS.host
 
-    feedback_UUID = UnicodeAttribute(hash_key=True, attr_name=USER_DATA_TABLE_SETTINGS.partition_key)
-    timestamp = NumberAttribute(range_key=True, default=datetime.now().timestamp(), attr_name=USER_DATA_TABLE_SETTINGS.sort_key)
-    tool_name = UnicodeAttribute()
+    feedback_UUID = UnicodeAttribute(hash_key=True, attr_name=FEEDBACK_TABLE_SETTINGS.partition_key)
+    timestamp = NumberAttribute(default=datetime.now().timestamp())
+    ai_tool_name = UnicodeAttribute()
     user_UUID = UnicodeAttribute()
-    tool_logs = JSONAttribute()
-    rating = NumberAttribute(null=True)
-    feedback = UnicodeAttribute(null=True)
-
-
+    user_prompt_feedback_context = JSONAttribute()
+    ai_response_feedback_context = JSONAttribute()
+    rating = NumberAttribute()
+    written_feedback = UnicodeAttribute(null=True)

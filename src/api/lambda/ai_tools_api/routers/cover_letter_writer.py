@@ -12,7 +12,8 @@ from utils import (
     Tone,
     EXAMPLES_ENDPOINT_POSTFIX,
     docstring_parameter,
-    ExamplesResponse
+    ExamplesResponse,
+    AIToolsEndpointName,
 )
 
 logger = logging.getLogger()
@@ -20,7 +21,7 @@ logger.setLevel(logging.DEBUG)
 
 router = APIRouter()
 
-ENDPOINT_NAME = "cover-letter-writer"
+ENDPOINT_NAME = AIToolsEndpointName.COVER_LETTER_WRITER.value
 
 RESUME_EXAMPLE = """
 Name: John Doe

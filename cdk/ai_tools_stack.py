@@ -35,10 +35,10 @@ class AIToolsStack(Stack):
         stack_id: str,
         lambda_settings: AIToolsLambdaSettings,
         api_gateway_settings: APIGatewaySettings,
-        user_data_table: dynamodb.Table,
-        next_js_auth_table: dynamodb.Table,
         stack_settings: AIToolsStackSettings,
-        **kwargs
+        read_only_tables: Optional[list[dynamodb.Table]] = None,
+        read_write_tables: Optional[list[dynamodb.Table]] = None,
+        **kwargs,
     ) -> None:
         super().__init__(scope, stack_id, **kwargs)
         self.namer = lambda x: stack_id + "-" + x
@@ -59,26 +59,33 @@ class AIToolsStack(Stack):
             id=self.namer("openai-secret"),
             secret_name=lambda_settings.external_api_secret_name
         )
-
-        role = iam.Role(
+        
+        role_name = self.namer("lambda-role")
+        role = iam.Role.from_role_arn(
             self,
             self.namer("lambda-role"),
-            assumed_by=iam.ServicePrincipal("lambda.amazonaws.com"),
-            role_name=self.namer("lambda-role")
+            role_arn=f"arn:aws:iam::{stack_settings.aws_account}:role/{role_name}"
         )
-        role.add_to_policy(
-            statement=iam.PolicyStatement(
-                actions=["secretsmanager:GetSecretValue", "secretsmanager:DescribeSecret"],
-                resources=[f"arn:aws:secretsmanager:*:{stack_settings.aws_account}:secret:*"]
+        if role is None:
+            role = iam.Role(
+                self,
+                role_name,
+                assumed_by=iam.ServicePrincipal("lambda.amazonaws.com"),
+                role_name=self.namer("lambda-role")
             )
-        )
-        # add ability to write to cloudwatch logs
-        role.add_to_policy(
-            statement=iam.PolicyStatement(
-                actions=["logs:CreateLogGroup", "logs:CreateLogStream", "logs:PutLogEvents"],
-                resources=["arn:aws:logs:*:*:*"]
+            role.add_to_policy(
+                statement=iam.PolicyStatement(
+                    actions=["secretsmanager:GetSecretValue", "secretsmanager:DescribeSecret"],
+                    resources=[f"arn:aws:secretsmanager:*:{stack_settings.aws_account}:secret:*"]
+                )
             )
-        )
+            # add ability to write to cloudwatch logs
+            role.add_to_policy(
+                statement=iam.PolicyStatement(
+                    actions=["logs:CreateLogGroup", "logs:CreateLogStream", "logs:PutLogEvents"],
+                    resources=["arn:aws:logs:*:*:*"]
+                )
+            )
         openai_lambda = self._create_aiforu_tools_lambda(lambda_settings=lambda_settings, gateway_settings=api_gateway_settings, role=role)
 
         openai_route = self.api.root \
@@ -88,11 +95,11 @@ class AIToolsStack(Stack):
             default_cors_preflight_options=self.cors_options
         )
 
-
-        user_data_table.grant_read_write_data(openai_lambda)
+        for table in read_only_tables:
+            table.grant_read_data(openai_lambda)
         
-
-        next_js_auth_table.grant_read_data(openai_lambda)
+        for table in read_write_tables:
+            table.grant_read_write_data(openai_lambda)
 
     def _create_rest_api(self, api_gateway_settings: APIGatewaySettings) -> tuple[api_gateway.RestApi, api_gateway.CorsOptions]:
         """Create a rest api with the provided id and deployment stage."""

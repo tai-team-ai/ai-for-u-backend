@@ -30,18 +30,20 @@ class DynamodbStack(Stack):
             name=dynamodb_settings.partition_key,
             type=settings_to_cdk_map[dynamodb_settings.partition_key_type]
         )
-
-        sort_key = dynamodb.Attribute(
-            name=dynamodb_settings.sort_key,
-            type=settings_to_cdk_map[dynamodb_settings.sort_key_type]
-        )
+        
+        sort_key = None
+        if dynamodb_settings.sort_key:
+            sort_key = dynamodb.Attribute(
+                name=dynamodb_settings.sort_key,
+                type=settings_to_cdk_map[dynamodb_settings.sort_key_type]
+            )
 
         self.table = dynamodb.Table(self,
             self.namer(stack_id),
             table_name=dynamodb_settings.table_name,
             partition_key=partition_key,
             sort_key=sort_key,
-            time_to_live_attribute="expires"
+            time_to_live_attribute="expires",
         )
 
         if dynamodb_settings.secondary_index_name:

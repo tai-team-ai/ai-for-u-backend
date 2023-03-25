@@ -12,7 +12,11 @@ sys.path.append(os.path.join(api_dir, "ai_tools_api"))
 from api_gateway_settings import APIGatewaySettings
 from ai_tools_lambda_settings import AIToolsLambdaSettings
 from ai_tools_stack import AIToolsStack, AIToolsStackSettings
-from dynamodb_models import USER_DATA_TABLE_SETTINGS, NEXT_JS_AUTH_TABLE_SETTINGS
+from dynamodb_models import (
+    USER_DATA_TABLE_SETTINGS,
+    NEXT_JS_AUTH_TABLE_SETTINGS,
+    FEEDBACK_TABLE_SETTINGS,
+)
 from dynamodb_stack import DynamodbStack
 
 
@@ -29,6 +33,12 @@ dynamo_db_next_js_auth_stack = DynamodbStack(
     scope=app,
     stack_id="dynamo-stack-next-js-auth",
     dynamodb_settings=NEXT_JS_AUTH_TABLE_SETTINGS
+)
+
+dynamo_db_feedback_stack = DynamodbStack(
+    scope=app,
+    stack_id="dynamo-stack-feedback",
+    dynamodb_settings=FEEDBACK_TABLE_SETTINGS,
 )
 
 # arn:aws:secretsmanager:us-east-1:645860363137:secret:openai/apikey-fMd6JZ
@@ -49,14 +59,22 @@ api_gateway_settings = APIGatewaySettings(
 
 stack_settings = AIToolsStackSettings()
 
+read_only_tables = [
+    dynamo_db_next_js_auth_stack.table,
+]
+read_write_tables = [
+    dynamo_db_user_data_stack.table,
+    dynamo_db_feedback_stack.table,
+]
+
 AIToolsStack(
     scope=app,
     stack_id="aiforu-api-stack",
     lambda_settings=lambda_settings,
     api_gateway_settings=api_gateway_settings,
-    user_data_table=dynamo_db_user_data_stack.table,
-    next_js_auth_table=dynamo_db_next_js_auth_stack.table,
-    stack_settings=stack_settings
+    read_only_tables=read_only_tables,
+    read_write_tables=read_write_tables,
+    stack_settings=stack_settings,
 )
 
 app.synth()
