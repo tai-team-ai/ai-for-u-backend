@@ -6,9 +6,10 @@ from fastapi import Response, Request
 import openai
 import boto3
 from uuid import UUID
+from enum import Enum
 from ai_tools_lambda_settings import AIToolsLambdaSettings
 from botocore.exceptions import ClientError
-from pydantic import BaseModel
+from pydantic import BaseModel, constr
 from typing import Optional, Union
 from dynamodb_models import UserDataTableModel
 from pynamodb.pagination import ResultIterator
@@ -21,7 +22,7 @@ lambda_settings = AIToolsLambdaSettings()
 
 AUTHENTICATED_USER_ENV_VAR_NAME = "AUTHENTICATED_USER"
 UUID_HEADER_NAME = "UUID"
-
+EXAMPLES_ENDPOINT_POSTFIX = "examples"
 
 class UserTokenNotFoundError(Exception):
     """User token not found in request headers."""
@@ -36,6 +37,43 @@ class CamelCaseModel(BaseModel):
     class Config:
         alias_generator = to_camel_case
         allow_population_by_field_name = True
+
+
+class Tone(str, Enum):
+    FORMAL = "formal"
+    INFORMAL = "informal"
+    OPTIMISTIC = "optimistic"
+    WORRIED = "worried"
+    FRIENDLY = "friendly"
+    CURIOUS = "curious"
+    ASSERTIVE = "assertive"
+    ENCOURAGING = "encouraging"
+    SURPRISED = "surprised"
+    COOPERATIVE = "cooperative"
+
+
+class BaseTemplateRequest(CamelCaseModel):
+    """
+    **Base request for all templtates.**
+    
+    **Attributes:**
+    - freeform_command: This command allows the user to specify any command they would like, 
+        to be appended to the end of the prompt. This could be dangerous, but for now will allow 
+        it will help prevent bottlenecks in the users ability to use the templates
+    """
+    freeform_command: Optional[constr(min_length=0, max_length=200)] = ""
+    tone: Optional[Tone] = Tone.FORMAL
+
+
+class ExamplesResponse(CamelCaseModel):
+    """
+    **Base Response for all examples endpoints.**
+    
+    **Attributes:**
+    - example_names: The names of the examples. This is to be used as parallel list 
+        to the examples defined in child classes.
+    """
+    example_names: list[str]
 
 def initialize_openai():
     """Initialize OpenAI."""
@@ -98,3 +136,10 @@ def update_user_token_count(user_uuid: UUID, token_count: int) -> None:
     except (Model.DoesNotExist, StopIteration):
         new_user_model = UserDataTableModel(str(user_uuid), token_count)
     new_user_model.save()
+
+
+def docstring_parameter(*sub):
+    def dec(obj):
+        obj.__doc__ = obj.__doc__.format(*sub)
+        return obj
+    return dec

@@ -6,14 +6,17 @@ services:
     image: openai-api
     volumes:
       - ~/.aws:/root/.aws
-      - /projects/ai-writer-backend/api/lambda:/app
+      - /home/ec2-user/working-directory/ai-for-u-backend/src/api/lambda:/app
     environment:
       DEV_PORT: 8000
       ENDPOINT: "http://localhost:8000"
       DOMAIN: "localhost"
-      OPENAI_ROUTE_PREFIX: "openai"
-      OPENAI_LAMBDA_ID: "openai_lambda"
+      OPENAI_ROUTE_PREFIX: "ai-for-u"
+      OPENAI_API_DIR: "ai_tools_api"
+      OPENAI_LAMBDA_ID: "ai_tools_lambda"
       EXTERNAL_API_SECRET_NAME: "openai/apikey"
       API_ENDPOINT_SECRET_NAME: "openai_org_id"
       API_KEY_SECRET_KEY_NAME: "openai_api_key"
       FRONTEND_CORS_URL: "http://localhost:8000"
+      AWS_REGION: "us-east-1"
+      DEPLOYMENT_STAGE: "local"

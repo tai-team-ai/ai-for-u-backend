@@ -7,6 +7,7 @@ class DeploymentStage(Enum):
     """Deployment Stage Enum"""
     DEVELOPMENT = "dev"
     PRODUCTION = "prod"
+    LOCAL = "local"
 
 
 class APIGatewaySettings(BaseSettings):

@@ -14,14 +14,16 @@ from pynamodb.pagination import ResultIterator
 sys.path.append(Path(__file__, "../utils").absolute())
 sys.path.append(Path(__file__, "../gpt_turbo").absolute())
 sys.path.append(Path(__file__, "../dynamodb_models").absolute())
-from utils import CamelCaseModel, UUID_HEADER_NAME
+from utils import CamelCaseModel, UUID_HEADER_NAME, EXAMPLES_ENDPOINT_POSTFIX
 from gpt_turbo import GPTTurboChatSession, get_gpt_turbo_response, GPTTurboChat, Role
 from dynamodb_models import UserDataTableModel
 
-router = APIRouter()
-
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
+
+router = APIRouter()
+
+ENDPOINT_NAME = "sandbox-chatgpt"
 
 SYSTEM_PROMPT = (
     "You are a friendly assist named Roo. You are to act as someone who is friendly and "
@@ -33,6 +35,7 @@ SYSTEM_PROMPT = (
     "This will allow you to better understand who the person is and what they need help with. "
     "You should also ask questions to make sure you understand what the user is saying. "
     "You MUST get to know them as a human being and understand their needs in order to be successful."
+    "Finally, please use markdown to format your responses."
 )
 
 
@@ -70,21 +73,21 @@ class GPTChatHistory(GPTTurboChatSession):
 
 class SandBoxChatGPTExamplesResponse(CamelCaseModel):
     """
-    ## Define example starter prompts for sandbox-chatgpt endpoint.
+    **Define example starter prompts for sandbox-chatgpt endpoint.**
 
-    ### Example:
+    **Example:**
     * example_names: ["How to Cook Ramen"] \n\n
     * examples: ["I want to cook ramen. What ingredients do I need?"]
 
-    ### Attributes:
-        example_names: List of example names. \n\n
-        examples: List of corresponding example prompts.
+    **Attributes:**
+    **example_names:** List of example names. \n\n
+    **examples:** List of corresponding example prompts.
     """
     example_names: list[str]
     examples: list[str]
 
 
-@router.get("/sandbox-chatgpt-examples", response_model=SandBoxChatGPTExamplesResponse, status_code=status.HTTP_200_OK)
+@router.get(f"/{ENDPOINT_NAME}-{EXAMPLES_ENDPOINT_POSTFIX}", response_model=SandBoxChatGPTExamplesResponse, status_code=status.HTTP_200_OK)
 async def sandbox_chatgpt_examples() -> SandBoxChatGPTExamplesResponse:
     """
     Get examples for sandbox-chatgpt.
@@ -140,7 +143,7 @@ def save_sandbox_chat_history(user_uuid: UUID, sandbox_chat_history: GPTChatHist
     new_user_model.save()
 
 
-@router.post("/sandbox-chatgpt", response_model=SandBoxChatGPTResponse, status_code=status.HTTP_200_OK)
+@router.post(f"/{ENDPOINT_NAME}", response_model=SandBoxChatGPTResponse, status_code=status.HTTP_200_OK)
 def sandbox_chatgpt(sandbox_chatgpt_request: SandBoxChatGPTRequest, request: Request) -> SandBoxChatGPTResponse:
     """
     Get response from openAI Turbo GPT-3 model.

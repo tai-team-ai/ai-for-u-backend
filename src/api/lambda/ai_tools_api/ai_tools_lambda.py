@@ -10,14 +10,20 @@ from fastapi.responses import JSONResponse
 from fastapi.exceptions import RequestValidationError
 
 
+
+
 dir_name = os.path.dirname(os.path.realpath(__file__))
 sys.path.append(os.path.join(dir_name, "../dependencies"))
 sys.path.append(dir_name)
 from api_gateway_settings import APIGatewaySettings, DeploymentStage
 from ai_tools_lambda_settings import AIToolsLambdaSettings
-from routers import note_summarizer, text_revisor, \
-    resignation_email_generator, catchy_title_creator, \
-    sales_inquiry_email_generator, dalle_prompt_coach, sandbox_chatgpt
+from routers import ( 
+    text_revisor,
+    cover_letter_writer,
+    catchy_title_creator,
+    sandbox_chatgpt,
+    text_summarizer
+)
 sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), "utils"))
 from utils import prepare_response, UserTokenNotFoundError, initialize_openai, AUTHENTICATED_USER_ENV_VAR_NAME, UUID_HEADER_NAME
 
@@ -87,8 +93,12 @@ def handle_rate_limit_exception(request: Request, exc: RateLimitError):
 
 def create_fastapi_app():
     """Create FastAPI app."""
+    root_path = f"/{api_gateway_settings.deployment_stage}"
+    if api_gateway_settings.deployment_stage == DeploymentStage.LOCAL.value:
+        root_path = ""
+
     app = FastAPI(
-        root_path=f"/{api_gateway_settings.deployment_stage}",
+        root_path=root_path,
         docs_url=f"/{api_gateway_settings.openai_route_prefix}/docs",
         openapi_url=f"/{api_gateway_settings.openai_route_prefix}/openapi.json",
         redoc_url=None,
@@ -100,8 +110,8 @@ def create_fastapi_app():
         """Check if user is authenticated."""
         path = request.url.path
         allowed_paths = {
-            f"/{api_gateway_settings.deployment_stage}/{api_gateway_settings.openai_route_prefix}/docs",
-            f"/{api_gateway_settings.deployment_stage}/{api_gateway_settings.openai_route_prefix}/openapi.json",
+            f"{root_path}/{api_gateway_settings.openai_route_prefix}/docs",
+            f"{root_path}/{api_gateway_settings.openai_route_prefix}/openapi.json",
         }
         uuid_str = request.headers.get(UUID_HEADER_NAME)
         logger.info("uuid_str: %s", uuid_str)
@@ -122,12 +132,10 @@ def create_fastapi_app():
 
     routers = [
         router,
-        note_summarizer.router,
-        # text_revisor.router,
-        # catchy_title_creator.router,
-        # resignation_email_generator.router,
-        # sales_inquiry_email_generator.router,
-        # dalle_prompt_coach.router,
+        text_summarizer.router,
+        text_revisor.router,
+        catchy_title_creator.router,
+        cover_letter_writer.router,
         sandbox_chatgpt.router
     ] 
     initialize_openai()

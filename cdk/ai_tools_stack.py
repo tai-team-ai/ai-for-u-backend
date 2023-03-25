@@ -1,5 +1,3 @@
-"""Module defines the stack for api."""
-
 from os import path
 import os
 from pathlib import Path
@@ -9,6 +7,7 @@ from aws_cdk import (
     Stack,
     Duration
 )
+from pydantic import BaseSettings, constr, Field
 from constructs import Construct
 import aws_cdk.aws_lambda as lambda_
 import aws_cdk.aws_dynamodb as dynamodb
@@ -24,6 +23,10 @@ from ai_tools_lambda_settings import AIToolsLambdaSettings # pylint: disable=imp
 from api_gateway_settings import APIGatewaySettings # pylint: disable=import-error
 
 
+class AIToolsStackSettings(BaseSettings):
+    aws_account: constr(min_length=12, max_length=12) = Field(..., env="CDK_DEFAULT_ACCOUNT")
+
+
 class AIToolsStack(Stack):
 
     def __init__(
@@ -34,7 +37,7 @@ class AIToolsStack(Stack):
         api_gateway_settings: APIGatewaySettings,
         user_data_table: dynamodb.Table,
         next_js_auth_table: dynamodb.Table,
-        environment_vars: dict[str, str],
+        stack_settings: AIToolsStackSettings,
         **kwargs
     ) -> None:
         super().__init__(scope, stack_id, **kwargs)
@@ -51,10 +54,10 @@ class AIToolsStack(Stack):
         )
         self.api.deployment_stage = self.stage
 
-        open_ai_secret = secretsmanager.Secret.from_secret_complete_arn(
+        open_ai_secret = secretsmanager.Secret.from_secret_name_v2(
             self,
             id=self.namer("openai-secret"),
-            secret_complete_arn="arn:aws:secretsmanager:us-west-2:645860363137:secret:openai/apikey-gXnzTj"
+            secret_name=lambda_settings.external_api_secret_name
         )
 
         role = iam.Role(
@@ -65,8 +68,8 @@ class AIToolsStack(Stack):
         )
         role.add_to_policy(
             statement=iam.PolicyStatement(
-                actions=["secretsmanager:GetSecretValue"],
-                resources=[open_ai_secret.secret_arn]
+                actions=["secretsmanager:GetSecretValue", "secretsmanager:DescribeSecret"],
+                resources=[f"arn:aws:secretsmanager:*:{stack_settings.aws_account}:secret:*"]
             )
         )
         # add ability to write to cloudwatch logs
@@ -76,7 +79,7 @@ class AIToolsStack(Stack):
                 resources=["arn:aws:logs:*:*:*"]
             )
         )
-        openai_lambda = self._create_aiforu_tools_lambda(lambda_settings=lambda_settings, gateway_settings=api_gateway_settings, role=role, environment_vars=environment_vars)
+        openai_lambda = self._create_aiforu_tools_lambda(lambda_settings=lambda_settings, gateway_settings=api_gateway_settings, role=role)
 
         openai_route = self.api.root \
             .add_resource(api_gateway_settings.openai_route_prefix)
@@ -109,12 +112,11 @@ class AIToolsStack(Stack):
         )
         return rest_api, cors_options
 
-    def _create_aiforu_tools_lambda(self, lambda_settings: AIToolsLambdaSettings, gateway_settings: APIGatewaySettings, role: iam.Role, environment_vars: dict[str, str]) -> lambda_.Function:
+    def _create_aiforu_tools_lambda(self, lambda_settings: AIToolsLambdaSettings, gateway_settings: APIGatewaySettings, role: iam.Role) -> lambda_.Function:
         """Create a lambda function with the provided id and environment variables."""
         id_ = lambda_settings.openai_lambda_id
         settings_dict = dict_keys_to_uppercase(lambda_settings.dict())
         settings_dict.update(dict_keys_to_uppercase(gateway_settings.dict()))
-        settings_dict.update(dict_keys_to_uppercase(environment_vars))
         assert isinstance(settings_dict, dict)
         entry_dir = Path(os.path.dirname(os.path.realpath(__file__)), "../src/api/lambda")
         path_to_requirements = Path(entry_dir, lambda_settings.openai_api_dir, "requirements-lambda.txt")
