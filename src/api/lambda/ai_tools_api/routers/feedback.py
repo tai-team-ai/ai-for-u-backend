@@ -103,7 +103,7 @@ class FeedbackRequest(AIToolModel):
                 return value
             except Exception: # pylint: disable=broad-except
                 pass
-        raise ValueError(f"Invalid user prompt feedback context: {value}. Supported request types: {SupportedRequest.__members__.values()}") from e
+        raise ValueError(f"Invalid user prompt feedback context: {value}. Supported request types: {SupportedRequest.__members__.values()}")
 
     @validator("ai_response_feedback_context")
     def valid_ai_response_feedback_context(cls, value):
@@ -114,7 +114,7 @@ class FeedbackRequest(AIToolModel):
                 return value
             except Exception: # pylint: disable=broad-except
                 pass
-        raise ValueError(f"Invalid ai response feedback context: {value}. Supported response types: {SupportedResponse.__members__.values()}") from e
+        raise ValueError(f"Invalid ai response feedback context: {value}. Supported response types: {SupportedResponse.__members__.values()}")
 
 
 @router.post(f"/{ENDPOINT_NAME}", status_code=status.HTTP_200_OK)
