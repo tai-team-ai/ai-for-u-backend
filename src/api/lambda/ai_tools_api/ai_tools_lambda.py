@@ -12,10 +12,12 @@ from fastapi.exceptions import RequestValidationError
 
 dir_path = Path(__file__).parent
 sys.path.append(str(dir_path / "../dependencies"))
+sys.path.append(str(dir_path / "utils"))
+sys.path.append(str(dir_path / "routers"))
 sys.path.append(str(dir_path))
 from api_gateway_settings import APIGatewaySettings, DeploymentStage
 from ai_tools_lambda_settings import AIToolsLambdaSettings
-from routers import ( 
+from routers import (
     text_revisor,
     cover_letter_writer,
     catchy_title_creator,
@@ -23,8 +25,10 @@ from routers import (
     text_summarizer,
     feedback,
 )
-sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), "utils"))
 from utils import prepare_response, UserTokenNotFoundError, initialize_openai, AUTHENTICATED_USER_ENV_VAR_NAME, UUID_HEADER_NAME
+
+logger = logging.getLogger()
+logger.setLevel(logging.INFO)
 
 
 API_DESCRIPTION = """
@@ -33,8 +37,7 @@ use OpenAI's GPT-3 API to generate text. All requests must include a uuid header
 This uuid is used to check if the user is authenticated and to track usage of the API.
 """
 
-logger = logging.getLogger()
-logger.setLevel(logging.INFO)
+
 
 
 lambda_settings = AIToolsLambdaSettings()
