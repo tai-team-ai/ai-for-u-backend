@@ -84,10 +84,11 @@ class FeedbackRequest(AIToolModel):
             "example": {
                 "aiToolEndpointName": "templates",
                 "userPromptFeedbackContext": {
-                    "userPrompt": "Make me famous"
+                    "conversationUuid": "f4bd346a-9ade-4471-b127-1f73364df090",
+                    "userMessage": "Make me Famous"
                 },
                 "aiResponseFeedbackContext": {
-                    "aiResponse": "Famous"
+                    "gptResponse": "Famous"
                 },
                 "rating": 5,
                 "writtenFeedback": "This was a great response"
