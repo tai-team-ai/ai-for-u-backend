@@ -1,4 +1,5 @@
 from os import path
+from loguru import logger
 import os
 from pathlib import Path
 import sys
@@ -25,6 +26,7 @@ from api_gateway_settings import APIGatewaySettings # pylint: disable=import-err
 
 class AIToolsStackSettings(BaseSettings):
     aws_account: constr(min_length=12, max_length=12) = Field(..., env="CDK_DEFAULT_ACCOUNT")
+    aws_region: constr(min_length=2, max_length=20) = Field(..., env="CDK_DEFAULT_REGION")
 
 
 class AIToolsStack(Stack):
@@ -41,7 +43,7 @@ class AIToolsStack(Stack):
         **kwargs,
     ) -> None:
         super().__init__(scope, stack_id, **kwargs)
-        self.namer = lambda x: stack_id + "-" + x
+        self.namer = lambda x: stack_id + "-" + x + "-" + stack_settings.aws_region
         self.api, self.cors_options = self._create_rest_api(api_gateway_settings=api_gateway_settings)
 
         self.deployment = api_gateway.Deployment(self, self.namer("deployment"), api=self.api)
@@ -61,32 +63,32 @@ class AIToolsStack(Stack):
         )
         
         role_name = self.namer("lambda-role")
-        role = iam.Role.from_role_arn(
+        role = iam.Role(
             self,
-            self.namer("lambda-role"),
-            role_arn=f"arn:aws:iam::{stack_settings.aws_account}:role/{role_name}"
+            role_name,
+            assumed_by=iam.ServicePrincipal("lambda.amazonaws.com"),
+            role_name=role_name
         )
-        if role is None:
-            role = iam.Role(
-                self,
-                role_name,
-                assumed_by=iam.ServicePrincipal("lambda.amazonaws.com"),
-                role_name=self.namer("lambda-role")
+        role.add_to_policy(
+            statement=iam.PolicyStatement(
+                actions=["secretsmanager:GetSecretValue", "secretsmanager:DescribeSecret"],
+                resources=[f"arn:aws:secretsmanager:*:{stack_settings.aws_account}:secret:*"]
             )
-            role.add_to_policy(
-                statement=iam.PolicyStatement(
-                    actions=["secretsmanager:GetSecretValue", "secretsmanager:DescribeSecret"],
-                    resources=[f"arn:aws:secretsmanager:*:{stack_settings.aws_account}:secret:*"]
-                )
+        )
+        # add ability to write to cloudwatch logs
+        role.add_to_policy(
+            statement=iam.PolicyStatement(
+                actions=["logs:CreateLogGroup", "logs:CreateLogStream", "logs:PutLogEvents"],
+                resources=["arn:aws:logs:*:*:*"]
             )
-            # add ability to write to cloudwatch logs
-            role.add_to_policy(
-                statement=iam.PolicyStatement(
-                    actions=["logs:CreateLogGroup", "logs:CreateLogStream", "logs:PutLogEvents"],
-                    resources=["arn:aws:logs:*:*:*"]
-                )
-            )
+        )
+
         openai_lambda = self._create_aiforu_tools_lambda(lambda_settings=lambda_settings, gateway_settings=api_gateway_settings, role=role)
+        for table in read_only_tables:
+            table.grant_read_data(openai_lambda)
+
+        for table in read_write_tables:
+            table.grant_read_write_data(openai_lambda)
 
         openai_route = self.api.root \
             .add_resource(api_gateway_settings.openai_route_prefix)
@@ -95,11 +97,6 @@ class AIToolsStack(Stack):
             default_cors_preflight_options=self.cors_options
         )
 
-        for table in read_only_tables:
-            table.grant_read_data(openai_lambda)
-        
-        for table in read_write_tables:
-            table.grant_read_write_data(openai_lambda)
 
     def _create_rest_api(self, api_gateway_settings: APIGatewaySettings) -> tuple[api_gateway.RestApi, api_gateway.CorsOptions]:
         """Create a rest api with the provided id and deployment stage."""
