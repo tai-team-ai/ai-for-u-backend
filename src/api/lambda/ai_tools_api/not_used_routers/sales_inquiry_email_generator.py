@@ -7,8 +7,8 @@ The response from openai is then returned to the client.
 
 Attributes:
     router (APIRouter): Router for the lambda function.
-    SalesInquiryEmailGeneratorModel (CamelCaseModel): Model for the request.
-    SalesInquiryEmailGeneratorResponseModel (CamelCaseModel): Model for the response.
+    SalesInquiryEmailGeneratorModel (AIToolModel): Model for the request.
+    SalesInquiryEmailGeneratorResponseModel (AIToolModel): Model for the response.
     get_openai_response (function): Method to get response from openai.
     sales_inquiry_email_generator (function): Post endpoint for the lambda function.
 """
@@ -21,11 +21,11 @@ from typing import Optional
 from fastapi import APIRouter, Response, status, Request
 from pydantic import conint, constr
 sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), "../utils"))
-from utils import initialize_openai, prepare_response, CamelCaseModel, sanitize_string
+from utils import initialize_openai, prepare_response, AIToolModel, sanitize_string
 
 router = APIRouter()
 
-class SalesInquiryEmailGeneratorModel(CamelCaseModel):
+class SalesInquiryEmailGeneratorModel(AIToolModel):
     companyName: constr (min_length=1, max_length=70)
     pointOfContact: constr (min_length=1, max_length=70) = "None"
     name: constr (min_length=1, max_length=70) = "None"
@@ -34,7 +34,7 @@ class SalesInquiryEmailGeneratorModel(CamelCaseModel):
     productDescription: constr (min_length=1, max_length=400) = "None"
     problem: constr (min_length=1, max_length=400) = "None"
 
-class SalesInquiryEmailGeneratorResponseModel(CamelCaseModel):
+class SalesInquiryEmailGeneratorResponseModel(AIToolModel):
     sales_inquiry_email: constr (min_length=1, max_length=10000)
 
 def get_openai_response(prompt: str, num_emails_to_generate: int=1) -> str:

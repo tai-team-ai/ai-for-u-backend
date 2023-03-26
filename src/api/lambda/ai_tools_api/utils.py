@@ -33,7 +33,7 @@ def to_camel_case(string: str) -> str:
     init, *temp = string.split('_')
     return ''.join([init.lower(), *map(str.title, temp)])
 
-class CamelCaseModel(BaseModel):
+class AIToolModel(BaseModel):
     class Config:
         alias_generator = to_camel_case
         allow_population_by_field_name = True
@@ -52,7 +52,15 @@ class Tone(str, Enum):
     COOPERATIVE = "cooperative"
 
 
-class BaseTemplateRequest(CamelCaseModel):
+class AIToolsEndpointName(str, Enum):
+    TEXT_REVISOR = "text-revisor"
+    COVER_LETTER_WRITER = "cover-letter-writer"
+    CATCHY_TITLE_CREATOR = "catchy-title-creator"
+    TEXT_SUMMARIZER = "text-summarizer"
+    SANDBOX_CHATGPT = "sandbox-chatgpt"
+
+
+class BaseTemplateRequest(AIToolModel):
     """
     **Base request for all templtates.**
     
@@ -65,7 +73,7 @@ class BaseTemplateRequest(CamelCaseModel):
     tone: Optional[Tone] = Tone.FORMAL
 
 
-class ExamplesResponse(CamelCaseModel):
+class ExamplesResponse(AIToolModel):
     """
     **Base Response for all examples endpoints.**
     

@@ -18,21 +18,21 @@ import sys
 import openai
 
 sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), "../utils"))
-from utils import initialize_openai, prepare_response, CamelCaseModel, sanitize_string
+from utils import initialize_openai, prepare_response, AIToolModel, sanitize_string
 
 logger = logging.getLogger()
 logger.setLevel(logging.DEBUG)
 
 router = APIRouter()
 
-class DallePromptCoachModel(CamelCaseModel):
+class DallePromptCoachModel(AIToolModel):
     """
     Pydantic model for the request body.
     """
     dialogue: constr(min_length=1, max_length=10000)
     return_coaching_tips: Optional[bool] = True
 
-class DallePromptCoachResponseModel(CamelCaseModel):
+class DallePromptCoachResponseModel(AIToolModel):
     """
     Pydantic model for the response body.
     """

@@ -23,13 +23,14 @@ import sys
 
 sys.path.append(Path(__file__).parent / "../utils")
 from utils import (
-    CamelCaseModel,
+    AIToolModel,
     sanitize_string,
     BaseTemplateRequest,
     Tone,
     EXAMPLES_ENDPOINT_POSTFIX,
     docstring_parameter,
-    ExamplesResponse
+    ExamplesResponse,
+    AIToolsEndpointName,
 )
 
 logger = logging.getLogger()
@@ -37,7 +38,7 @@ logger.setLevel(logging.DEBUG)
 
 router = APIRouter()
 
-ENDPOINT_NAME = "catchy-title-creator"
+ENDPOINT_NAME = AIToolsEndpointName.CATCHY_TITLE_CREATOR.value
 
 
 @docstring_parameter(ENDPOINT_NAME)
@@ -69,7 +70,7 @@ class CatchyTitleCreatorRequest(BaseTemplateRequest):
 
 
 @docstring_parameter(ENDPOINT_NAME)
-class CatchyTitleCreatorResponse(CamelCaseModel):
+class CatchyTitleCreatorResponse(AIToolModel):
     """
     **Define the model for the response body for {0} endpoint.**
     

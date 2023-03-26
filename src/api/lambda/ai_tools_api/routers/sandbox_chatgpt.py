@@ -9,12 +9,10 @@ from typing import Any, Dict
 from pynamodb.models import Model
 from pynamodb.pagination import ResultIterator
 
-
-
-sys.path.append(Path(__file__, "../utils").absolute())
-sys.path.append(Path(__file__, "../gpt_turbo").absolute())
-sys.path.append(Path(__file__, "../dynamodb_models").absolute())
-from utils import CamelCaseModel, UUID_HEADER_NAME, EXAMPLES_ENDPOINT_POSTFIX
+sys.path.append(Path(__file__, "../utils"))
+sys.path.append(Path(__file__, "../gpt_turbo"))
+sys.path.append(Path(__file__, "../dynamodb_models"))
+from utils import AIToolModel, UUID_HEADER_NAME, EXAMPLES_ENDPOINT_POSTFIX, AIToolsEndpointName
 from gpt_turbo import GPTTurboChatSession, get_gpt_turbo_response, GPTTurboChat, Role
 from dynamodb_models import UserDataTableModel
 
@@ -23,7 +21,7 @@ logger.setLevel(logging.INFO)
 
 router = APIRouter()
 
-ENDPOINT_NAME = "sandbox-chatgpt"
+ENDPOINT_NAME = AIToolsEndpointName.SANDBOX_CHATGPT.value
 
 SYSTEM_PROMPT = (
     "You are a friendly assist named Roo. You are to act as someone who is friendly and "
@@ -39,7 +37,7 @@ SYSTEM_PROMPT = (
 )
 
 
-class SandBoxChatGPTRequest(CamelCaseModel):
+class SandBoxChatGPTRequest(AIToolModel):
     """
     ## Define the request body for sandbox-chatgpt endpoint.
 
@@ -63,7 +61,7 @@ class SandBoxChatGPTRequest(CamelCaseModel):
     user_message: Optional[str] = ""
 
 
-class SandBoxChatGPTResponse(CamelCaseModel):
+class SandBoxChatGPTResponse(AIToolModel):
     gpt_response: str
     
     
@@ -71,7 +69,7 @@ class GPTChatHistory(GPTTurboChatSession):
     conversation_uuid: UUID
 
 
-class SandBoxChatGPTExamplesResponse(CamelCaseModel):
+class SandBoxChatGPTExamplesResponse(AIToolModel):
     """
     **Define example starter prompts for sandbox-chatgpt endpoint.**
 
@@ -112,8 +110,8 @@ def load_sandbox_chat_history(user_uuid: UUID, conversation_uuid: UUID) -> GPTCh
         chat_history: Chat history for a sandbox-chatgpt session.
     """
     try:
-        results: ResultIterator[UserDataTableModel] = UserDataTableModel.query(str(user_uuid))
-        chat_history: Dict[str, Any] = next(results).sandbox_chat_history
+        user_data_table_model = UserDataTableModel.get(str(user_uuid))
+        chat_history: Dict[str, Any] = user_data_table_model.sandbox_chat_history
         if chat_history:
             chat_history = GPTChatHistory(**chat_history)
             if chat_history.conversation_uuid == conversation_uuid:
@@ -133,13 +131,12 @@ def save_sandbox_chat_history(user_uuid: UUID, sandbox_chat_history: GPTChatHist
     chat_dict = sandbox_chat_history.dict()
     chat_dict["conversation_uuid"] = str(sandbox_chat_history.conversation_uuid)
     try:
-        results: ResultIterator[UserDataTableModel] = UserDataTableModel.query(str(user_uuid))
-        user_data_table_model = next(results)
+        user_data_table_model: UserDataTableModel = UserDataTableModel.get(str(user_uuid))
         new_token_count = token_count + user_data_table_model.cumulative_token_count
-        new_user_model = UserDataTableModel(str(user_uuid), new_token_count, sandbox_chat_history=chat_dict)
+        new_user_model = UserDataTableModel(str(user_uuid), cumulative_token_count=new_token_count, sandbox_chat_history=chat_dict)
         user_data_table_model.delete()
     except (Model.DoesNotExist, StopIteration):
-        new_user_model = UserDataTableModel(str(user_uuid), token_count, sandbox_chat_history=chat_dict)
+        new_user_model = UserDataTableModel(str(user_uuid), cumulative_token_count=token_count, sandbox_chat_history=chat_dict)
     new_user_model.save()
 
 

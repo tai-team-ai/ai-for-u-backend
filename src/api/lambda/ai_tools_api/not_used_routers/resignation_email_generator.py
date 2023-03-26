@@ -8,8 +8,8 @@ openai is then returned to the client.
 
 Attributes:
     router (APIRouter): Router for the lambda function.
-    ResignationEmailGeneratorModel (CamelCaseModel): Model for the request.
-    ResignationEmailGeneratorResponseModel (CamelCaseModel): Model for the response.
+    ResignationEmailGeneratorModel (AIToolModel): Model for the request.
+    ResignationEmailGeneratorResponseModel (AIToolModel): Model for the response.
     get_openai_response (function): Method to get response from openai.
     resignation_email_generator (function): Post endpoint for the lambda function.
     
@@ -24,14 +24,14 @@ from fastapi import APIRouter, Response, status,Request
 from pydantic import conint, constr
 import openai
 sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), "../utils"))
-from utils import initialize_openai, prepare_response, CamelCaseModel, sanitize_string
+from utils import initialize_openai, prepare_response, AIToolModel, sanitize_string
 
 logger = logging.getLogger()
 logger.setLevel(logging.DEBUG)
 
 router = APIRouter()
 
-class ResignationEmailGeneratorModel(CamelCaseModel):
+class ResignationEmailGeneratorModel(AIToolModel):
     reason: constr (min_length=1, max_length=400)
     resignation_date: datetime
     company_name: Optional[constr (min_length=0, max_length=70)] = ""
@@ -39,7 +39,7 @@ class ResignationEmailGeneratorModel(CamelCaseModel):
     notes: Optional[constr (min_length=0, max_length=250)] = ""
     bluntness: Optional[conint(ge=0, le=100)] = 50
 
-class ResignationEmailGeneratorResponseModel(CamelCaseModel):
+class ResignationEmailGeneratorResponseModel(AIToolModel):
     resignation_email: str = ""
 
 def get_openai_response(prompt: str, bluntness: int=50) -> str:

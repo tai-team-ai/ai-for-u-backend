@@ -2,30 +2,33 @@ import logging
 import os
 import sys
 import traceback
+from uuid import UUID
+from pathlib import Path
 from openai.error import RateLimitError
 from mangum import Mangum
-from uuid import UUID
 from fastapi import FastAPI, APIRouter, Request, status , Response
 from fastapi.responses import JSONResponse
 from fastapi.exceptions import RequestValidationError
 
-
-
-
-dir_name = os.path.dirname(os.path.realpath(__file__))
-sys.path.append(os.path.join(dir_name, "../dependencies"))
-sys.path.append(dir_name)
+dir_path = Path(__file__).parent
+sys.path.append(str(dir_path / "../dependencies"))
+sys.path.append(str(dir_path / "utils"))
+sys.path.append(str(dir_path / "routers"))
+sys.path.append(str(dir_path))
 from api_gateway_settings import APIGatewaySettings, DeploymentStage
 from ai_tools_lambda_settings import AIToolsLambdaSettings
-from routers import ( 
+from routers import (
     text_revisor,
     cover_letter_writer,
     catchy_title_creator,
     sandbox_chatgpt,
-    text_summarizer
+    text_summarizer,
+    feedback,
 )
-sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), "utils"))
 from utils import prepare_response, UserTokenNotFoundError, initialize_openai, AUTHENTICATED_USER_ENV_VAR_NAME, UUID_HEADER_NAME
+
+logger = logging.getLogger()
+logger.setLevel(logging.INFO)
 
 
 API_DESCRIPTION = """
@@ -34,8 +37,7 @@ use OpenAI's GPT-3 API to generate text. All requests must include a uuid header
 This uuid is used to check if the user is authenticated and to track usage of the API.
 """
 
-logger = logging.getLogger()
-logger.setLevel(logging.INFO)
+
 
 
 lambda_settings = AIToolsLambdaSettings()
@@ -136,7 +138,8 @@ def create_fastapi_app():
         text_revisor.router,
         catchy_title_creator.router,
         cover_letter_writer.router,
-        sandbox_chatgpt.router
+        sandbox_chatgpt.router,
+        feedback.router,
     ] 
     initialize_openai()
     for router_ in routers:

@@ -6,13 +6,14 @@ from pydantic import constr
 from fastapi import APIRouter, Request, Response, status
 sys.path.append(Path(__file__).parent / "../utils")
 from utils import (
-    CamelCaseModel,
+    AIToolModel,
     sanitize_string,
     BaseTemplateRequest,
     Tone,
     EXAMPLES_ENDPOINT_POSTFIX,
     docstring_parameter,
-    ExamplesResponse
+    ExamplesResponse,
+    AIToolsEndpointName,
 )
 
 logger = logging.getLogger()
@@ -20,7 +21,7 @@ logger.setLevel(logging.DEBUG)
 
 router = APIRouter()
 
-ENDPOINT_NAME = "cover-letter-writer"
+ENDPOINT_NAME = AIToolsEndpointName.COVER_LETTER_WRITER.value
 
 RESUME_EXAMPLE = """
 Name: John Doe
@@ -108,7 +109,7 @@ class CoverLetterWriterRequest(BaseTemplateRequest):
 
 
 @docstring_parameter(ENDPOINT_NAME)
-class CoverLetterWriterResponse(CamelCaseModel):
+class CoverLetterWriterResponse(AIToolModel):
     """
     **Define the model for the response body for {0} endpoint.**
     

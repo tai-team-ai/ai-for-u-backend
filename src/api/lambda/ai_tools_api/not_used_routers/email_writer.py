@@ -7,7 +7,7 @@ import sys
 
 sys.path.append(Path(__file__).parent / "../utils")
 from utils import (
-    CamelCaseModel,
+    AIToolModel,
     sanitize_string,
     BaseTemplateRequest,
     Tone,
