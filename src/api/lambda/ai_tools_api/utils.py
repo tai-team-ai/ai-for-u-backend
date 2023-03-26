@@ -9,7 +9,7 @@ from uuid import UUID
 from enum import Enum
 from ai_tools_lambda_settings import AIToolsLambdaSettings
 from botocore.exceptions import ClientError
-from pydantic import BaseModel, constr
+from pydantic import BaseModel, constr, BaseSettings, Field
 from typing import Optional, Union
 from dynamodb_models import UserDataTableModel
 from pynamodb.pagination import ResultIterator
@@ -59,6 +59,11 @@ class AIToolsEndpointName(str, Enum):
     TEXT_SUMMARIZER = "text-summarizer"
     SANDBOX_CHATGPT = "sandbox-chatgpt"
 
+
+class RuntimeSettings(BaseSettings):
+    """Define the runtime settings for the runtime session."""
+
+    authenticated: bool = Field(..., alias=AUTHENTICATED_USER_ENV_VAR_NAME)
 
 class BaseTemplateRequest(AIToolModel):
     """
