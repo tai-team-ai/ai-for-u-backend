@@ -63,6 +63,7 @@ class UserDataTableModel(Model):
     cumulative_token_count = NumberAttribute(default_for_new=0)
     is_subscribed = BooleanAttribute(null=True)
     sandbox_chat_history = JSONAttribute(null=True)
+    email_address = UnicodeAttribute(null=True)
 
 
 class FeedbackTableModel(Model):

@@ -24,6 +24,7 @@ from routers import (
     sandbox_chatgpt,
     text_summarizer,
     feedback,
+    subscription,
 )
 from utils import prepare_response, UserTokenNotFoundError, initialize_openai, AUTHENTICATED_USER_ENV_VAR_NAME, UUID_HEADER_NAME
 
@@ -140,6 +141,7 @@ def create_fastapi_app():
         cover_letter_writer.router,
         sandbox_chatgpt.router,
         feedback.router,
+        subscription.router,
     ] 
     initialize_openai()
     for router_ in routers:
