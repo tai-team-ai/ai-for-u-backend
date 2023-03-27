@@ -14,6 +14,7 @@ from typing import Optional, Union
 from dynamodb_models import UserDataTableModel
 from pynamodb.pagination import ResultIterator
 from pynamodb.models import Model
+from dynamodb_models import NextJsAuthTableModel
 
 logger = logging.getLogger()
 logger.setLevel(logging.DEBUG)
@@ -22,6 +23,7 @@ lambda_settings = AIToolsLambdaSettings()
 
 AUTHENTICATED_USER_ENV_VAR_NAME = "AUTHENTICATED_USER"
 UUID_HEADER_NAME = "UUID"
+USER_TOKEN_HEADER_NAME = "Token"
 EXAMPLES_ENDPOINT_POSTFIX = "examples"
 
 class UserTokenNotFoundError(Exception):
@@ -64,6 +66,8 @@ class RuntimeSettings(BaseSettings):
     """Define the runtime settings for the runtime session."""
 
     authenticated: bool = Field(..., alias=AUTHENTICATED_USER_ENV_VAR_NAME)
+    authenticate_user_daily_usage_token_limit: int = 15000
+    non_authenticate_user_daily_usage_token_limit: int = 3000
 
 class BaseTemplateRequest(AIToolModel):
     """
@@ -156,3 +160,34 @@ def docstring_parameter(*sub):
         obj.__doc__ = obj.__doc__.format(*sub)
         return obj
     return dec
+
+
+def is_user_authenticated(uuid: UUID, user_token: str) -> bool:
+    """Check if the user is authenticated."""
+    try:
+        nextjs_auth_table_model: NextJsAuthTableModel = NextJsAuthTableModel.get(str(uuid))
+        if nextjs_auth_table_model.access_token == user_token:
+            return True
+    except Exception: # pylint: disable=broad-except
+        pass
+    return False
+
+
+def does_user_have_enough_tokens_to_make_request(user_uuid: UUID, expected_token_count: int, authenticated_status: bool) -> bool:
+    """Check if the user has enough tokens to make the request."""
+    tokens_left = get_number_of_tokens_before_limit_reached(user_uuid, authenticated_status)
+    if tokens_left < expected_token_count / 2: # dividing by 2 allows them to make an extra request that goes slightly over the limit
+        return False
+    return True
+
+def get_number_of_tokens_before_limit_reached(user_uuid: UUID, authenticated_status: bool) -> int:
+    """Get the number of tokens before the user reaches the limit."""
+    runtime_settings = RuntimeSettings()
+    token_limit = runtime_settings.non_authenticate_user_daily_usage_token_limit
+    try:
+        user_data_table_model: UserDataTableModel = UserDataTableModel.get(str(user_uuid))
+        if authenticated_status:
+            token_limit = runtime_settings.authenticate_user_daily_usage_token_limit
+    except UserDataTableModel.DoesNotExist:
+        return token_limit
+    return token_limit - user_data_table_model.cumulative_token_count
