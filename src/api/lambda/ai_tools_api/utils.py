@@ -1,5 +1,5 @@
 import ast
-import datetime
+import datetime as dt
 import logging
 from urllib3 import response
 from fastapi import Response, Request
@@ -68,6 +68,10 @@ class RuntimeSettings(BaseSettings):
     authenticated: bool = Field(..., alias=AUTHENTICATED_USER_ENV_VAR_NAME)
     authenticate_user_daily_usage_token_limit: int = 15000
     non_authenticate_user_daily_usage_token_limit: int = 3000
+    days_before_resetting_token_count: int = 1
+
+runtime_settings = RuntimeSettings()
+
 
 class BaseTemplateRequest(AIToolModel):
     """
@@ -168,21 +172,34 @@ def is_user_authenticated(uuid: UUID, user_token: str) -> bool:
         nextjs_auth_table_model: NextJsAuthTableModel = NextJsAuthTableModel.get(str(uuid))
         if nextjs_auth_table_model.access_token == user_token:
             return True
-    except Exception: # pylint: disable=broad-except
+    except UserDataTableModel.DoesNotExist: # pylint: disable=broad-except
         pass
     return False
 
 
 def does_user_have_enough_tokens_to_make_request(user_uuid: UUID, expected_token_count: int, authenticated_status: bool) -> bool:
     """Check if the user has enough tokens to make the request."""
+    reset_token_count_if_time_elapsed(user_uuid)
     tokens_left = get_number_of_tokens_before_limit_reached(user_uuid, authenticated_status)
-    if tokens_left < expected_token_count / 2: # dividing by 2 allows them to make an extra request that goes slightly over the limit
+    if tokens_left < expected_token_count:
         return False
     return True
 
+
+def reset_token_count_if_time_elapsed(user_uuid: UUID) -> None:
+    """Reset the token count if the time has elapsed."""
+    try:
+        user_data_table_model: UserDataTableModel = UserDataTableModel.get(str(user_uuid))
+        reset_cutoff_date = user_data_table_model.token_count_last_reset_date + dt.timedelta(days=runtime_settings.days_before_resetting_token_count)
+        if user_data_table_model.token_count_last_reset_date < reset_cutoff_date:
+            user_data_table_model.cumulative_token_count = 0
+            user_data_table_model.save()
+    except UserDataTableModel.DoesNotExist:
+        pass
+
+
 def get_number_of_tokens_before_limit_reached(user_uuid: UUID, authenticated_status: bool) -> int:
     """Get the number of tokens before the user reaches the limit."""
-    runtime_settings = RuntimeSettings()
     token_limit = runtime_settings.non_authenticate_user_daily_usage_token_limit
     try:
         user_data_table_model: UserDataTableModel = UserDataTableModel.get(str(user_uuid))

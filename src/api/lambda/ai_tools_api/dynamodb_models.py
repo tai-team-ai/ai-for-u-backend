@@ -2,7 +2,7 @@ from typing import Optional
 from datetime import datetime
 from enum import Enum
 from pynamodb.models import Model
-from pynamodb.attributes import UnicodeAttribute, BooleanAttribute, NumberAttribute, JSONAttribute
+from pynamodb.attributes import UnicodeAttribute, BooleanAttribute, NumberAttribute, JSONAttribute, UTCDateTimeAttribute
 from pydantic import BaseSettings, AnyUrl, constr, validator, Field
 
 CDK_DEFAULT_REGION_VAR_NAME = "CDK_DEFAULT_REGION"
@@ -61,6 +61,7 @@ class UserDataTableModel(Model):
 
     UUID = UnicodeAttribute(hash_key=True, attr_name=USER_DATA_TABLE_SETTINGS.partition_key)
     cumulative_token_count = NumberAttribute(default_for_new=0)
+    token_count_last_reset_date = UTCDateTimeAttribute(default_for_new=datetime.utcnow())
     is_subscribed = BooleanAttribute(null=True)
     sandbox_chat_history = JSONAttribute(null=True)
 
