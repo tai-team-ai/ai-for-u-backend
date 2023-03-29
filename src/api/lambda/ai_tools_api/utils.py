@@ -70,8 +70,6 @@ class RuntimeSettings(BaseSettings):
     non_authenticate_user_daily_usage_token_limit: int = 3000
     days_before_resetting_token_count: int = 1
 
-runtime_settings = RuntimeSettings()
-
 
 class BaseTemplateRequest(AIToolModel):
     """
@@ -179,14 +177,15 @@ def is_user_authenticated(uuid: UUID, user_token: str) -> bool:
 
 def does_user_have_enough_tokens_to_make_request(user_uuid: UUID, expected_token_count: int, authenticated_status: bool) -> bool:
     """Check if the user has enough tokens to make the request."""
-    reset_token_count_if_time_elapsed(user_uuid)
-    tokens_left = get_number_of_tokens_before_limit_reached(user_uuid, authenticated_status)
+    runtime_settings = RuntimeSettings()
+    reset_token_count_if_time_elapsed(user_uuid, runtime_settings)
+    tokens_left = get_number_of_tokens_before_limit_reached(user_uuid, authenticated_status, runtime_settings)
     if tokens_left < expected_token_count:
         return False
     return True
 
 
-def reset_token_count_if_time_elapsed(user_uuid: UUID) -> None:
+def reset_token_count_if_time_elapsed(user_uuid: UUID, runtime_settings: RuntimeSettings) -> None:
     """Reset the token count if the time has elapsed."""
     try:
         user_data_table_model: UserDataTableModel = UserDataTableModel.get(str(user_uuid))
@@ -198,7 +197,7 @@ def reset_token_count_if_time_elapsed(user_uuid: UUID) -> None:
         pass
 
 
-def get_number_of_tokens_before_limit_reached(user_uuid: UUID, authenticated_status: bool) -> int:
+def get_number_of_tokens_before_limit_reached(user_uuid: UUID, authenticated_status: bool, runtime_settings: RuntimeSettings) -> int:
     """Get the number of tokens before the user reaches the limit."""
     token_limit = runtime_settings.non_authenticate_user_daily_usage_token_limit
     try:

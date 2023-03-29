@@ -139,7 +139,6 @@ def create_fastapi_app():
         prepare_response(response, request)
         return response
 
-
     routers = [
         router,
         text_summarizer.router,
