@@ -24,7 +24,6 @@ from routers import (
     sandbox_chatgpt,
     text_summarizer,
     feedback,
-    subscription,
 )
 from utils import (
     prepare_response,
@@ -92,7 +91,7 @@ def handle_user_token_error(request: Request, exc: UserTokenNotFoundError):
 def handle_generic_exception(request: Request, exc: Exception):
     """Handle exception."""
     msg = get_error_message(exc)
-    content = {"Exception Raised": msg}
+    content = {"Exception Raised": msg + "\n\n" + os.environ.get("AUTHENTICATED_USER", None)}
     return get_error_response(request, content)
 
 def handle_rate_limit_exception(request: Request, exc: RateLimitError):
@@ -148,7 +147,6 @@ def create_fastapi_app():
         cover_letter_writer.router,
         sandbox_chatgpt.router,
         feedback.router,
-        subscription.router,
     ] 
     initialize_openai()
     for router_ in routers:
