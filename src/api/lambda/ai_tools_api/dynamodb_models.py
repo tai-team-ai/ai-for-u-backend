@@ -2,7 +2,7 @@ from typing import Optional
 from datetime import datetime
 from enum import Enum
 from pynamodb.models import Model
-from pynamodb.attributes import UnicodeAttribute, BooleanAttribute, NumberAttribute, JSONAttribute
+from pynamodb.attributes import UnicodeAttribute, BooleanAttribute, NumberAttribute, JSONAttribute, UTCDateTimeAttribute
 from pydantic import BaseSettings, AnyUrl, constr, validator, Field
 
 CDK_DEFAULT_REGION_VAR_NAME = "CDK_DEFAULT_REGION"
@@ -61,9 +61,36 @@ class UserDataTableModel(Model):
 
     UUID = UnicodeAttribute(hash_key=True, attr_name=USER_DATA_TABLE_SETTINGS.partition_key)
     cumulative_token_count = NumberAttribute(default_for_new=0)
+    token_count_last_reset_date = UTCDateTimeAttribute(default_for_new=datetime.utcnow())
     is_subscribed = BooleanAttribute(null=True)
     sandbox_chat_history = JSONAttribute(null=True)
     email_address = UnicodeAttribute(null=True)
+
+
+class NextJsAuthTableModel(Model):
+    class Meta:
+        region = NEXT_JS_AUTH_TABLE_SETTINGS.aws_region
+        table_name = NEXT_JS_AUTH_TABLE_SETTINGS.table_name
+        host = NEXT_JS_AUTH_TABLE_SETTINGS.host
+
+    pk = UnicodeAttribute(hash_key=True, attr_name=NEXT_JS_AUTH_TABLE_SETTINGS.partition_key)
+    sk = UnicodeAttribute(range_key=True, attr_name=NEXT_JS_AUTH_TABLE_SETTINGS.sort_key)
+    GSI1PK = UnicodeAttribute(null=True, attr_name=NEXT_JS_AUTH_TABLE_SETTINGS.secondary_partition_key)
+    GSI1SK = UnicodeAttribute(null=True, attr_name=NEXT_JS_AUTH_TABLE_SETTINGS.secondary_sort_key)
+    access_token = UnicodeAttribute(null=True)
+    email = UnicodeAttribute(null=True)
+    email_verified = UnicodeAttribute(null=True)
+    expires_at = NumberAttribute(null=True)
+    id = UnicodeAttribute(null=True)
+    id_token = UnicodeAttribute(null=True)
+    image = UnicodeAttribute(null=True)
+    name = UnicodeAttribute(null=True)
+    provider = UnicodeAttribute(null=True)
+    provider_account_id = UnicodeAttribute(null=True, attr_name="providerAccountId")
+    scope = UnicodeAttribute(null=True)
+    token_type = UnicodeAttribute(null=True)
+    type = UnicodeAttribute(null=True)
+    user_id = UnicodeAttribute(null=True, attr_name="userId")
 
 
 class FeedbackTableModel(Model):

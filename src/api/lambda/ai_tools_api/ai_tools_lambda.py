@@ -26,7 +26,15 @@ from routers import (
     feedback,
     subscription,
 )
-from utils import prepare_response, UserTokenNotFoundError, initialize_openai, AUTHENTICATED_USER_ENV_VAR_NAME, UUID_HEADER_NAME
+from utils import (
+    prepare_response,
+    UserTokenNotFoundError,
+    initialize_openai,
+    AUTHENTICATED_USER_ENV_VAR_NAME,
+    UUID_HEADER_NAME,
+    USER_TOKEN_HEADER_NAME,
+    is_user_authenticated,
+)
 
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
@@ -116,22 +124,21 @@ def create_fastapi_app():
             f"{root_path}/{api_gateway_settings.openai_route_prefix}/docs",
             f"{root_path}/{api_gateway_settings.openai_route_prefix}/openapi.json",
         }
-        uuid_str = request.headers.get(UUID_HEADER_NAME)
+        uuid_str = request.headers.get(UUID_HEADER_NAME, None)
         logger.info("uuid_str: %s", uuid_str)
         try:
-            UUID(uuid_str, version=4)
-        except Exception:
+            uuid = UUID(uuid_str, version=4)
+        except Exception as e: # pylint: disable=broad-except
             if path not in allowed_paths:
-                raise UserTokenNotFoundError("User token not found.")
-        authenticated = True
-        if authenticated:
-            os.environ[AUTHENTICATED_USER_ENV_VAR_NAME] = "TRUE"
-        else:
-            os.environ[AUTHENTICATED_USER_ENV_VAR_NAME] = "FALSE"
+                raise UserTokenNotFoundError("User token not found.") from e
+        user_token = request.headers.get(USER_TOKEN_HEADER_NAME, None)
+        authenticated = False
+        if user_token is not None:
+            authenticated = is_user_authenticated(uuid, user_token)
+        os.environ[AUTHENTICATED_USER_ENV_VAR_NAME] = str(authenticated)
         response = await call_next(request)
         prepare_response(response, request)
         return response
-
 
     routers = [
         router,
