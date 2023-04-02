@@ -2,6 +2,7 @@ from __future__ import annotations
 from pydantic import BaseModel
 from enum import Enum
 import openai
+from utils import does_user_have_enough_tokens_to_make_request
 
 
 class Role(Enum):
@@ -80,9 +81,17 @@ def get_gpt_turbo_response(
     prompt_messages = [
         {"role": "system", "content": system_prompt}
     ]
-
+    chat_history_cumulative_token_count = 0
     for chat in chat_session.messages:
+        chat_history_cumulative_token_count += chat.token_count
         prompt_messages.append(chat.dict(exclude={"token_count"}))
+    tokens_for_request = chat_history_cumulative_token_count + max_tokens
+    can_user_make_request, tokens_allowed = does_user_have_enough_tokens_to_make_request(
+        user_uuid=uuid,
+        expected_token_count=tokens_for_request,
+    )
+    if not can_user_make_request:
+        raise Exception(f"User does not have enough tokens to make request. Token quota: {tokens_allowed}, Tokens required for request: {tokens_for_request}")
 
     response = openai.ChatCompletion.create(
         model="gpt-3.5-turbo",
