@@ -90,7 +90,9 @@ def count_tokens(string: str) -> int:
     Returns:
         token_count: The token count of the string.
     """
-    return len(MODEL_ENCODING.encode(string))
+    # return len(MODEL_ENCODING.encode(string))
+    return 0
+# TODO:  uncomment when token count is working
 
 
 @docstring_parameter(MODEL_CONTEXT_WINDOW)
