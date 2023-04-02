@@ -128,6 +128,7 @@ def save_sandbox_chat_history(user_uuid: UUID, sandbox_chat_history: GPTChatHist
         chat_session: Chat history for a sandbox-chatgpt session.
     """
     token_count = sandbox_chat_history.messages[-1].token_count
+    token_count += sandbox_chat_history.messages[-2].token_count # add token count for system prompt
     chat_dict = sandbox_chat_history.dict()
     chat_dict["conversation_uuid"] = str(sandbox_chat_history.conversation_uuid)
     try:
@@ -153,12 +154,12 @@ def sandbox_chatgpt(sandbox_chatgpt_request: SandBoxChatGPTRequest, request: Req
     """
     uuid = request.headers.get(UUID_HEADER_NAME)
     logger.info("uuid: %s", uuid)
-    chat_history = load_sandbox_chat_history(user_uuid=uuid, conversation_uuid=sandbox_chatgpt_request.conversation_uuid)
-    logger.info("chat_session before response: %s", chat_history)
-    chat_history = chat_history.add_message(GPTTurboChat(role=Role.USER, content=sandbox_chatgpt_request.user_message))
+    chat_session = load_sandbox_chat_history(user_uuid=uuid, conversation_uuid=sandbox_chatgpt_request.conversation_uuid)
+    logger.info("chat_session before response: %s", chat_session)
+    chat_session = chat_session.add_message(GPTTurboChat(role=Role.USER, content=sandbox_chatgpt_request.user_message))
     chat_session = get_gpt_turbo_response(
         system_prompt=SYSTEM_PROMPT,
-        chat_session=GPTTurboChatSession(**chat_history.dict()),
+        chat_session=chat_session,
         frequency_penalty=0.9,
         temperature=0.9,
         uuid=uuid,

@@ -2,15 +2,20 @@ from __future__ import annotations
 from pydantic import BaseModel
 from enum import Enum
 import openai
+import tiktoken
 from loguru import logger
 from utils import does_user_have_enough_tokens_to_make_request, docstring_parameter
 
 
 MODEL_CONTEXT_WINDOW = 4096
+GPT_MODEL = "gpt-3.5-turbo"
+MODEL_ENCODING = tiktoken.encoding_for_model(GPT_MODEL)
+
 
 class Role(Enum):
     USER = "user"
     ASSISTANT = "assistant"
+    SYSTEM = "system"
 
 
 class GPTTurboChat(BaseModel):
@@ -73,7 +78,20 @@ def can_user_make_request(user_uuid: str, expected_token_count: int) -> None:
     )
     if not can_make_request:
         raise Exception("User does not have enough tokens to make request. Token quota: {tokens_allowed}, Tokens required for request: {expected_token_count}")
-    
+
+
+def count_tokens(string: str) -> int:
+    """
+    Get the token count of a string.
+
+    Args:
+        string: The string to get the token count of.
+
+    Returns:
+        token_count: The token count of the string.
+    """
+    return len(MODEL_ENCODING.encode(string))
+
 
 @docstring_parameter(MODEL_CONTEXT_WINDOW)
 def truncate_chat_session(chat_session: GPTTurboChatSession, max_tokens_for_response: int) -> GPTTurboChatSession:
@@ -100,6 +118,7 @@ def truncate_chat_session(chat_session: GPTTurboChatSession, max_tokens_for_resp
         chat_session = GPTTurboChatSession(messages=chat_session.messages[1:])
         logger.info(chat_session)
     return chat_session
+# TODO TOken count not seeming to be counted for user messages only the ai responses
 
 
 def get_gpt_turbo_response(
@@ -127,10 +146,13 @@ def get_gpt_turbo_response(
         response: Response from GPT Turbo.
     """
     prompt_messages = [
-        {"role": "system", "content": system_prompt}
+        {"role": Role.SYSTEM.value, "content": system_prompt}
     ]
-    chat_history_cumulative_token_count = 0
-    chat_session = truncate_chat_session(chat_session, max_tokens)
+
+    system_token_count = count_tokens(system_prompt)
+    chat_history_cumulative_token_count = system_token_count
+    chat_session = truncate_chat_session(chat_session, max_tokens + system_token_count)
+    chat_session.messages[-1].token_count = count_tokens(chat_session.messages[-1].content)
     for chat in chat_session.messages:
         chat_history_cumulative_token_count += chat.token_count
         prompt_messages.append(chat.dict(exclude={"token_count"}))
@@ -138,7 +160,7 @@ def get_gpt_turbo_response(
     can_user_make_request(uuid, tokens_for_request)
 
     response = openai.ChatCompletion.create(
-        model="gpt-3.5-turbo",
+        model=GPT_MODEL,
         messages=prompt_messages,
         temperature=temperature,
         frequency_penalty=frequency_penalty,
@@ -149,10 +171,10 @@ def get_gpt_turbo_response(
     )
 
     message = response.choices[0].message.content
-    token_count = response.usage.total_tokens
+    completion_tokens = response.usage.completion_tokens
     chat_session = chat_session.add_message(GPTTurboChat(
         role=Role.ASSISTANT,
         content=message,
-        token_count=token_count
+        token_count=completion_tokens,
     ))
     return chat_session
