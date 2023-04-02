@@ -77,7 +77,7 @@ def can_user_make_request(user_uuid: str, expected_token_count: int) -> None:
         expected_token_count=expected_token_count,
     )
     if not can_make_request:
-        raise Exception("User does not have enough tokens to make request. Token quota: {tokens_allowed}, Tokens required for request: {expected_token_count}")
+        raise Exception(f"User does not have enough tokens to make request. Token quota: {tokens_allowed}, Tokens required for request: {expected_token_count}")
 
 
 def count_tokens(string: str) -> int:
@@ -90,13 +90,11 @@ def count_tokens(string: str) -> int:
     Returns:
         token_count: The token count of the string.
     """
-    # return len(MODEL_ENCODING.encode(string))
-    return 0
-# TODO:  uncomment when token count is working
+    return len(MODEL_ENCODING.encode(string))
 
 
 @docstring_parameter(MODEL_CONTEXT_WINDOW)
-def truncate_chat_session(chat_session: GPTTurboChatSession, max_tokens_for_response: int) -> GPTTurboChatSession:
+def truncate_chat_session(chat_session: GPTTurboChatSession, overhead_tokens: int) -> GPTTurboChatSession:
     """
     Truncate the chat session to the model context window ({0})
 
@@ -108,6 +106,7 @@ def truncate_chat_session(chat_session: GPTTurboChatSession, max_tokens_for_resp
 
     Args:
         chat_session: The chat session to truncate.
+        overhead_tokens: The number of tokens to add to account for system and response tokens.
     
     Returns:
         chat_session: The truncated chat session.
@@ -115,12 +114,11 @@ def truncate_chat_session(chat_session: GPTTurboChatSession, max_tokens_for_resp
     chat_history_cumulative_token_count = 0
     for chat in chat_session.messages:
         chat_history_cumulative_token_count += chat.token_count
-    while chat_history_cumulative_token_count + max_tokens_for_response > MODEL_CONTEXT_WINDOW:
+    while chat_history_cumulative_token_count + overhead_tokens > MODEL_CONTEXT_WINDOW:
         chat_history_cumulative_token_count -= chat_session.messages[0].token_count
         chat_session = GPTTurboChatSession(messages=chat_session.messages[1:])
         logger.info(chat_session)
     return chat_session
-# TODO TOken count not seeming to be counted for user messages only the ai responses
 
 
 def get_gpt_turbo_response(
@@ -152,13 +150,13 @@ def get_gpt_turbo_response(
     ]
 
     system_token_count = count_tokens(system_prompt)
-    chat_history_cumulative_token_count = system_token_count
-    chat_session = truncate_chat_session(chat_session, max_tokens + system_token_count)
+    tokens_for_request = system_token_count + max_tokens
+    # This line counts the tokens for the last user message and adds it to the chat session
     chat_session.messages[-1].token_count = count_tokens(chat_session.messages[-1].content)
+    chat_session = truncate_chat_session(chat_session, tokens_for_request)
     for chat in chat_session.messages:
-        chat_history_cumulative_token_count += chat.token_count
+        tokens_for_request += chat.token_count
         prompt_messages.append(chat.dict(exclude={"token_count"}))
-    tokens_for_request = chat_history_cumulative_token_count + max_tokens
     can_user_make_request(uuid, tokens_for_request)
 
     response = openai.ChatCompletion.create(

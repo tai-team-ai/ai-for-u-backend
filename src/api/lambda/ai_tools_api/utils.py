@@ -68,6 +68,7 @@ class RuntimeSettings(BaseSettings):
     authenticated: bool = Field(..., env=AUTHENTICATED_USER_ENV_VAR_NAME)
     authenticate_user_daily_usage_token_limit: int = 15000
     non_authenticate_user_daily_usage_token_limit: int = 7500
+    allowed_token_overflow: int = 1000
     days_before_resetting_token_count: dt.timedelta = dt.timedelta(days=1)
 
 
@@ -180,6 +181,7 @@ def does_user_have_enough_tokens_to_make_request(user_uuid: UUID, expected_token
     runtime_settings = RuntimeSettings()
     reset_token_count_if_time_elapsed(user_uuid, runtime_settings)
     tokens_left = get_number_of_tokens_before_limit_reached(user_uuid, runtime_settings)
+    tokens_left += runtime_settings.allowed_token_overflow
     if tokens_left < expected_token_count:
         return False, tokens_left
     return True, tokens_left
