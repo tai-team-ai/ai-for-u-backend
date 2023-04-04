@@ -20,8 +20,11 @@ from typing import Optional, List
 from pathlib import Path
 import logging
 import sys
+import os
 
 sys.path.append(Path(__file__).parent / "../utils")
+sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), "../gpt_turbo"))
+from gpt_turbo import GPTTurboChatSession, GPTTurboChat, Role, get_gpt_turbo_response
 from utils import (
     AIToolModel,
     sanitize_string,
@@ -31,6 +34,8 @@ from utils import (
     docstring_parameter,
     ExamplesResponse,
     AIToolsEndpointName,
+    update_user_token_count,
+    UUID_HEADER_NAME,
 )
 
 logger = logging.getLogger()
@@ -39,6 +44,27 @@ logger.setLevel(logging.DEBUG)
 router = APIRouter()
 
 ENDPOINT_NAME = AIToolsEndpointName.CATCHY_TITLE_CREATOR.value
+
+KEYWORDS_FOR_PROMPT = {
+    "text_type": "Text Type",
+    "target_audience": "Target Audience",
+    "expected_tone": "Expected Tone",
+    "specific_keywords": "Specific Keywords that MUST be Included",
+    "num_titles": "Number of Titles to Generate",
+    "creativity": "Creativity",
+}
+
+TITLE_RESPONSE_PREFIX = "Title: "
+
+SYSTEM_PROMPT = (
+    "As an AI catchy title generator, create engaging titles for the user's text based on their input. "
+    f"Consider the provided {KEYWORDS_FOR_PROMPT['text']}, {KEYWORDS_FOR_PROMPT['text_type']}, {KEYWORDS_FOR_PROMPT['target_audience']}, "
+    f"and {KEYWORDS_FOR_PROMPT['expected_tone']}. Include the {KEYWORDS_FOR_PROMPT['specific_keywords']} that MUST be incorporated in the titles. "
+    "Generate the requested {KEYWORDS_FOR_PROMPT['num_titles']} number of titles, using the specified {KEYWORDS_FOR_PROMPT['creativity']} level. "
+    "When not provided, assume a creativity level of 50 (0 least creative, 100 most creative). "
+    "Create distinct and attractive titles that capture the essence of the text and appeal to the target audience. "
+    "Present the generated titles as a list, using the prefix '{TITLE_RESPONSE_PREFIX}' to differentiate between them."
+)
 
 
 @docstring_parameter(ENDPOINT_NAME)
@@ -130,10 +156,36 @@ async def catchy_title_creator(catchy_title_creator_request: CatchyTitleCreatorR
 
     :return: response from openai
     """
-    prompt = f"You are a marketer for a company that is trained to write exceptionally catchy titles for text. The "\
-        f" text may be any type of content including but not limited to books, articles, blogs, technical articles, "\
-            f"video descriptions, etc. I will provide you with the text and a target audience and you will provide a n number of titles "\
-                f"that are catchy and easily understood by the target audience with each title wrapped in single quotes. You will only generate titles, nothing else. "\
-                    f"The first text and target audience to generate a {catchy_title_creator_request.num_titles} titles for is: "\
-                        f"Text:\n'{sanitize_string(catchy_title_creator_request.text)}'\n\nTarget Audience:\n{sanitize_string(catchy_title_creator_request.target_audience)}\n\n"
-    return CatchyTitleCreatorResponse(titles=["Test Title 1", "Test Title 2", "Test Title 3"])
+
+    system_prompt = SYSTEM_PROMPT
+    system_prompt += f"{KEYWORDS_FOR_PROMPT['text_type']}: {catchy_title_creator_request.text_type}. "
+    system_prompt += f"{KEYWORDS_FOR_PROMPT['target_audience']}: {catchy_title_creator_request.target_audience}. "
+    system_prompt += f"{KEYWORDS_FOR_PROMPT['expected_tone']}: {catchy_title_creator_request.expected_tone.value}. "
+    system_prompt += f"{KEYWORDS_FOR_PROMPT['specific_keywords']}: {', '.join(catchy_title_creator_request.specific_keywords)}. "
+
+    system_prompt += "Finally, here's the text I want you to summarize: "
+
+    uuid = request.headers.get(UUID_HEADER_NAME)
+    user_chat = GPTTurboChat(
+        role=Role.USER,
+        content=catchy_title_creator_request.text,
+    )
+    chat_session = get_gpt_turbo_response(
+        system_prompt=system_prompt,
+        chat_session=GPTTurboChatSession(messages=[user_chat]),
+        frequency_penalty=0.0,
+        presence_penalty=0.0,
+        temperature=0.3,
+        uuid=uuid,
+        max_tokens=MAX_TOKENS
+    )
+
+    latest_gpt_chat_model = chat_session.messages[-1]
+    update_user_token_count(uuid, latest_gpt_chat_model.token_count)
+    latest_chat = latest_gpt_chat_model.content
+    latest_chat = sanitize_string(latest_chat)
+
+    titles = latest_chat.split("'")[1::2]
+
+    response_model = CatchyTitleCreatorResponse(titles=titles)
+    return response_model

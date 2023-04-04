@@ -5,6 +5,8 @@ from pathlib import Path
 from pydantic import constr
 from fastapi import APIRouter, Request, Response, status
 sys.path.append(Path(__file__).parent / "../utils")
+sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), "../gpt_turbo"))
+from gpt_turbo import GPTTurboChatSession, GPTTurboChat, Role, get_gpt_turbo_response
 from utils import (
     AIToolModel,
     sanitize_string,
@@ -14,6 +16,8 @@ from utils import (
     docstring_parameter,
     ExamplesResponse,
     AIToolsEndpointName,
+    UUID_HEADER_NAME,
+    update_user_token_count,
 )
 
 logger = logging.getLogger()
@@ -22,6 +26,25 @@ logger.setLevel(logging.DEBUG)
 router = APIRouter()
 
 ENDPOINT_NAME = AIToolsEndpointName.COVER_LETTER_WRITER.value
+MAX_TOKENS = 400
+
+KEYWORDS_FOR_PROMPT = {
+    "resume": "Resume",
+    "job_posting": "Job Posting",
+    "company_name": "Company Name",
+    "skills_to_highlight": "Skills to Highlight",
+    "freeform_command": "Freeform Command"
+}
+
+SYSTEM_PROMPT = (
+    "As an AI cover letter writer, your task is to create a tailored cover letter based on the user's input. "
+    f"Consider the provided {KEYWORDS_FOR_PROMPT['resume']}, {KEYWORDS_FOR_PROMPT['job_posting']}, "
+    f"{KEYWORDS_FOR_PROMPT['company_name']} (if given), and specific {KEYWORDS_FOR_PROMPT['skills_to_highlight']} from the resume. "
+    "Compose a well-structured and persuasive cover letter that showcases the user's qualifications, aligns with the job requirements, "
+    "and demonstrates enthusiasm for the company and role. "
+    f"If a {KEYWORDS_FOR_PROMPT['freeform_command']} is provided, adhere to the user's additional instructions while maintaining "
+    "the overall purpose of writing a compelling cover letter."
+)
 
 RESUME_EXAMPLE = """
 Name: John Doe
@@ -165,4 +188,37 @@ async def cover_letter_writer(request: Request, cover_letter_writer_request: Cov
     
     This method takes a resume and job posting as input and generates a cover letter for the resume and job posting.
     """
-    return CoverLetterWriterResponse(cover_letter="This is a perfect cover letter.")
+    system_prompt = SYSTEM_PROMPT
+    system_prompt += f"{KEYWORDS_FOR_PROMPT['resume']}: {cover_letter_writer_request.resume}. "
+    system_prompt += f"{KEYWORDS_FOR_PROMPT['job_posting']}: {cover_letter_writer_request.job_posting}. "
+    if cover_letter_writer_request.company_name:
+        system_prompt += f"{KEYWORDS_FOR_PROMPT['company_name']}: {cover_letter_writer_request.company_name}. "
+    if cover_letter_writer_request.skills_to_highlight_from_resume:
+        system_prompt += f"{KEYWORDS_FOR_PROMPT['skills_to_highlight']}: {cover_letter_writer_request.skills_to_highlight_from_resume}. "
+    if cover_letter_writer_request.freeform_command:
+        system_prompt += f"{KEYWORDS_FOR_PROMPT['freeform_command']}: {cover_letter_writer_request.freeform_command}. "
+
+    uuid = request.headers.get(UUID_HEADER_NAME)
+    user_chat = GPTTurboChat(
+        role=Role.USER,
+        content=""
+    )
+    chat_session = get_gpt_turbo_response(
+        system_prompt=system_prompt,
+        chat_session=GPTTurboChatSession(messages=[user_chat]),
+        frequency_penalty=0.0,
+        presence_penalty=0.0,
+        temperature=0.3,
+        uuid=uuid,
+        max_tokens=MAX_TOKENS
+    )
+
+    latest_gpt_chat_model = chat_session.messages[-1]
+    update_user_token_count(uuid, latest_gpt_chat_model.token_count)
+    latest_chat = latest_gpt_chat_model.content
+    latest_chat = sanitize_string(latest_chat)
+
+    response_model = CoverLetterWriterResponse(
+        cover_letter=latest_chat
+    )
+    return response_model

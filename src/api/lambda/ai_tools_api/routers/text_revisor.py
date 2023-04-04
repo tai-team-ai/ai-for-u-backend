@@ -23,9 +23,27 @@ from utils import (
 
 MAX_TOKENS = 400
 
+
+class RevisionType(str, Enum):
+    SPELLING = "spelling"
+    GRAMMAR = "grammar"
+    SENTENCE_STRUCTURE = "sentence structure"
+    WORD_CHOICE = "word choice"
+    CONSISTENCY = "consistency"
+    PUNCTUATION = "punctuation"
+
+REVISION_RESPONSE_PREFIX = "Revision: "
+
 SYSTEM_PROMPT = (
-    "You are a skilled text revisor. Your job is to revise the following text based on the "
-    "given revision types, tone, and creativity. "
+    "As an AI text revisor, revise the provided text considering specific fields the user may include in their request: "
+    f"{RevisionType.SPELLING}, {RevisionType.GRAMMAR}, {RevisionType.SENTENCE_STRUCTURE}, "
+    f"{RevisionType.WORD_CHOICE}, {RevisionType.CONSISTENCY}, and {RevisionType.PUNCTUATION}. "
+    "The user may also specify the number of revisions, the tone, and the creativity level of the revised text. "
+    "When not provided, assume a friendly tone and a creativity level of 50 (0 least creative, 100 most creative). "
+    "At a creativity level of 0, do not change the meaning of the text, while at a creativity level of 100, feel free to embellish the text. "
+    "For each revision, adhere to the user's preferences and requirements while maintaining the original meaning and intent of the text. "
+    "Present the revised text as a list, using the prefix '{REVISION_RESPONSE_PREFIX}' to differentiate between revisions. "
+    "Provide distinct alternatives when multiple revisions are requested, always focusing on improving the text according to the specified fields."
 )
 
 logger = logging.getLogger()
@@ -36,13 +54,13 @@ router = APIRouter()
 
 ENDPOINT_NAME = AIToolsEndpointName.TEXT_REVISOR.value
 
-class RevisionType(str, Enum):
-    SPELLING = "spelling"
-    GRAMMAR = "grammar"
-    SENTENCE_STRUCTURE = "sentence structure"
-    WORD_CHOICE = "word choice"
-    CONSISTENCY = "consistency"
-    PUNCTUATION = "punctuation"
+KEYWORDS_FOR_PROMPT = {
+    "revision_types": "Revision Types",
+    "tone": "Tone",
+    "creativity": "Creativity",
+    "freeform_command": "Freeform Command",
+    "text_to_revise": "Text to Revise"
+}
 
 
 @docstring_parameter(ENDPOINT_NAME)
@@ -124,12 +142,12 @@ async def text_revisor(text_revision_request: TextRevisorRequest, request: Reque
     :param text_revision_request: Request containing text and options for revision.
     """
     system_prompt = SYSTEM_PROMPT
-    system_prompt += f"Revision Types: {', '.join([rt.value for rt in text_revision_request.revision_types])}. "
-    system_prompt += f"Tone: {text_revision_request.tone.value}. "
-    system_prompt += f"Creativity: {text_revision_request.creativity}. "
+    system_prompt += f"{KEYWORDS_FOR_PROMPT['revision_types']}: {', '.join([rt.value for rt in text_revision_request.revision_types])}. "
+    system_prompt += f"{KEYWORDS_FOR_PROMPT['tone']}: {text_revision_request.tone.value}. "
+    system_prompt += f"{KEYWORDS_FOR_PROMPT['creativity']}: {text_revision_request.creativity}. "
     if text_revision_request.freeform_command:
-        system_prompt += f"Freeform Command: {text_revision_request.freeform_command}. "
-    system_prompt += "Text to Revise: "
+        system_prompt += f"{KEYWORDS_FOR_PROMPT['freeform_command']}: {text_revision_request.freeform_command}. "
+    system_prompt += f"{KEYWORDS_FOR_PROMPT['text_to_revise']}: "
 
     uuid = request.headers.get(UUID_HEADER_NAME)
     user_chat = GPTTurboChat(
