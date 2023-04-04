@@ -6,7 +6,8 @@ import sys
 from typing import Optional
 from aws_cdk import (
     Stack,
-    Duration
+    Duration,
+    Size,
 )
 from pydantic import BaseSettings, constr, Field
 from constructs import Construct
@@ -139,7 +140,7 @@ class AIToolsStack(Stack):
             timeout=Duration.seconds(10),
             role=role,
             memory_size=1024,
-            ephemeral_storage_size=128,
+            ephemeral_storage_size=Size.mebibytes(512),
         )
         return function
 

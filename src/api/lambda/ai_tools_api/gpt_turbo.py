@@ -4,7 +4,7 @@ from enum import Enum
 import openai
 import tiktoken
 from loguru import logger
-from utils import does_user_have_enough_tokens_to_make_request, docstring_parameter
+from utils import does_user_have_enough_tokens_to_make_request, docstring_parameter, TokensExhaustedException
 
 
 MODEL_CONTEXT_WINDOW = 4096
@@ -77,7 +77,7 @@ def can_user_make_request(user_uuid: str, expected_token_count: int) -> None:
         expected_token_count=expected_token_count,
     )
     if not can_make_request:
-        raise Exception(f"User does not have enough tokens to make request. Token quota: {tokens_allowed}, Tokens required for request: {expected_token_count}")
+        raise TokensExhaustedException(f"User does not have enough tokens to make request. Token quota: {tokens_allowed}, Tokens required for request: {expected_token_count}")
 
 
 def count_tokens(string: str) -> int:

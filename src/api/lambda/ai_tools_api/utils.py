@@ -2,7 +2,8 @@ import ast
 import datetime as dt
 import logging
 from urllib3 import response
-from fastapi import Response, Request
+from fastapi import Response, Request, status
+from fastapi.responses import JSONResponse
 import openai
 import boto3
 from uuid import UUID
@@ -19,6 +20,28 @@ from dynamodb_models import NextJsAuthTableModel
 logger = logging.getLogger()
 logger.setLevel(logging.DEBUG)
 lambda_settings = AIToolsLambdaSettings()
+
+
+class TokensExhaustedResponse(BaseModel):
+    """Define the model for the client error response."""
+
+    message: str = "Tokens exhausted for the day. Please Sign Up for a free account to continue using AIforU or wait until tomorrow to use the AIforU again."
+
+
+class TokensExhaustedException(Exception):
+    pass
+
+
+error_responses = {
+    status.HTTP_429_TOO_MANY_REQUESTS: {
+        "model": TokensExhaustedResponse,
+    },
+}
+
+TOKEN_EXHAUSTED_JSON_RESPONSE = JSONResponse(
+    status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+    content={"message": "Tokens exhausted for the day."},
+)
 
 
 AUTHENTICATED_USER_ENV_VAR_NAME = "AUTHENTICATED_USER"
