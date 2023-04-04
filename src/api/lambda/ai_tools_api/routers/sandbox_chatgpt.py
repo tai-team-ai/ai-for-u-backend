@@ -183,3 +183,67 @@ def sandbox_chatgpt(sandbox_chatgpt_request: SandBoxChatGPTRequest, request: Req
     latest_gpt_chat_model = chat_session.messages[-1]
     latest_message = latest_gpt_chat_model.content
     return SandBoxChatGPTResponse(gpt_response=latest_message)
+
+
+
+
+
+
+
+async def get_gpt_turbo_response_stream(
+    system_prompt: str,
+    chat_session: GPTTurboChatSession,
+    temperature: float = 0.9,
+    frequency_penalty: float = 0.0,
+    presence_penalty: float = 0.0,
+    stream: bool = False,
+    uuid: str = "",
+    max_tokens: int = 400,
+):
+    # ... (same code as before, up to the response creation)
+
+    response = openai.ChatCompletion.create(
+        model=GPT_MODEL,
+        messages=prompt_messages,
+        temperature=temperature,
+        frequency_penalty=frequency_penalty,
+        presence_penalty=presence_penalty,
+        stream=stream,
+        user=uuid,
+        max_tokens=max_tokens,
+    )
+
+    async for message in response.iter_chunks():
+        yield message
+```
+
+3. Update the WebSocket route to forward the events to the user:
+
+```python
+@app.websocket("/ws/{conversation_id}")
+async def websocket_endpoint(websocket: WebSocket, conversation_id: str):
+    await websocket.accept()
+
+    while True:
+        user_message = await websocket.receive_text()
+        uuid = websocket.headers.get(UUID_HEADER_NAME)
+
+        chat_session = load_sandbox_chat_history(user_uuid=uuid, conversation_uuid=conversation_id)
+        chat_session = chat_session.add_message(GPTTurboChat(role=Role.USER, content=user_message))
+
+        try:
+            response_stream = get_gpt_turbo_response_stream(
+                system_prompt=SYSTEM_PROMPT,
+                chat_session=chat_session,
+                frequency_penalty=0.9,
+                temperature=0.9,
+                uuid=uuid,
+                max_tokens=400
+            )
+            
+            async for message in response_stream:
+                await websocket.send_text(message)
+
+        except TokensExhaustedException:
+            await websocket.send_text(TOKEN_EXHAUSTED_JSON_RESPONSE)
+            continue
