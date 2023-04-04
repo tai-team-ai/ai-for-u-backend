@@ -6,6 +6,8 @@ from fastapi import APIRouter, Response, status, Request
 from enum import Enum
 from pydantic import conint
 sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), "../utils"))
+sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), "../gpt_turbo"))
+from gpt_turbo import GPTTurboChatSession, GPTTurboChat, Role, get_gpt_turbo_response
 from utils import (
     AIToolModel,
     EXAMPLES_ENDPOINT_POSTFIX,
@@ -14,6 +16,16 @@ from utils import (
     ExamplesResponse,
     Tone,
     AIToolsEndpointName,
+    UUID_HEADER_NAME,
+    update_user_token_count,
+    sanitize_string,
+)
+
+MAX_TOKENS = 400
+
+SYSTEM_PROMPT = (
+    "You are a skilled text revisor. Your job is to revise the following text based on the "
+    "given revision types, tone, and creativity. "
 )
 
 logger = logging.getLogger()
@@ -111,11 +123,39 @@ async def text_revisor(text_revision_request: TextRevisorRequest, request: Reque
 
     :param text_revision_request: Request containing text and options for revision.
     """
-    response = TextRevisorResponse(
-        revised_text_list=[
-            "This is a revised text that is probably much better than the original text.",
-            "This is a revised text that is probably much better than the original text.",
-        ]
-    )
-    return response
+    system_prompt = SYSTEM_PROMPT
+    system_prompt += f"Revision Types: {', '.join([rt.value for rt in text_revision_request.revision_types])}. "
+    system_prompt += f"Tone: {text_revision_request.tone.value}. "
+    system_prompt += f"Creativity: {text_revision_request.creativity}. "
+    if text_revision_request.freeform_command:
+        system_prompt += f"Freeform Command: {text_revision_request.freeform_command}. "
+    system_prompt += "Text to Revise: "
 
+    uuid = request.headers.get(UUID_HEADER_NAME)
+    user_chat = GPTTurboChat(
+        role=Role.USER,
+        content=text_revision_request.text_to_revise
+    )
+    temperature = 0.2 + (0.7 * (text_revision_request.creativity / 100))
+    chat_session = get_gpt_turbo_response(
+        system_prompt=system_prompt,
+        chat_session=GPTTurboChatSession(messages=[user_chat]),
+        frequency_penalty=0.0,
+        presence_penalty=0.0,
+        temperature=temperature,
+        uuid=uuid,
+        max_tokens=MAX_TOKENS
+    )
+
+    latest_gpt_chat_model = chat_session.messages[-1]
+    update_user_token_count(uuid, latest_gpt_chat_model.token_count)
+    latest_chat = latest_gpt_chat_model.content
+    latest_chat = sanitize_string(latest_chat)
+
+    revised_text_list = latest_chat.split("\n")
+    revised_text_list = [text.strip() for text in revised_text_list if text.strip()]
+
+    response_model = TextRevisorResponse(
+        revised_text_list=revised_text_list
+    )
+    return response_model
