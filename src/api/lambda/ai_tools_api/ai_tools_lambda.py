@@ -2,8 +2,10 @@ import logging
 import os
 import sys
 import traceback
+from enum import Enum
 from uuid import UUID
 from pathlib import Path
+from pydantic import BaseModel
 from openai.error import RateLimitError
 from mangum import Mangum
 from fastapi import FastAPI, APIRouter, Request, status , Response
@@ -44,9 +46,6 @@ This is the API for the AI for U project. It is a collection of endpoints that
 use OpenAI's GPT-3 API to generate text. All requests must include a uuid header.
 This uuid is used to check if the user is authenticated and to track usage of the API.
 """
-
-
-
 
 lambda_settings = AIToolsLambdaSettings()
 api_gateway_settings = APIGatewaySettings()

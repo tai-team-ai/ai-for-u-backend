@@ -12,7 +12,15 @@ from pynamodb.pagination import ResultIterator
 sys.path.append(Path(__file__, "../utils"))
 sys.path.append(Path(__file__, "../gpt_turbo"))
 sys.path.append(Path(__file__, "../dynamodb_models"))
-from utils import AIToolModel, UUID_HEADER_NAME, EXAMPLES_ENDPOINT_POSTFIX, AIToolsEndpointName
+from utils import (
+    AIToolModel,
+    UUID_HEADER_NAME,
+    EXAMPLES_ENDPOINT_POSTFIX,
+    AIToolsEndpointName,
+    error_responses,
+    TokensExhaustedException,
+    TOKEN_EXHAUSTED_JSON_RESPONSE,
+)
 from gpt_turbo import GPTTurboChatSession, get_gpt_turbo_response, GPTTurboChat, Role
 from dynamodb_models import UserDataTableModel
 
@@ -85,7 +93,7 @@ class SandBoxChatGPTExamplesResponse(AIToolModel):
     examples: list[str]
 
 
-@router.get(f"/{ENDPOINT_NAME}-{EXAMPLES_ENDPOINT_POSTFIX}", response_model=SandBoxChatGPTExamplesResponse, status_code=status.HTTP_200_OK)
+@router.get(f"/{ENDPOINT_NAME}-{EXAMPLES_ENDPOINT_POSTFIX}", response_model=SandBoxChatGPTExamplesResponse, responses=error_responses)
 async def sandbox_chatgpt_examples() -> SandBoxChatGPTExamplesResponse:
     """
     Get examples for sandbox-chatgpt.
@@ -128,6 +136,7 @@ def save_sandbox_chat_history(user_uuid: UUID, sandbox_chat_history: GPTChatHist
         chat_session: Chat history for a sandbox-chatgpt session.
     """
     token_count = sandbox_chat_history.messages[-1].token_count
+    token_count += sandbox_chat_history.messages[-2].token_count # add token count for system prompt
     chat_dict = sandbox_chat_history.dict()
     chat_dict["conversation_uuid"] = str(sandbox_chat_history.conversation_uuid)
     try:
@@ -140,7 +149,7 @@ def save_sandbox_chat_history(user_uuid: UUID, sandbox_chat_history: GPTChatHist
     new_user_model.save()
 
 
-@router.post(f"/{ENDPOINT_NAME}", response_model=SandBoxChatGPTResponse, status_code=status.HTTP_200_OK)
+@router.post(f"/{ENDPOINT_NAME}", response_model=SandBoxChatGPTResponse, responses=error_responses)
 def sandbox_chatgpt(sandbox_chatgpt_request: SandBoxChatGPTRequest, request: Request) -> SandBoxChatGPTResponse:
     """
     Get response from openAI Turbo GPT-3 model.
@@ -153,17 +162,20 @@ def sandbox_chatgpt(sandbox_chatgpt_request: SandBoxChatGPTRequest, request: Req
     """
     uuid = request.headers.get(UUID_HEADER_NAME)
     logger.info("uuid: %s", uuid)
-    chat_history = load_sandbox_chat_history(user_uuid=uuid, conversation_uuid=sandbox_chatgpt_request.conversation_uuid)
-    logger.info("chat_session before response: %s", chat_history)
-    chat_history = chat_history.add_message(GPTTurboChat(role=Role.USER, content=sandbox_chatgpt_request.user_message))
-    chat_session = get_gpt_turbo_response(
-        system_prompt=SYSTEM_PROMPT,
-        chat_session=GPTTurboChatSession(**chat_history.dict()),
-        frequency_penalty=0.9,
-        temperature=0.9,
-        uuid=uuid,
-        max_tokens=400
-    )
+    chat_session = load_sandbox_chat_history(user_uuid=uuid, conversation_uuid=sandbox_chatgpt_request.conversation_uuid)
+    logger.info("chat_session before response: %s", chat_session)
+    chat_session = chat_session.add_message(GPTTurboChat(role=Role.USER, content=sandbox_chatgpt_request.user_message))
+    try:
+        chat_session = get_gpt_turbo_response(
+            system_prompt=SYSTEM_PROMPT,
+            chat_session=chat_session,
+            frequency_penalty=0.9,
+            temperature=0.9,
+            uuid=uuid,
+            max_tokens=400
+        )
+    except TokensExhaustedException:
+        return TOKEN_EXHAUSTED_JSON_RESPONSE
     logger.info("chat_session after response: %s", chat_session)
     chat_history = GPTChatHistory(**chat_session.dict(), conversation_uuid=sandbox_chatgpt_request.conversation_uuid)
     save_sandbox_chat_history(user_uuid=uuid, sandbox_chat_history=chat_history)
