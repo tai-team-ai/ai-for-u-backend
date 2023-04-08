@@ -17,7 +17,6 @@ from utils import (
     Tone,
     AIToolsEndpointName,
     UUID_HEADER_NAME,
-    update_user_token_count,
     sanitize_string,
     append_field_prompts_to_prompt,
     BASE_USER_PROMPT_PREFIX,
