@@ -147,5 +147,5 @@ async def text_revisor(text_revision_request: TextRevisorRequest, request: Reque
     response_model = TextRevisorResponse(
         revised_text_list=revised_text_list
     )
-    logger.info("Response model: %s", response_model)
+    logger.info(f"Returning response for {ENDPOINT_NAME} endpoint.")
     return response_model

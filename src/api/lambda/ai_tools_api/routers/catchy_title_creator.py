@@ -146,7 +146,7 @@ async def catchy_title_creator(catchy_title_creator_request: CatchyTitleCreatorR
     logger.info(f"Received request for {ENDPOINT_NAME} endpoint.")
     user_prompt = append_field_prompts_to_prompt(CatchyTitleCreatorInstructions(**catchy_title_creator_request.dict()), BASE_USER_PROMPT_PREFIX)
 
-    user_prompt += f"\nHere is the text you should revise: {catchy_title_creator_request.text}"
+    user_prompt += f"\nHere is the text you should create catchy titles for: {catchy_title_creator_request.text}"
     uuid = request.headers.get(UUID_HEADER_NAME)
     user_chat = GPTTurboChat(
         role=Role.USER,
@@ -171,5 +171,5 @@ async def catchy_title_creator(catchy_title_creator_request: CatchyTitleCreatorR
     titles = [title.strip() for title in titles if title.strip()]
 
     response_model = CatchyTitleCreatorResponse(titles=titles)
-    logger.info("Response model: %s", response_model)
+    logger.info("Returning response: %s", response_model)
     return response_model
