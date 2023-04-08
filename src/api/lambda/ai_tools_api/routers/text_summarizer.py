@@ -12,12 +12,13 @@ sys.path.append(Path(__file__, "../").absolute())
 from gpt_turbo import GPTTurboChatSession, GPTTurboChat, Role, get_gpt_turbo_response
 from utils import (
     AIToolModel,
-    BaseTemplateRequest,
+    BaseAIInstructionModel,
     UUID_HEADER_NAME,
     update_user_token_count,
     sanitize_string,
     EXAMPLES_ENDPOINT_POSTFIX,
-    ExamplesResponse
+    ExamplesResponse,
+    BASE_USER_PROMPT_PREFIX,
 )
 
 router = APIRouter()
@@ -26,37 +27,19 @@ logger = logging.getLogger()
 logger.setLevel(logging.DEBUG)
 
 
-KEYWORDS_FOR_PROMPT ={
-    "summary_sentence": "1-3 sentence summary",
-    "bullets": "bullet points",
-    "action_items": "action items",
-    "freeform_command": "freeform text analysis command"
-}
-
-SECTIONS_FOR_RESPONSE = {
-    "summary_sentence": "Summary Sentence:\n",
-    "bullets": "Bullet Points:\n",
-    "action_items": "Action Items:\n",
-    "freeform_command": "Freeform Text Analysis:\n"
-}
-
-MAX_TOKENS = 400
+MAX_TOKENS_FROM_GPT_RESPONSE = 400
 
 SYSTEM_PROMPT = (
     "You are a professional text summarizer. You job is to summarize & analyze the text for me in order to help me "
-    f"understand the text better. I may optional ask you to provide me with a {KEYWORDS_FOR_PROMPT['summary_sentence']}, "
-    f"{KEYWORDS_FOR_PROMPT['bullets']}, {KEYWORDS_FOR_PROMPT['action_items']}, and a {KEYWORDS_FOR_PROMPT['freeform_command']}. "
-    f"You should only include these sections if I ask for them. If I provide a {KEYWORDS_FOR_PROMPT['freeform_command']}, "
-    "you should analyze the text using the command I provide. However, if the command is not related to text analysis, "
-    "you should ignore it. You should also ignore any commands that are not related to text analysis. For each of the "
-    f"sections I provide you should title the section as follows: {SECTIONS_FOR_RESPONSE['summary_sentence']}, "
-    f"{SECTIONS_FOR_RESPONSE['bullets']}, {SECTIONS_FOR_RESPONSE['action_items']}, and {SECTIONS_FOR_RESPONSE['freeform_command']}. "
+    "understand the text better. I may request for a summary sentence, bullet points, actions, and/or a freeform section. "
+    "You should only respond with the sections that I specify in my request, nothing else. You should use markdown format "
+    "and should use bold titles for each section."
 )
 
 ENDPOINT_NAME = "text-summarizer"
 
 
-class TextSummarizerRequest(BaseTemplateRequest):
+class TextSummarizerRequest(BaseAIInstructionModel):
     """
     **Define the request model for the text summarizer endpoint.**
     
@@ -67,20 +50,18 @@ class TextSummarizerRequest(BaseTemplateRequest):
     - number_of_action_items: number of action items to include in the response (this is suggested to use with 
         summaries of things such as meeting minutes)
     
-    Inherit from BaseTemplateRequest:    
+    Inherit from BaseAIInstructionModel:    
     """
-    __doc__ += BaseTemplateRequest.__doc__
+    __doc__ += BaseAIInstructionModel.__doc__
     text_to_summarize: str
-    include_summary_sentence: Optional[bool]
-    number_of_bullets: Optional[int]
-    number_of_action_items: Optional[int]
+    include_summary_sentence: Optional[bool] = True
+    number_of_bullets: Optional[int] = None
+    number_of_action_items: Optional[int] = None
+
 
 
 class TextSummarizerResponse(AIToolModel):
-    summary_sentence: Optional[str]
-    bullet_points: Optional[str]
-    action_items: Optional[str]
-    freeform_section: Optional[str]
+    summary: str
     
 
 class TextSummarizerExampleResponse(ExamplesResponse):
@@ -96,7 +77,6 @@ async def sandbox_chatgpt_examples() -> TextSummarizerExampleResponse:
             include_summary_sentence=True,
             number_of_bullets=3,
             number_of_action_items=2,
-            freeform_command="Count the number of characters and group them by character."
         )
     ]
     response = TextSummarizerExampleResponse(
@@ -107,35 +87,34 @@ async def sandbox_chatgpt_examples() -> TextSummarizerExampleResponse:
 
 @router.post(f"/{ENDPOINT_NAME}", response_model=TextSummarizerResponse, status_code=status.HTTP_200_OK)
 async def text_summarizer(text_summarizer_request: TextSummarizerRequest, request: Request):
-    logger.info("Text Summarizer Request Model: %s", text_summarizer_request)
+    """**Summarize text using GPT-3.**"""
+    logger.info(f"Received request: {text_summarizer_request}")
     for field_name, value in text_summarizer_request:
         if isinstance(value, str):
             setattr(text_summarizer_request, field_name, value.strip())
-    system_prompt = SYSTEM_PROMPT
+    user_prompt = BASE_USER_PROMPT_PREFIX
     if text_summarizer_request.include_summary_sentence:
-        system_prompt += f"Please provide me with a {KEYWORDS_FOR_PROMPT['summary_sentence']}. "
+        user_prompt += f"Please provide me with a summary sentance.\n"
     if text_summarizer_request.number_of_bullets:
-        system_prompt += f"Please provide me with {text_summarizer_request.number_of_bullets} {KEYWORDS_FOR_PROMPT['bullets']}. "
+        user_prompt += f"Please provide me with {text_summarizer_request.number_of_bullets} bullet points.\n"
     if text_summarizer_request.number_of_action_items:
-        system_prompt += f"Please provide me with {text_summarizer_request.number_of_action_items} {KEYWORDS_FOR_PROMPT['action_items']}. "
-    if text_summarizer_request.freeform_command:
-        system_prompt += f"Here's my {KEYWORDS_FOR_PROMPT['freeform_command']}: {text_summarizer_request.freeform_command}. "
+        user_prompt += f"Please provide me with {text_summarizer_request.number_of_action_items} action items.\n"
 
-    system_prompt += "Finally, here's the text I want you to summarize: "
+    user_prompt += "Finally, here's the text I want you to summarize: " + text_summarizer_request.text_to_summarize
 
     uuid = request.headers.get(UUID_HEADER_NAME)
     user_chat = GPTTurboChat(
         role=Role.USER,
-        content=text_summarizer_request.text_to_summarize
+        content=user_prompt
     )
     chat_session = get_gpt_turbo_response(
-        system_prompt=system_prompt,
+        system_prompt=SYSTEM_PROMPT,
         chat_session=GPTTurboChatSession(messages=[user_chat]),
         frequency_penalty=0.0,
         presence_penalty=0.0,
         temperature=0.3,
         uuid=uuid,
-        max_tokens=MAX_TOKENS
+        max_tokens=MAX_TOKENS_FROM_GPT_RESPONSE
     )
 
     latest_gpt_chat_model = chat_session.messages[-1]
@@ -143,27 +122,8 @@ async def text_summarizer(text_summarizer_request: TextSummarizerRequest, reques
     latest_chat = latest_gpt_chat_model.content
     latest_chat = sanitize_string(latest_chat)
 
-    try:
-        summary_sentence = latest_chat.split(SECTIONS_FOR_RESPONSE["summary_sentence"])[-1].split(SECTIONS_FOR_RESPONSE["bullets"])[0].strip()
-    except:
-        summary_sentence = None
-    try:
-        bullet_points = latest_chat.split(SECTIONS_FOR_RESPONSE["bullets"])[-1].split(SECTIONS_FOR_RESPONSE["action_items"])[0].strip()
-    except:
-        bullet_points = None
-    try:
-        action_items = latest_chat.split(SECTIONS_FOR_RESPONSE["action_items"])[-1].split(SECTIONS_FOR_RESPONSE["freeform_command"])[0].strip()
-    except:
-        action_items = None
-    try:
-        freeform_section = latest_chat.split(SECTIONS_FOR_RESPONSE["freeform_command"])[-1].strip()
-    except:
-        freeform_section = None
-
     reponse_model = TextSummarizerResponse(
-        summary_sentence=summary_sentence,
-        bullet_points=bullet_points,
-        action_items=action_items,
-        freeform_section=freeform_section
+        summary=latest_chat,
     )
+    logger.info(f"Returning response for {ENDPOINT_NAME} endpoint.")
     return reponse_model

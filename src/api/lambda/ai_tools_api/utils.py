@@ -11,7 +11,7 @@ from enum import Enum
 from ai_tools_lambda_settings import AIToolsLambdaSettings
 from botocore.exceptions import ClientError
 from pydantic import BaseModel, constr, BaseSettings, Field
-from typing import Optional, Union
+from typing import Optional, Sequence, Union
 from dynamodb_models import UserDataTableModel
 from pynamodb.pagination import ResultIterator
 from pynamodb.models import Model
@@ -20,6 +20,7 @@ from dynamodb_models import NextJsAuthTableModel
 logger = logging.getLogger()
 logger.setLevel(logging.DEBUG)
 lambda_settings = AIToolsLambdaSettings()
+
 
 
 class TokensExhaustedResponse(BaseModel):
@@ -48,6 +49,7 @@ AUTHENTICATED_USER_ENV_VAR_NAME = "AUTHENTICATED_USER"
 UUID_HEADER_NAME = "UUID"
 USER_TOKEN_HEADER_NAME = "Token"
 EXAMPLES_ENDPOINT_POSTFIX = "examples"
+DELIMITER_SEQUENCE = "%!%!%"
 
 class UserTokenNotFoundError(Exception):
     """User token not found in request headers."""
@@ -95,17 +97,49 @@ class RuntimeSettings(BaseSettings):
     days_before_resetting_token_count: dt.timedelta = dt.timedelta(days=1)
 
 
-class BaseTemplateRequest(AIToolModel):
+def get_names_of_fields_in_model_mapping(model: BaseModel) -> dict[str, str]:
+    """Get the names of the fields in the model mapping.
+
+    Args:
+        model: The model to get the names of the fields in the model mapping for.
+
+    Returns:
+        A dictionary mapping the field names in the model mapping to the field names in the model.
     """
-    **Base request for all templtates.**
-    
-    **Attributes:**
-    - freeform_command: This command allows the user to specify any command they would like, 
-        to be appended to the end of the prompt. This could be dangerous, but for now will allow 
-        it will help prevent bottlenecks in the users ability to use the templates
+    return {field.name: field.name for field in model.__fields__.values()}
+
+class BaseAIInstructionModel(AIToolModel):
     """
-    freeform_command: Optional[constr(min_length=0, max_length=200)] = ""
+    **Base for all AI Instructions.**
+
+    - tone: The tone of the AI. This is used to determine the tone of the AI's instructions. Each
+        class that inherits from this class should define the default tone for the AI and 
+        provide instructions on what the tone should impact in the the response.
+    """
     tone: Optional[Tone] = Tone.FORMAL
+
+
+BASE_USER_PROMPT_PREFIX = "Hi! Here are the instructions for you to follow:\n"
+
+def append_field_prompts_to_prompt(model: BaseAIInstructionModel, base_prompt: str) -> str:
+    """
+    Append the fields in the model to the base prompt.
+
+    Args:
+        model: The model to append the fields to the base prompt for.
+        base_prompt: The base prompt to append the fields to.
+
+    Returns:
+        The base prompt with the fields appended to it.
+    """
+    for field_name, field_value in model.dict().items():
+        if field_value:
+            if isinstance(field_value, list):
+                if isinstance(field_value[0], Enum):
+                    field_value = [field.value for field in field_value]
+                field_value = ", ".join(field_value)
+            base_prompt += f"{field_name}: {field_value}\n"
+    return base_prompt
 
 
 class ExamplesResponse(AIToolModel):
@@ -174,10 +208,10 @@ def update_user_token_count(user_uuid: UUID, token_count: int) -> None:
         results: ResultIterator[UserDataTableModel] = UserDataTableModel.query(str(user_uuid))
         user_data_table_model = next(results)
         new_token_count = token_count + user_data_table_model.cumulative_token_count
-        new_user_model = UserDataTableModel(str(user_uuid), new_token_count, sandbox_chat_history=user_data_table_model.sandbox_chat_history)
+        new_user_model = UserDataTableModel(str(user_uuid), cumulative_token_count=new_token_count, sandbox_chat_history=user_data_table_model.sandbox_chat_history)
         user_data_table_model.delete()
     except (Model.DoesNotExist, StopIteration):
-        new_user_model = UserDataTableModel(str(user_uuid), token_count)
+        new_user_model = UserDataTableModel(str(user_uuid), cumulative_token_count=token_count)
     new_user_model.save()
 
 
