@@ -19,6 +19,9 @@ from utils import (
     EXAMPLES_ENDPOINT_POSTFIX,
     ExamplesResponse,
     BASE_USER_PROMPT_PREFIX,
+    error_responses,
+    TOKEN_EXHAUSTED_JSON_RESPONSE,
+    TokensExhaustedException,
 )
 
 router = APIRouter()
@@ -85,7 +88,7 @@ async def sandbox_chatgpt_examples() -> TextSummarizerExampleResponse:
     )
     return response
 
-@router.post(f"/{ENDPOINT_NAME}", response_model=TextSummarizerResponse, status_code=status.HTTP_200_OK)
+@router.post(f"/{ENDPOINT_NAME}", response_model=TextSummarizerResponse, responses=error_responses)
 async def text_summarizer(text_summarizer_request: TextSummarizerRequest, request: Request):
     """**Summarize text using GPT-3.**"""
     logger.info(f"Received request: {text_summarizer_request}")
@@ -107,15 +110,18 @@ async def text_summarizer(text_summarizer_request: TextSummarizerRequest, reques
         role=Role.USER,
         content=user_prompt
     )
-    chat_session = get_gpt_turbo_response(
-        system_prompt=SYSTEM_PROMPT,
-        chat_session=GPTTurboChatSession(messages=[user_chat]),
-        frequency_penalty=0.0,
-        presence_penalty=0.0,
-        temperature=0.3,
-        uuid=uuid,
-        max_tokens=MAX_TOKENS_FROM_GPT_RESPONSE
-    )
+    try:
+        chat_session = get_gpt_turbo_response(
+            system_prompt=SYSTEM_PROMPT,
+            chat_session=GPTTurboChatSession(messages=[user_chat]),
+            frequency_penalty=0.0,
+            presence_penalty=0.0,
+            temperature=0.3,
+            uuid=uuid,
+            max_tokens=MAX_TOKENS_FROM_GPT_RESPONSE
+        )
+    except TokensExhaustedException:
+        return TOKEN_EXHAUSTED_JSON_RESPONSE
 
     latest_gpt_chat_model = chat_session.messages[-1]
     update_user_token_count(uuid, latest_gpt_chat_model.token_count)

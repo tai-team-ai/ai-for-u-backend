@@ -34,10 +34,12 @@ from utils import (
     docstring_parameter,
     ExamplesResponse,
     AIToolsEndpointName,
-    update_user_token_count,
     UUID_HEADER_NAME,
     append_field_prompts_to_prompt,
     BASE_USER_PROMPT_PREFIX,
+    error_responses,
+    TOKEN_EXHAUSTED_JSON_RESPONSE,
+    TokensExhaustedException,
 )
 
 logger = logging.getLogger()
@@ -140,7 +142,7 @@ async def catchy_title_creator_examples():
     return example_response
 
 
-@router.post(f"/{ENDPOINT_NAME}", response_model=CatchyTitleCreatorResponse, status_code=status.HTTP_200_OK)
+@router.post(f"/{ENDPOINT_NAME}", response_model=CatchyTitleCreatorResponse, responses=error_responses)
 async def catchy_title_creator(catchy_title_creator_request: CatchyTitleCreatorRequest, response: Response, request: Request):
     """**Generate catchy titles using GPT-3.**"""
     logger.info(f"Received request for {ENDPOINT_NAME} endpoint.")
@@ -152,15 +154,18 @@ async def catchy_title_creator(catchy_title_creator_request: CatchyTitleCreatorR
         role=Role.USER,
         content=user_prompt,
     )
-    chat_session = get_gpt_turbo_response(
-        system_prompt=SYSTEM_PROMPT,
-        chat_session=GPTTurboChatSession(messages=[user_chat]),
-        frequency_penalty=0.0,
-        presence_penalty=0.0,
-        temperature=0.3,
-        uuid=uuid,
-        max_tokens=MAX_TOKENS_FROM_GPT_RESPONSE,
-    )
+    try:
+        chat_session = get_gpt_turbo_response(
+            system_prompt=SYSTEM_PROMPT,
+            chat_session=GPTTurboChatSession(messages=[user_chat]),
+            frequency_penalty=0.0,
+            presence_penalty=0.0,
+            temperature=0.3,
+            uuid=uuid,
+            max_tokens=MAX_TOKENS_FROM_GPT_RESPONSE,
+        )
+    except TokensExhaustedException:
+        return TOKEN_EXHAUSTED_JSON_RESPONSE
 
     latest_gpt_chat_model = chat_session.messages[-1]
     latest_chat = latest_gpt_chat_model.content
