@@ -21,9 +21,10 @@ from utils import (
     sanitize_string,
     append_field_prompts_to_prompt,
     BASE_USER_PROMPT_PREFIX,
+    Tone,
 )
 
-MAX_TOKENS = 400
+MAX_TOKENS_FROM_GPT_RESPONSE = 400
 
 
 class RevisionType(str, Enum):
@@ -42,9 +43,9 @@ router = APIRouter()
 ENDPOINT_NAME = AIToolsEndpointName.TEXT_REVISOR.value
 
 AI_PURPOSE = " ".join(ENDPOINT_NAME.split("-")).lower()
-@docstring_parameter(AI_PURPOSE, [revision_type.value for revision_type in RevisionType])
+@docstring_parameter(AI_PURPOSE, [revision_type.value for revision_type in RevisionType], [tone.value for tone in Tone])
 class TextRevisorInstructions(BaseAIInstructionModel):
-    """You are a expert {0}. I will provide a text to revise and should respond with a revised version of that text, nothing else.
+    """You are an expert {0}. I will provide a text to revise and should respond with a revised version of that text, nothing else.
     
     For each revision, only respond with the revision, nothing else (no explanations, not the original text, no comparisons between the original and the revised, etc.).
 
@@ -54,8 +55,7 @@ class TextRevisorInstructions(BaseAIInstructionModel):
     * creativity: The creativity of the revised text. Where 0 is the least creative and 100 is the most creative.
         Further, a creativity closer to 0 signifies that the revisions should be made in a way that is as close to the original text as possible 
         while a creativity closer to 100 signifies that you have more freedom to embellish the text.
-    * tone: The tone that you should use when revising the text.
-
+    * tone: The tone that you should use when revising the text. Here are the possible tones: {2}.
     """
     revision_types: Optional[list[RevisionType]] = [revision_type.value for revision_type in RevisionType]
     creativity: Optional[conint(ge=0, le=100)] = 50
@@ -71,11 +71,11 @@ class TextRevisorRequest(TextRevisorInstructions):
     **Attributes:**
     * text_to_revise: The text to revise. This can literally be any block of text.
 
-    **AI Instructions for this endpoint:**
+    **AI Instructions:**
 
     """
     __doc__ += TextRevisorInstructions.__doc__
-    text_to_revise: constr(min_length=1, max_length=4000)
+    text_to_revise: constr(min_length=1, max_length=int(MAX_TOKENS_FROM_GPT_RESPONSE / 3.5))
 
 @docstring_parameter(ENDPOINT_NAME)
 class TextRevisorResponse(AIToolModel):
@@ -109,7 +109,6 @@ async def text_revisor_examples():
     """
     text_revisor_example = TextRevisorRequest(
         text_to_revise="This are some porrly written text. Its probaly needing to be revised in order to help it sound much more better.",
-        number_of_revisions=3,
         revision_types=[RevisionType.SPELLING, RevisionType.GRAMMAR, RevisionType.SENTENCE_STRUCTURE, RevisionType.WORD_CHOICE, RevisionType.CONSISTENCY, RevisionType.PUNCTUATION],
         tone=Tone.ASSERTIVE,
         creativity=100,
@@ -141,16 +140,13 @@ async def text_revisor(text_revision_request: TextRevisorRequest, request: Reque
         presence_penalty=0.0,
         temperature=temperature,
         uuid=uuid,
-        max_tokens=MAX_TOKENS
+        max_tokens=MAX_TOKENS_FROM_GPT_RESPONSE,
     )
-    logger.info("Chat session: %s", chat_session)
 
     latest_gpt_chat_model = chat_session.messages[-1]
-    update_user_token_count(uuid, latest_gpt_chat_model.token_count)
     latest_chat = latest_gpt_chat_model.content
 
     revised_text_list = [sanitize_string(latest_chat)]
-
     response_model = TextRevisorResponse(
         revised_text_list=revised_text_list
     )
