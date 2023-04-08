@@ -22,6 +22,7 @@ logger.setLevel(logging.DEBUG)
 lambda_settings = AIToolsLambdaSettings()
 
 
+
 class TokensExhaustedResponse(BaseModel):
     """Define the model for the client error response."""
 
@@ -48,6 +49,7 @@ AUTHENTICATED_USER_ENV_VAR_NAME = "AUTHENTICATED_USER"
 UUID_HEADER_NAME = "UUID"
 USER_TOKEN_HEADER_NAME = "Token"
 EXAMPLES_ENDPOINT_POSTFIX = "examples"
+DELIMITER_SEQUENCE = "%!%!%"
 
 class UserTokenNotFoundError(Exception):
     """User token not found in request headers."""
@@ -106,6 +108,12 @@ class BaseTemplateRequest(AIToolModel):
     """
     freeform_command: Optional[constr(min_length=0, max_length=200)] = ""
     tone: Optional[Tone] = Tone.FORMAL
+
+
+SYSTEM_PROMPT_BASE = ("As an AI {ai_purpose}, your job is to {ai_job_description}. In addition to the above instructions, "
+    f"I may also provide you with additional commands specified by this list: {list(BaseTemplateRequest.__fields__.keys())}. "
+    "You should adhere to the instructions in this commands while maintaining your overall purpose of being an AI {ai_purpose}."
+)
 
 
 class ExamplesResponse(AIToolModel):
@@ -174,10 +182,10 @@ def update_user_token_count(user_uuid: UUID, token_count: int) -> None:
         results: ResultIterator[UserDataTableModel] = UserDataTableModel.query(str(user_uuid))
         user_data_table_model = next(results)
         new_token_count = token_count + user_data_table_model.cumulative_token_count
-        new_user_model = UserDataTableModel(str(user_uuid), new_token_count, sandbox_chat_history=user_data_table_model.sandbox_chat_history)
+        new_user_model = UserDataTableModel(str(user_uuid), cumulative_token_count=new_token_count, sandbox_chat_history=user_data_table_model.sandbox_chat_history)
         user_data_table_model.delete()
     except (Model.DoesNotExist, StopIteration):
-        new_user_model = UserDataTableModel(str(user_uuid), token_count)
+        new_user_model = UserDataTableModel(str(user_uuid), cumulative_token_count=token_count)
     new_user_model.save()
 
 
