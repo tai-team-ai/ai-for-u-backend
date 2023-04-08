@@ -4,7 +4,12 @@ from enum import Enum
 import openai
 import tiktoken
 from loguru import logger
-from utils import does_user_have_enough_tokens_to_make_request, docstring_parameter, TokensExhaustedException
+from utils import (
+    does_user_have_enough_tokens_to_make_request,
+    docstring_parameter,
+    TokensExhaustedException,
+    update_user_token_count,
+)
 
 
 MODEL_CONTEXT_WINDOW = 4096
@@ -152,13 +157,14 @@ def get_gpt_turbo_response(
     system_token_count = count_tokens(system_prompt)
     tokens_for_request = system_token_count + max_tokens
     # This line counts the tokens for the last user message and adds it to the chat session
-    chat_session.messages[-1].token_count = count_tokens(chat_session.messages[-1].content)
+    user_prompt_token_count = count_tokens(chat_session.messages[-1].content)
+    chat_session.messages[-1].token_count = user_prompt_token_count
+    update_user_token_count(uuid, user_prompt_token_count + system_token_count)
     chat_session = truncate_chat_session(chat_session, tokens_for_request)
     for chat in chat_session.messages:
         tokens_for_request += chat.token_count
         prompt_messages.append(chat.dict(exclude={"token_count"}))
     can_user_make_request(uuid, tokens_for_request)
-    logger.info(f"Prompt messages: {prompt_messages}")
 
     response = openai.ChatCompletion.create(
         model=GPT_MODEL,
@@ -178,4 +184,5 @@ def get_gpt_turbo_response(
         content=message,
         token_count=completion_tokens,
     ))
+    update_user_token_count(uuid, completion_tokens)
     return chat_session
