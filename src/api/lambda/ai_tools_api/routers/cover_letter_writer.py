@@ -11,7 +11,7 @@ from gpt_turbo import GPTTurboChatSession, GPTTurboChat, Role, get_gpt_turbo_res
 from utils import (
     AIToolModel,
     sanitize_string,
-    BaseTemplateRequest,
+    BaseAIInstructionModel,
     Tone,
     EXAMPLES_ENDPOINT_POSTFIX,
     docstring_parameter,
@@ -113,7 +113,7 @@ We offer a competitive salary and benefits package, as well as ongoing professio
 """
 
 @docstring_parameter(ENDPOINT_NAME)
-class CoverLetterWriterRequest(BaseTemplateRequest):
+class CoverLetterWriterRequest(BaseAIInstructionModel):
     """
     **Define the model for the request body for {0} endpoint.**
     
@@ -122,10 +122,10 @@ class CoverLetterWriterRequest(BaseTemplateRequest):
     - job_posting: The job posting to generate a cover letter for.
     - skills_to_highlight_from_resume: The skills to highlight from the resume.
     
-    Inherits from BaseTemplateRequest:
+    Inherits from BaseAIInstructionModel:
     """
     
-    __doc__ += BaseTemplateRequest.__doc__
+    __doc__ += BaseAIInstructionModel.__doc__
     resume: constr(min_length=1, max_length=10000)
     job_posting: constr(min_length=1, max_length=10000)
     company_name: Optional[constr(min_length=1, max_length=50)] = None

@@ -12,7 +12,7 @@ sys.path.append(Path(__file__, "../").absolute())
 from gpt_turbo import GPTTurboChatSession, GPTTurboChat, Role, get_gpt_turbo_response
 from utils import (
     AIToolModel,
-    BaseTemplateRequest,
+    BaseAIInstructionModel,
     UUID_HEADER_NAME,
     update_user_token_count,
     sanitize_string,
@@ -56,7 +56,7 @@ SYSTEM_PROMPT = (
 ENDPOINT_NAME = "text-summarizer"
 
 
-class TextSummarizerRequest(BaseTemplateRequest):
+class TextSummarizerRequest(BaseAIInstructionModel):
     """
     **Define the request model for the text summarizer endpoint.**
     
@@ -67,9 +67,9 @@ class TextSummarizerRequest(BaseTemplateRequest):
     - number_of_action_items: number of action items to include in the response (this is suggested to use with 
         summaries of things such as meeting minutes)
     
-    Inherit from BaseTemplateRequest:    
+    Inherit from BaseAIInstructionModel:    
     """
-    __doc__ += BaseTemplateRequest.__doc__
+    __doc__ += BaseAIInstructionModel.__doc__
     text_to_summarize: str
     include_summary_sentence: Optional[bool]
     number_of_bullets: Optional[int]

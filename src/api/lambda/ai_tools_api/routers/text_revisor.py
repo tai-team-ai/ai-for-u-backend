@@ -4,23 +4,23 @@ import sys
 from typing import List, Optional
 from fastapi import APIRouter, Response, status, Request
 from enum import Enum
-from pydantic import conint, BaseModel
+from pydantic import conint, constr
 sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), "../utils"))
 sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), "../gpt_turbo"))
 from gpt_turbo import GPTTurboChatSession, GPTTurboChat, Role, get_gpt_turbo_response
 from utils import (
     AIToolModel,
     EXAMPLES_ENDPOINT_POSTFIX,
+    BaseAIInstructionModel,
     docstring_parameter,
-    BaseTemplateRequest,
     ExamplesResponse,
     Tone,
     AIToolsEndpointName,
     UUID_HEADER_NAME,
     update_user_token_count,
     sanitize_string,
-    SYSTEM_PROMPT_BASE,
-    DELIMITER_SEQUENCE,
+    append_field_prompts_to_prompt,
+    BASE_USER_PROMPT_PREFIX,
 )
 
 MAX_TOKENS = 400
@@ -38,58 +38,44 @@ class RevisionType(str, Enum):
 logger = logging.getLogger()
 logger.setLevel(logging.DEBUG)
 
-
 router = APIRouter()
 ENDPOINT_NAME = AIToolsEndpointName.TEXT_REVISOR.value
 
-AI_PURPOSE = "".join(ENDPOINT_NAME.split("-")).lower()
-@docstring_parameter(AI_PURPOSE, DELIMITER_SEQUENCE, [revision_type for revision_type in RevisionType])
-class TextRevisorInstructions(BaseModel):
-    """Instruct the AI {0} on how to do it's job.
+AI_PURPOSE = " ".join(ENDPOINT_NAME.split("-")).lower()
+@docstring_parameter(AI_PURPOSE, [revision_type.value for revision_type in RevisionType])
+class TextRevisorInstructions(BaseAIInstructionModel):
+    """You are a expert {0}. I will provide a text to revise and should respond with a revised version of that text, nothing else.
     
-    **Instructions for AI {0}:**
-        - number_of_revisions: The number of revisions to return in the response. These must be 
-            delimited by the sequence: {1}. This will allow the user to easily split the revisions into
-            individual revisions.
-        - revision_types: The types of revisions to make. The types of revisions that can be made are: {2}.
-        - creativity: The creativity of the revised text. Where 0 is the least creative and 100 is the most creative.
-            Further, a creativity of 0 signifies that the revisions should be made in a way that is as close to the original text as possible 
-            while a creativity of 100 signifies that the revisions should be embellished as much as possible.
+    For each revision, only respond with the revision, nothing else (no explanations, not the original text, no comparisons between the original and the revised, etc.).
+
+    **Instructions that I may provide you:**
+    * revision_types: The types of revisions that you should make to the text. The types of revisions that can be made are: {1}. Do not revise the text in anyway
+            that is not in this list. Use this list as a guide to what types of revisions you should make.
+    * creativity: The creativity of the revised text. Where 0 is the least creative and 100 is the most creative.
+        Further, a creativity closer to 0 signifies that the revisions should be made in a way that is as close to the original text as possible 
+        while a creativity closer to 100 signifies that you have more freedom to embellish the text.
+    * tone: The tone that you should use when revising the text.
+
     """
-    text_to_revise: str
-    number_of_revisions: Optional[int] = 1
-    revision_types: Optional[list[RevisionType]] = [revision_type for revision_type in RevisionType]
-    creativity: Optional[conint (ge=0, le=100)] = 50
+    revision_types: Optional[list[RevisionType]] = [revision_type.value for revision_type in RevisionType]
+    creativity: Optional[conint(ge=0, le=100)] = 50
+    tone: Optional[Tone] = Tone.ASSERTIVE
 
-
-
-
-
-
-
-
-AI_JOB_DESCRIPTION = (
-    "revise text for me. In my instruction to revise text, I may specify any of the following instructions on how to revise the text: "
-    f"{[field for field in TextRevisorInstructions.__fields__.keys() if field in TextRevisorInstructions.__annotations__]}. "
-    f""
-
-
-)
-SYSTEM_PROMPT = SYSTEM_PROMPT_BASE.format(ai_purpose=AI_PURPOSE, ai_job_description=AI_JOB_DESCRIPTION)
-
+SYSTEM_PROMPT = TextRevisorInstructions.__doc__
 
 @docstring_parameter(ENDPOINT_NAME)
-class TextRevisorRequest(TextRevisorInstructions, BaseTemplateRequest):
+class TextRevisorRequest(TextRevisorInstructions):
     """
     **Define the model for the request body for {0} endpoint.**
 
     **Attributes:**
-        - text_to_revise: The text to revise. This can literally be any block of text.
+    * text_to_revise: The text to revise. This can literally be any block of text.
 
-    Inherit from BaseRequest:
+    **AI Instructions for this endpoint:**
+
     """
-    __doc__ += BaseTemplateRequest.__doc__
-    text_to_revise: str
+    __doc__ += TextRevisorInstructions.__doc__
+    text_to_revise: constr(min_length=1, max_length=4000)
 
 @docstring_parameter(ENDPOINT_NAME)
 class TextRevisorResponse(AIToolModel):
@@ -123,11 +109,10 @@ async def text_revisor_examples():
     """
     text_revisor_example = TextRevisorRequest(
         text_to_revise="This are some porrly written text. Its probaly needing to be revised in order to help it sound much more better.",
-        number_of_revisions=4,
+        number_of_revisions=3,
         revision_types=[RevisionType.SPELLING, RevisionType.GRAMMAR, RevisionType.SENTENCE_STRUCTURE, RevisionType.WORD_CHOICE, RevisionType.CONSISTENCY, RevisionType.PUNCTUATION],
         tone=Tone.ASSERTIVE,
         creativity=100,
-        freeform_command="The revised text should be combined into one sentence.",
     )
     example_response = TextRevisorExamplesResponse(
         example_names=["Badly Written Text"],
@@ -138,33 +123,19 @@ async def text_revisor_examples():
 
 @router.post(f"/{ENDPOINT_NAME}", response_model=TextRevisorResponse, status_code=status.HTTP_200_OK)
 async def text_revisor(text_revision_request: TextRevisorRequest, request: Request, response: Response):
-    """
-    Method uses openai model text-davinci-edit-001 to revise text.
-
-    The method takes a string of text and returns a revised version of the text. Optionally, 
-    the revision types can be specified. This method forwards text with options to openai for
-    processing. The response from openai is then returned to the client.
-
-    :param text_revision_request: Request containing text and options for revision.
-    """
+    """**Revises text using GPT-3.**"""
     logger.info(f"Received request for {ENDPOINT_NAME} endpoint.")
-    system_prompt = SYSTEM_PROMPT
-    system_prompt += f"{KEYWORDS_FOR_PROMPT['revision_types']}: {', '.join([rt.value for rt in text_revision_request.revision_types])}. "
-    system_prompt += f"{KEYWORDS_FOR_PROMPT['tone']}: {text_revision_request.tone.value}. "
-    system_prompt += f"{KEYWORDS_FOR_PROMPT['creativity']}: {text_revision_request.creativity}. "
-    system_prompt += f"{KEYWORDS_FOR_PROMPT['number_of_revisions']}: {text_revision_request.number_of_revisions}. "
-    if text_revision_request.freeform_command:
-        system_prompt += f"{KEYWORDS_FOR_PROMPT['freeform_command']}: {text_revision_request.freeform_command}. "
-    system_prompt += f"{KEYWORDS_FOR_PROMPT['text_to_revise']}: "
+    user_prompt = append_field_prompts_to_prompt(TextRevisorInstructions(**text_revision_request.dict()), BASE_USER_PROMPT_PREFIX)
 
+    user_prompt += f"\nHere is the text you should revise: {text_revision_request.text_to_revise}"
     uuid = request.headers.get(UUID_HEADER_NAME)
     user_chat = GPTTurboChat(
         role=Role.USER,
-        content=text_revision_request.text_to_revise
+        content=user_prompt
     )
     temperature = 0.2 + (0.7 * (text_revision_request.creativity / 100))
     chat_session = get_gpt_turbo_response(
-        system_prompt=system_prompt,
+        system_prompt=SYSTEM_PROMPT,
         chat_session=GPTTurboChatSession(messages=[user_chat]),
         frequency_penalty=0.0,
         presence_penalty=0.0,
@@ -178,8 +149,7 @@ async def text_revisor(text_revision_request: TextRevisorRequest, request: Reque
     update_user_token_count(uuid, latest_gpt_chat_model.token_count)
     latest_chat = latest_gpt_chat_model.content
 
-    revised_text_list = latest_chat.split(REVISION_RESPONSE_PREFIX)
-    revised_text_list = [sanitize_string(text) for text in revised_text_list if text.strip()]
+    revised_text_list = [sanitize_string(latest_chat)]
 
     response_model = TextRevisorResponse(
         revised_text_list=revised_text_list

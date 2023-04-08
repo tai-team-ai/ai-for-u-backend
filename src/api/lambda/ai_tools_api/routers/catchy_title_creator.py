@@ -28,7 +28,7 @@ from gpt_turbo import GPTTurboChatSession, GPTTurboChat, Role, get_gpt_turbo_res
 from utils import (
     AIToolModel,
     sanitize_string,
-    BaseTemplateRequest,
+    BaseAIInstructionModel,
     Tone,
     EXAMPLES_ENDPOINT_POSTFIX,
     docstring_parameter,
@@ -68,7 +68,7 @@ SYSTEM_PROMPT = (
 
 
 @docstring_parameter(ENDPOINT_NAME)
-class CatchyTitleCreatorRequest(BaseTemplateRequest):
+class CatchyTitleCreatorRequest(BaseAIInstructionModel):
     """
     **Define the model for the request body for {0} endpoint.**
     
@@ -82,10 +82,10 @@ class CatchyTitleCreatorRequest(BaseTemplateRequest):
     - creativity: The creativity of the title; where 0 is the least creative and 100 is the most creative
 
 
-    Inherit from BaseTemplateRequest:
+    Inherit from BaseAIInstructionModel:
     """
 
-    __doc__ += BaseTemplateRequest.__doc__
+    __doc__ += BaseAIInstructionModel.__doc__
     text: constr(min_length=1, max_length=10000)
     text_type: Optional[constr(min_length=1, max_length=50)] = "document"
     target_audience: Optional[constr(min_length=1, max_length=200)] = "public"

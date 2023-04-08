@@ -11,7 +11,7 @@ from enum import Enum
 from ai_tools_lambda_settings import AIToolsLambdaSettings
 from botocore.exceptions import ClientError
 from pydantic import BaseModel, constr, BaseSettings, Field
-from typing import Optional, Union
+from typing import Optional, Sequence, Union
 from dynamodb_models import UserDataTableModel
 from pynamodb.pagination import ResultIterator
 from pynamodb.models import Model
@@ -97,23 +97,45 @@ class RuntimeSettings(BaseSettings):
     days_before_resetting_token_count: dt.timedelta = dt.timedelta(days=1)
 
 
-class BaseTemplateRequest(AIToolModel):
+def get_names_of_fields_in_model_mapping(model: BaseModel) -> dict[str, str]:
+    """Get the names of the fields in the model mapping.
+
+    Args:
+        model: The model to get the names of the fields in the model mapping for.
+
+    Returns:
+        A dictionary mapping the field names in the model mapping to the field names in the model.
     """
-    **Base request for all templtates.**
-    
-    **Attributes:**
-    - freeform_command: This command allows the user to specify any command they would like, 
-        to be appended to the end of the prompt. This could be dangerous, but for now will allow 
-        it will help prevent bottlenecks in the users ability to use the templates
+    return {field.name: field.name for field in model.__fields__.values()}
+
+class BaseAIInstructionModel(AIToolModel):
     """
-    freeform_command: Optional[constr(min_length=0, max_length=200)] = ""
+    **Base for all AI Instructions.**
+
+    - tone: The tone of the AI. This is used to determine the tone of the AI's instructions. Each
+        class that inherits from this class should define the default tone for the AI and 
+        provide instructions on what the tone should impact in the the response.
+    """
     tone: Optional[Tone] = Tone.FORMAL
 
 
-SYSTEM_PROMPT_BASE = ("As an AI {ai_purpose}, your job is to {ai_job_description}. In addition to the above instructions, "
-    f"I may also provide you with additional commands specified by this list: {list(BaseTemplateRequest.__fields__.keys())}. "
-    "You should adhere to the instructions in this commands while maintaining your overall purpose of being an AI {ai_purpose}."
-)
+BASE_USER_PROMPT_PREFIX = "Hi! Here are the instructions for you to follow:\n"
+
+def append_field_prompts_to_prompt(model: BaseAIInstructionModel, base_prompt: str) -> str:
+    """
+    Append the fields in the model to the base prompt.
+
+    Args:
+        model: The model to append the fields to the base prompt for.
+        base_prompt: The base prompt to append the fields to.
+
+    Returns:
+        The base prompt with the fields appended to it.
+    """
+    for field_name, field_value in model.dict(by_alias=True).items():
+        if field_value:
+            base_prompt += f"{field_name}: {field_value}\n"
+    return base_prompt
 
 
 class ExamplesResponse(AIToolModel):
