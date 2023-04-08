@@ -21,6 +21,9 @@ from utils import (
     append_field_prompts_to_prompt,
     BASE_USER_PROMPT_PREFIX,
     Tone,
+    error_responses,
+    TOKEN_EXHAUSTED_JSON_RESPONSE,
+    TokensExhaustedException,
 )
 
 MAX_TOKENS_FROM_GPT_RESPONSE = 400
@@ -95,7 +98,7 @@ class TextRevisorExamplesResponse(ExamplesResponse):
 
 
 @docstring_parameter(ENDPOINT_NAME)
-@router.get(f"/{ENDPOINT_NAME}-{EXAMPLES_ENDPOINT_POSTFIX}", response_model=TextRevisorExamplesResponse, status_code=status.HTTP_200_OK)
+@router.get(f"/{ENDPOINT_NAME}-{EXAMPLES_ENDPOINT_POSTFIX}", response_model=TextRevisorExamplesResponse, responses=error_responses)
 async def text_revisor_examples():
     """
     **Get examples for the {0} endpoint.**
@@ -129,15 +132,18 @@ async def text_revisor(text_revision_request: TextRevisorRequest, request: Reque
         content=user_prompt
     )
     temperature = 0.2 + (0.7 * (text_revision_request.creativity / 100))
-    chat_session = get_gpt_turbo_response(
-        system_prompt=SYSTEM_PROMPT,
-        chat_session=GPTTurboChatSession(messages=[user_chat]),
-        frequency_penalty=0.0,
-        presence_penalty=0.0,
-        temperature=temperature,
-        uuid=uuid,
-        max_tokens=MAX_TOKENS_FROM_GPT_RESPONSE,
-    )
+    try:
+        chat_session = get_gpt_turbo_response(
+            system_prompt=SYSTEM_PROMPT,
+            chat_session=GPTTurboChatSession(messages=[user_chat]),
+            frequency_penalty=0.0,
+            presence_penalty=0.0,
+            temperature=temperature,
+            uuid=uuid,
+            max_tokens=MAX_TOKENS_FROM_GPT_RESPONSE,
+        )
+    except TokensExhaustedException:
+        return TOKEN_EXHAUSTED_JSON_RESPONSE
 
     latest_gpt_chat_model = chat_session.messages[-1]
     latest_chat = latest_gpt_chat_model.content
