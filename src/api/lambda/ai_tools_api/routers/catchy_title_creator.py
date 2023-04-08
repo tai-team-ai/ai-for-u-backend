@@ -58,7 +58,7 @@ TITLE_RESPONSE_PREFIX = "Title: "
 
 SYSTEM_PROMPT = (
     "As an AI catchy title generator, create engaging titles for the user's text based on their input. "
-    f"Consider the provided {KEYWORDS_FOR_PROMPT['text']}, {KEYWORDS_FOR_PROMPT['text_type']}, {KEYWORDS_FOR_PROMPT['target_audience']}, "
+    f"Consider the provided {KEYWORDS_FOR_PROMPT['text_type']}, {KEYWORDS_FOR_PROMPT['target_audience']}, "
     f"and {KEYWORDS_FOR_PROMPT['expected_tone']}. Include the {KEYWORDS_FOR_PROMPT['specific_keywords']} that MUST be incorporated in the titles. "
     "Generate the requested {KEYWORDS_FOR_PROMPT['num_titles']} number of titles, using the specified {KEYWORDS_FOR_PROMPT['creativity']} level. "
     "When not provided, assume a creativity level of 50 (0 least creative, 100 most creative). "
