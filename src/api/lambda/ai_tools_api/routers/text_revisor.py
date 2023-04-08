@@ -50,11 +50,8 @@ class TextRevisorInstructions(BaseAIInstructionModel):
     For each revision, only respond with the revision, nothing else (no explanations, not the original text, no comparisons between the original and the revised, etc.).
 
     **Instructions that I may provide you:**
-    * revision_types: The types of revisions that you should make to the text. The types of revisions that can be made are: {1}. Do not revise the text in anyway
-            that is not in this list. Use this list as a guide to what types of revisions you should make.
-    * creativity: The creativity of the revised text. Where 0 is the least creative and 100 is the most creative.
-        Further, a creativity closer to 0 signifies that the revisions should be made in a way that is as close to the original text as possible 
-        while a creativity closer to 100 signifies that you have more freedom to embellish the text.
+    * revision_types: The types of revisions that you should make to the text. The types of revisions that can be made are: {1}. Do not revise the text in anyway that is not in this list. Use this list as a guide to what types of revisions you should make.
+    * creativity: The creativity of the revised text. Where 0 is the least creative and 100 is the most creative. Further, a creativity closer to 0 signifies that the revisions should be made in a way that is as close to the original text as possible  while a creativity closer to 100 signifies that you have more freedom to embellish the text.
     * tone: The tone that you should use when revising the text. Here are the possible tones: {2}.
     """
     revision_types: Optional[list[RevisionType]] = [revision_type.value for revision_type in RevisionType]

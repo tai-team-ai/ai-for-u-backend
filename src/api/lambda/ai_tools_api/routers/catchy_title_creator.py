@@ -46,29 +46,24 @@ logger.setLevel(logging.DEBUG)
 router = APIRouter()
 
 ENDPOINT_NAME = AIToolsEndpointName.CATCHY_TITLE_CREATOR.value
-MAX_TOKENS_FROM_GPT_RESPONSE = 100
-TITLE_RESPONSE_PREFIX = "Title: "
+MAX_TOKENS_FROM_GPT_RESPONSE = 200
+TITLE_RESPONSE_PREFIX = "Generated Title:: "
 
 AI_PURPOSE = " ".join(ENDPOINT_NAME.split("-")).lower()
 @docstring_parameter(AI_PURPOSE, TITLE_RESPONSE_PREFIX, [tone.value for tone in Tone])
 class CatchyTitleCreatorInstructions(BaseAIInstructionModel):
     """You are an expert {0}. I will provide a text and should respond with a list of catchy titles for that text, nothing else.
 
-    For each title, only respond with the title, nothing else (no explanations, not the original text, no comparisons between the original and the revised, etc.).
-    For each title you should prefix each title with the string '{1}' to differentiate between the titles.
+    For each title, only respond with the title, nothing else. For each title you should prefix each title with the string '{1}' to differentiate between the titles.
     
     **Instructions that I may provide you:**
-    * text: The text to generate a catchy title for.
     * text_type: The type of text to generate a catchy title for (eg. book, article, song, documentary, public, social media post, etc.)
     * target_audience: The target audience for the text (eg. children, adults, teenagers, public, superiors, etc.)
     * tone: The expected tone of the titles you should generate. Here are the possible tones: {2}.
-    * specific_keywords_to_include: A list of specific keywords that MUST be included in the titles. If I provide keywords, you should include these in the title.
+    * specific_keywords_to_include: A list of specific keywords that you should include in every title that you generate.
     * num_titles: The number of titles to generate (As instructed above, prefix each title with the string '{1}' to differentiate between the titles).
-    * creativity: The creativity of the titles. Where 0 is the least creative and 100 is the most creative.
-        Further, a creativity closer to 0 signifies that the titles should be made in a way that is as close to the original text as possible
-        while a creativity closer to 100 signifies that you have more freedom to embellish the text.
+    * creativity: The creativity of the titles. Where 0 is the least creative and 100 is the most creative. Further, a creativity closer to 0 signifies that the titles should be made in a way that is as close to the original text as possible while a creativity closer to 100 signifies that you have more freedom to embellish the text.
     """
-    text: constr(min_length=1, max_length=10000)
     text_type: Optional[constr(min_length=1, max_length=50)] = "document"
     target_audience: Optional[constr(min_length=1, max_length=200)] = "public"
     tone: Optional[Tone] = Tone.INFORMAL
@@ -79,7 +74,7 @@ class CatchyTitleCreatorInstructions(BaseAIInstructionModel):
 SYSTEM_PROMPT = CatchyTitleCreatorInstructions.__doc__
 
 @docstring_parameter(ENDPOINT_NAME)
-class CatchyTitleCreatorRequest(BaseAIInstructionModel):
+class CatchyTitleCreatorRequest(CatchyTitleCreatorInstructions):
     """
     **Define the model for the request body for {0} endpoint.**
     
@@ -132,12 +127,11 @@ async def catchy_title_creator_examples():
     catchy_title_example = CatchyTitleCreatorRequest(
         text="This is an amazing text that I wrote. It is so amazing that I am going to write a catchy title for it.",
         target_audience="My boss",
-        expected_tone=Tone.WORRIED,
+        tone=Tone.FRIENDLY,
         num_titles=8,
         creativity=100,
         specific_keywords_to_include=["Best Title Ever", "Amazing Title", "Catchy Title"],
         text_type="document",
-        freeform_command="The titles all should be less than 50 characters long."
     )
     example_response = CatchyTitleCreatorExamplesReponse(
         example_names=["Catchy Title Example"],
@@ -170,9 +164,12 @@ async def catchy_title_creator(catchy_title_creator_request: CatchyTitleCreatorR
 
     latest_gpt_chat_model = chat_session.messages[-1]
     latest_chat = latest_gpt_chat_model.content
+    logger.info("Latest chat: %s", latest_chat)
     latest_chat = sanitize_string(latest_chat)
 
     titles = latest_chat.split(TITLE_RESPONSE_PREFIX)
+    titles = [title.strip() for title in titles if title.strip()]
 
     response_model = CatchyTitleCreatorResponse(titles=titles)
+    logger.info("Response model: %s", response_model)
     return response_model

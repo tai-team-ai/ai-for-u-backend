@@ -165,7 +165,7 @@ def get_gpt_turbo_response(
         tokens_for_request += chat.token_count
         prompt_messages.append(chat.dict(exclude={"token_count"}))
     can_user_make_request(uuid, tokens_for_request)
-
+    logger.info(prompt_messages)
     response = openai.ChatCompletion.create(
         model=GPT_MODEL,
         messages=prompt_messages,

@@ -132,8 +132,12 @@ def append_field_prompts_to_prompt(model: BaseAIInstructionModel, base_prompt: s
     Returns:
         The base prompt with the fields appended to it.
     """
-    for field_name, field_value in model.dict(by_alias=True).items():
+    for field_name, field_value in model.dict().items():
         if field_value:
+            if isinstance(field_value, list):
+                if isinstance(field_value[0], Enum):
+                    field_value = [field.value for field in field_value]
+                field_value = ", ".join(field_value)
             base_prompt += f"{field_name}: {field_value}\n"
     return base_prompt
 
