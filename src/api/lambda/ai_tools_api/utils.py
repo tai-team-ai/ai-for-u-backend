@@ -224,11 +224,12 @@ def docstring_parameter(*sub):
 
 def is_user_authenticated(uuid: UUID, user_token: str) -> bool:
     """Check if the user is authenticated."""
+    table_key = f"USER#{str(uuid)}"
     try:
-        nextjs_auth_table_model: NextJsAuthTableModel = NextJsAuthTableModel.get(str(uuid))
+        nextjs_auth_table_model: NextJsAuthTableModel = NextJsAuthTableModel.get(table_key, table_key)
         if nextjs_auth_table_model.access_token == user_token:
             return True
-    except UserDataTableModel.DoesNotExist: # pylint: disable=broad-except
+    except NextJsAuthTableModel.DoesNotExist: # pylint: disable=broad-except
         pass
     return False
 
