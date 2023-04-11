@@ -26,6 +26,7 @@ from routers import (
     sandbox_chatgpt,
     text_summarizer,
     feedback,
+    subscription,
 )
 from utils import (
     prepare_response,
@@ -146,6 +147,7 @@ def create_fastapi_app():
         cover_letter_writer.router,
         sandbox_chatgpt.router,
         feedback.router,
+        subscription.router,
     ] 
     initialize_openai()
     for router_ in routers:

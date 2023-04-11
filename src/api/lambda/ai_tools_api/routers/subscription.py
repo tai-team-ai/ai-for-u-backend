@@ -63,7 +63,7 @@ def subscription(request: Request, response: Response, subscription_request: Sub
     uuid = request.headers.get(UUID_HEADER_NAME)
     logger.info(f"Received request from user {uuid} for {ENDPOINT_NAME} endpoint.")
     user_data_table_model = UserDataTableModel(
-        hash_key=request.headers.get(UUID_HEADER_NAME),
+        uuid,
         email_address=subscription_request.email_address,
         is_subscribed=True,
     )
