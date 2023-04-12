@@ -129,7 +129,7 @@ def create_fastapi_app():
             uuid = UUID(uuid_str, version=4)
         except Exception as e: # pylint: disable=broad-except
             if path not in allowed_paths:
-                raise UserTokenNotFoundError("User token not found.") from e
+                raise UserTokenNotFoundError("User UUID not found.") from e
         user_token = request.headers.get(USER_TOKEN_HEADER_NAME, None)
         authenticated = False
         if user_token is not None:

@@ -8,6 +8,7 @@ import openai
 import boto3
 from uuid import UUID
 from enum import Enum
+import jwt
 from ai_tools_lambda_settings import AIToolsLambdaSettings
 from botocore.exceptions import ClientError
 from pydantic import BaseModel, constr, BaseSettings, Field
@@ -22,6 +23,11 @@ logger.setLevel(logging.DEBUG)
 lambda_settings = AIToolsLambdaSettings()
 
 
+AUTHENTICATED_USER_ENV_VAR_NAME = "AUTHENTICATED_USER"
+UUID_HEADER_NAME = "UUID"
+USER_TOKEN_HEADER_NAME = "JWT"
+EXAMPLES_ENDPOINT_POSTFIX = "examples"
+DELIMITER_SEQUENCE = "%!%!%"
 
 class TokensExhaustedResponse(BaseModel):
     """Define the model for the client error response."""
@@ -45,11 +51,6 @@ TOKEN_EXHAUSTED_JSON_RESPONSE = JSONResponse(
 )
 
 
-AUTHENTICATED_USER_ENV_VAR_NAME = "AUTHENTICATED_USER"
-UUID_HEADER_NAME = "UUID"
-USER_TOKEN_HEADER_NAME = "Token"
-EXAMPLES_ENDPOINT_POSTFIX = "examples"
-DELIMITER_SEQUENCE = "%!%!%"
 
 class UserTokenNotFoundError(Exception):
     """User token not found in request headers."""
@@ -154,7 +155,7 @@ class ExamplesResponse(AIToolModel):
 
 def initialize_openai():
     """Initialize OpenAI."""
-    secret_ = ast.literal_eval(get_secret(lambda_settings.external_api_secret_name, "us-west-2"))
+    secret_ = get_secret(lambda_settings.external_api_secret_name, "us-west-2")
     openai.organization = secret_.get(lambda_settings.api_endpoint_secret_key_name)
     openai.api_key = secret_.get(lambda_settings.api_key_secret_key_name)
 
@@ -222,16 +223,41 @@ def docstring_parameter(*sub):
     return dec
 
 
-def is_user_authenticated(uuid: UUID, user_token: str) -> bool:
-    """Check if the user is authenticated."""
+def get_user_uuid_from_jwt_token(jwt_token: str) -> UUID:
+    """Get the user's UUID from the JWT token."""
+    jwt_secret = get_secret(lambda_settings.jwt_secret_name, "us-west-2")
+    jwt_private_key = jwt_secret.get(lambda_settings.jwt_secret_key_name)
+    header_data = jwt.get_unverified_header(jwt_token)
+    jwt_payload = jwt.decode(jwt_token, jwt_private_key, algorithms=[header_data["alg"]])
+    return UUID(jwt_payload[UUID_HEADER_NAME])
+
+
+def is_user_authenticated(uuid: UUID, user_jwt_token: str) -> bool:
+    """
+    Check if the user is authenticated.
+
+    For a user to be authenticated, the UUID in the JWT token must match the UUID in the request
+    AND the token in the JWT token must match the token in the database.
+
+    Args:
+        uuid: The UUID of the user (from the header in the request).
+        user_jwt_token: The JWT token of the user (from the header in the request).
+    
+    Returns:
+        True if the user is authenticated, False otherwise.
+    """
+    jwt_uuid = get_user_uuid_from_jwt_token(user_jwt_token)
+    if uuid != jwt_uuid:
+        return False
     table_key = f"USER#{str(uuid)}"
+    nextjs_auth_table_model: NextJsAuthTableModel = None
     try:
         nextjs_auth_table_model: NextJsAuthTableModel = NextJsAuthTableModel.get(table_key, table_key)
-        if nextjs_auth_table_model.access_token == user_token:
-            return True
     except NextJsAuthTableModel.DoesNotExist: # pylint: disable=broad-except
-        pass
-    return False
+        return False
+    if UUID(nextjs_auth_table_model.pk) != uuid:
+        return False
+    return True
 
 
 def does_user_have_enough_tokens_to_make_request(user_uuid: UUID, expected_token_count: int) -> bool:
