@@ -48,7 +48,9 @@ lambda_settings = AIToolsLambdaSettings(
     openai_lambda_id="ai_tools_lambda",
     external_api_secret_name="openai/apikey",
     api_endpoint_secret_key_name="openai_org_id",
-    api_key_secret_key_name="openai_api_key"
+    api_key_secret_key_name="openai_api_key",
+    jwt_secret_name="jwt-key",
+    jwt_secret_key_name="key",
 )
 api_gateway_settings = APIGatewaySettings(
     openai_route_prefix="ai-for-u",
