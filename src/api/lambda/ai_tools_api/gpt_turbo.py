@@ -159,12 +159,12 @@ def get_gpt_turbo_response(
     # This line counts the tokens for the last user message and adds it to the chat session
     user_prompt_token_count = count_tokens(chat_session.messages[-1].content)
     chat_session.messages[-1].token_count = user_prompt_token_count
-    update_user_token_count(uuid, user_prompt_token_count + system_token_count)
     chat_session = truncate_chat_session(chat_session, tokens_for_request)
     for chat in chat_session.messages:
         tokens_for_request += chat.token_count
         prompt_messages.append(chat.dict(exclude={"token_count"}))
     can_user_make_request(uuid, tokens_for_request)
+    update_user_token_count(uuid, user_prompt_token_count + system_token_count)
     logger.info(prompt_messages)
     response = openai.ChatCompletion.create(
         model=GPT_MODEL,

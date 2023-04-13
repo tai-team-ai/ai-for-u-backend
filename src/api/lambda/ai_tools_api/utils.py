@@ -1,5 +1,6 @@
-import ast
 import datetime as dt
+import ast
+import json
 import logging
 from urllib3 import response
 from fastapi import Response, Request, status
@@ -26,6 +27,7 @@ lambda_settings = AIToolsLambdaSettings()
 AUTHENTICATED_USER_ENV_VAR_NAME = "AUTHENTICATED_USER"
 UUID_HEADER_NAME = "UUID"
 USER_TOKEN_HEADER_NAME = "JWT"
+JWT_PAYLOAD_ID_FIELD_NAME = "sub"
 EXAMPLES_ENDPOINT_POSTFIX = "examples"
 DELIMITER_SEQUENCE = "%!%!%"
 
@@ -201,7 +203,9 @@ def get_secret(secret_name: str, region: str) -> dict:
         # https://docs.aws.amazon.com/secretsmanager/latest/apireference/API_GetSecretValue.html
         raise e
     # Decrypts secret using the associated KMS key.
-    return get_secret_value_response['SecretString']
+    # convert the response to a dictionary
+    secret_dict = json.loads(get_secret_value_response['SecretString'])
+    return secret_dict
 
 
 def update_user_token_count(user_uuid: UUID, token_count: int) -> None:
@@ -229,7 +233,10 @@ def get_user_uuid_from_jwt_token(jwt_token: str) -> UUID:
     jwt_private_key = jwt_secret.get(lambda_settings.jwt_secret_key_name)
     header_data = jwt.get_unverified_header(jwt_token)
     jwt_payload = jwt.decode(jwt_token, jwt_private_key, algorithms=[header_data["alg"]])
-    return UUID(jwt_payload[UUID_HEADER_NAME])
+    uuid = jwt_payload.get(JWT_PAYLOAD_ID_FIELD_NAME, None)
+    if not uuid:
+        raise ValueError("No UUID in JWT payload.")
+    return UUID(uuid)
 
 
 def is_user_authenticated(uuid: UUID, user_jwt_token: str) -> bool:
@@ -251,11 +258,14 @@ def is_user_authenticated(uuid: UUID, user_jwt_token: str) -> bool:
         return False
     table_key = f"USER#{str(uuid)}"
     nextjs_auth_table_model: NextJsAuthTableModel = None
+    logger.info(table_key)
     try:
         nextjs_auth_table_model: NextJsAuthTableModel = NextJsAuthTableModel.get(table_key, table_key)
+        logger.info(nextjs_auth_table_model)
     except NextJsAuthTableModel.DoesNotExist: # pylint: disable=broad-except
         return False
-    if UUID(nextjs_auth_table_model.pk) != uuid:
+    uuid_str = nextjs_auth_table_model.pk.split("#")[1]
+    if UUID(uuid_str) != uuid:
         return False
     return True
 

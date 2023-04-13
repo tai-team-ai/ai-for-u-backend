@@ -135,6 +135,7 @@ def create_fastapi_app():
         if user_token is not None:
             authenticated = is_user_authenticated(uuid, user_token)
         os.environ[AUTHENTICATED_USER_ENV_VAR_NAME] = str(authenticated)
+        logger.info(f"Authenticated: {authenticated}")
         response = await call_next(request)
         prepare_response(response, request)
         return response
