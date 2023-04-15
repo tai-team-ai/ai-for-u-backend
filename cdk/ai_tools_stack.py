@@ -139,7 +139,7 @@ class AIToolsStack(Stack):
             layers=[self.create_dependencies_layer(id_, path_to_requirements)],
             timeout=Duration.seconds(30),
             role=role,
-            memory_size=1024,
+            memory_size=448,
             ephemeral_storage_size=Size.mebibytes(512),
         )
         return function

@@ -94,8 +94,8 @@ class RuntimeSettings(BaseSettings):
     """Define the runtime settings for the runtime session."""
 
     authenticated: bool = Field(..., env=AUTHENTICATED_USER_ENV_VAR_NAME)
-    authenticate_user_daily_usage_token_limit: int = 15000
-    non_authenticate_user_daily_usage_token_limit: int = 7500
+    authenticate_user_daily_usage_token_limit: int = 8000
+    non_authenticate_user_daily_usage_token_limit: int = 2000
     allowed_token_overflow: int = 1000
     days_before_resetting_token_count: dt.timedelta = dt.timedelta(days=1)
 
