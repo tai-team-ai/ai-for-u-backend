@@ -102,7 +102,7 @@ We offer a competitive salary and benefits package, as well as ongoing professio
 AI_PURPOSE = " ".join(ENDPOINT_NAME.split("-")).lower()
 @docstring_parameter(AI_PURPOSE, [tone.value for tone in Tone])
 class CoverLetterWriterInsructions(BaseAIInstructionModel):
-    """You are an expert {0}. I will provide a resume, job posting, and company name (if given) to write a cover letter for.
+    """You are an expert {0}. I will provide a resume, job posting, and company name (if given) to write a cover letter for. You should respond with the cover letter and nothing else.
 
     I will also provide a list of skills to highlight from the resume. You should respond with a cover letter that is tailored to the job posting and company, highlights the my skills, and demonstrates enthusiasm for the company and role.
 
