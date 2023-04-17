@@ -3,7 +3,7 @@ import sys
 import os
 from typing import Optional, List
 from pathlib import Path
-from pydantic import constr
+from pydantic import constr, Field
 from fastapi import APIRouter, Request, Response, status
 sys.path.append(Path(__file__).parent / "../utils")
 sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), "../gpt_turbo"))
@@ -110,10 +110,25 @@ class CoverLetterWriterInsructions(BaseAIInstructionModel):
     * tone: The tone that you should use when writing the cover letter. Here are the possible tones: {1}.
     * skills_to_highlight_from_resume: The skills to highlight from the resume. If this is not provided, you should highlight the skills that you think are most relevant to the job posting.
     """
-    job_posting: constr(min_length=1, max_length=10000)
-    company_name: Optional[constr(min_length=1, max_length=50)]
-    skills_to_highlight_from_resume: Optional[constr(min_length=1, max_length=1000)]
-    tone: Optional[Tone] = Tone.ASSERTIVE
+    job_posting: constr(min_length=1, max_length=10000) = Field(
+        ...,
+        title="Job Posting",
+        description="The job posting to generate a cover letter for.",
+    )
+    company_name: Optional[constr(min_length=1, max_length=50)] = Field(
+        title="Company Name",
+        description="The name of the company you are applying to.",
+    )
+    skills_to_highlight_from_resume: constr(min_length=1, max_length=1000) = Field(
+        ...,
+        title="Skills to Highlight from Resume",
+        description="The skills to highlight form your resume. What's your best skills?",
+    )
+    tone: Optional[Tone] = Field(
+        default=Tone.ASSERTIVE,
+        title="Tone of the Cover Letter",
+        description="The tone used when writing the cover letter.",
+    )
 
 SYSTEM_PROMPT = CoverLetterWriterInsructions.__doc__
 
@@ -132,7 +147,11 @@ class CoverLetterWriterRequest(CoverLetterWriterInsructions):
     """
     
     __doc__ += CoverLetterWriterInsructions.__doc__
-    resume: constr(min_length=1, max_length=10000)
+    resume: constr(min_length=1, max_length=10000) = Field(
+        ...,
+        title="Resume",
+        description="Your resume. Don't worry too much about formatting.",
+    )
 
 
 
