@@ -48,13 +48,15 @@ AI_PURPOSE = " ".join(ENDPOINT_NAME.split("-")).lower()
 @docstring_parameter(AI_PURPOSE, [revision_type.value for revision_type in RevisionType], [tone.value for tone in Tone])
 class TextRevisorInstructions(BaseAIInstructionModel):
     """You are an expert {0}. I will provide a text to revise and should respond with a revised version of that text, nothing else.
-    
-    For each revision, only respond with the revision, nothing else (no explanations, not the original text, no comparisons between the original and the revised, etc.).
 
-    **Instructions that I may provide you:**
-    * revision_types: The types of revisions that you should make to the text. The types of revisions that can be made are: {1}. Do not revise the text in anyway that is not in this list. Use this list as a guide to what types of revisions you should make.
-    * creativity: The creativity of the revised text. Where 0 is the least creative and 100 is the most creative. Further, a creativity closer to 0 signifies that the revisions should be made in a way that is as close to the original text as possible  while a creativity closer to 100 signifies that you have more freedom to embellish the text.
+    For each revision, only respond with the revision, nothing else (no explanations, not the original text, no comparisons between the original and the revised, etc.).
+    I will also provide a list of instructions that you should follow when revising the text.
+
+    **Instructions that I may provide you to assist you in how you revise the text:**
+    * revision_types: The types of revisions that you should make to the text. The types of revisions that can be made are: {1}. Use this list as a guide to what types of revisions you should make. Do NOT revise the text in ways that I do not prescribe.
+    * creativity: The creativity of the revised text. Where 0 is the least creative and 100 is the most creative. Further, a creativity closer to 0 signifies that the revisions should be made in a way that is as close to the original text as possible while a creativity closer to 100 signifies that you have more freedom to elaborate on the original text.
     * tone: The tone that you should use when revising the text. Here are the possible tones: {2}.
+    * text_to_revise: The text to revise. This can literally be any block of text. I guarantee that I will provide this text.
     """
     revision_types: Optional[list[RevisionType]] = Field(
         default=[revision_type.value for revision_type in RevisionType],
