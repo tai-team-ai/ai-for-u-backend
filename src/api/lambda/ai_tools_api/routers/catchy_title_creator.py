@@ -14,7 +14,7 @@ Attributes:
     catchy_title_creator (function): Post endpoint for the lambda function.
 """
 
-from pydantic import constr, conint
+from pydantic import constr, conint, Field
 from fastapi import APIRouter, Response, status, Request
 from typing import Optional, List
 from pathlib import Path
@@ -66,12 +66,36 @@ class CatchyTitleCreatorInstructions(BaseAIInstructionModel):
     * num_titles: The number of titles to generate (As instructed above, prefix each title with the string '{1}' to differentiate between the titles).
     * creativity: The creativity of the titles. Where 0 is the least creative and 100 is the most creative. Further, a creativity closer to 0 signifies that the titles should be made in a way that is as close to the original text as possible while a creativity closer to 100 signifies that you have more freedom to embellish the text.
     """
-    text_type: Optional[constr(min_length=1, max_length=50)] = "document"
-    target_audience: Optional[constr(min_length=1, max_length=200)] = "public"
-    tone: Optional[Tone] = Tone.INFORMAL
-    specific_keywords_to_include: Optional[list[constr(min_length=1, max_length=20)]] = []
-    num_titles: Optional[conint(ge=1, le=10)] = 3
-    creativity: Optional[conint(ge=0, le=100)] = 50
+    text_type: Optional[constr(min_length=1, max_length=50)] = Field(
+        "document",
+        title="What's the Title For?",
+        description="(eg. book, company, coffee shop, song, documentary, social media post, etc.)"
+    )
+    target_audience: Optional[constr(min_length=1, max_length=200)] = Field(
+        "public",
+        title="Target Audience",
+        description="The target audience for the title (e.g. children, adults, teenagers, public, superiors, etc.)"
+    )
+    tone: Optional[Tone] = Field(
+        Tone.INFORMAL,
+        title="Tone",
+        description="The expected tone of the generated titles."
+    )
+    specific_keywords_to_include: Optional[List[constr(min_length=1, max_length=20)]] = Field(
+        [],
+        title="Keywords to Include in Titles",
+        description="(e.g. 'how to', 'best', 'top', 'ultimate', 'ultimate guide', etc.)"
+    )
+    num_titles: Optional[conint(ge=1, le=10)] = Field(
+        3,
+        title="Number of Titles to Create",
+        description="The number of titles that you want to generate."
+    )
+    creativity: Optional[conint(ge=0, le=100)] = Field(
+        50,
+        title="Creativity (0 = Least Creative, 100 = Most Creative)",
+        description="The creativity of the titles. More creativity may be more inspiring but less accurate while less creativity may be more accurate but less inspiring."
+    )
 
 SYSTEM_PROMPT = CatchyTitleCreatorInstructions.__doc__
 
@@ -88,7 +112,12 @@ class CatchyTitleCreatorRequest(CatchyTitleCreatorInstructions):
     """
 
     __doc__ += BaseAIInstructionModel.__doc__
-    text: constr(min_length=1, max_length=10000)
+    text: constr(min_length=1, max_length=10000) = Field(
+        ...,
+        title="Description for the Titles (if generating titles for something written, this should be the text)",
+        description="This can be the text you are generating titles for, or if you are generating titles for something else, you can describe what you are generating titles for. Example -> Coffee Shop, Company Name, etc."
+    )
+        
 
 
 
