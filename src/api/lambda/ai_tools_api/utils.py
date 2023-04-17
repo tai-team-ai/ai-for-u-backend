@@ -119,7 +119,11 @@ class BaseAIInstructionModel(AIToolModel):
         class that inherits from this class should define the default tone for the AI and 
         provide instructions on what the tone should impact in the the response.
     """
-    tone: Optional[Tone] = Tone.FORMAL
+    tone: Optional[Tone] = Field(
+        default=Tone.FORMAL,
+        title="Tone of the Response",
+        description="The tone of the writing in the response.",
+    )
 
 
 BASE_USER_PROMPT_PREFIX = "Hi! Here are the instructions for you to follow:\n"
