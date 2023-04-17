@@ -9,6 +9,7 @@ from utils import (
     docstring_parameter,
     TokensExhaustedException,
     update_user_token_count,
+    sanitize_string,
 )
 
 
@@ -159,6 +160,7 @@ def get_gpt_turbo_response(
     # This line counts the tokens for the last user message and adds it to the chat session
     user_prompt_token_count = count_tokens(chat_session.messages[-1].content)
     chat_session.messages[-1].token_count = user_prompt_token_count
+    chat_session.messages[-1].content = sanitize_string(chat_session.messages[-1].content)
     chat_session = truncate_chat_session(chat_session, tokens_for_request)
     for chat in chat_session.messages:
         tokens_for_request += chat.token_count
