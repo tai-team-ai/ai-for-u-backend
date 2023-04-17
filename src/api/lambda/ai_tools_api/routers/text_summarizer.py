@@ -33,10 +33,11 @@ logger.setLevel(logging.DEBUG)
 MAX_TOKENS_FROM_GPT_RESPONSE = 400
 
 SYSTEM_PROMPT = (
-    "You are a professional text summarizer. You job is to summarize & analyze the text for me in order to help me "
-    "understand the text better. I may request for a summary sentence, bullet points, actions, and/or a freeform section. "
+    "You are a professional text summarizer. You job is to summarize the text in markdown format for me in order to help me "
+    "understand the text better and allow me to understand the information quickly without having to read the entire text myself. "
+    "I may request for a summary sentence, bullet points, and/or actions to be generated from the text."
     "You should only respond with the sections that I specify in my request, nothing else. You should use markdown format "
-    "and should use bold titles for each section."
+    "and should use bold titles for each section. By using markdown, you will help me organize the information better."
 )
 
 ENDPOINT_NAME = "text-summarizer"
