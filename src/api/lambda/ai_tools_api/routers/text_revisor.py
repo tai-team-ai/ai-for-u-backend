@@ -4,7 +4,7 @@ import sys
 from typing import List, Optional
 from fastapi import APIRouter, Response, status, Request
 from enum import Enum
-from pydantic import conint, constr
+from pydantic import conint, constr, Field
 sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), "../utils"))
 sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), "../gpt_turbo"))
 from gpt_turbo import GPTTurboChatSession, GPTTurboChat, Role, get_gpt_turbo_response
@@ -56,9 +56,21 @@ class TextRevisorInstructions(BaseAIInstructionModel):
     * creativity: The creativity of the revised text. Where 0 is the least creative and 100 is the most creative. Further, a creativity closer to 0 signifies that the revisions should be made in a way that is as close to the original text as possible  while a creativity closer to 100 signifies that you have more freedom to embellish the text.
     * tone: The tone that you should use when revising the text. Here are the possible tones: {2}.
     """
-    revision_types: Optional[list[RevisionType]] = [revision_type.value for revision_type in RevisionType]
-    creativity: Optional[conint(ge=0, le=100)] = 50
-    tone: Optional[Tone] = Tone.ASSERTIVE
+    revision_types: Optional[list[RevisionType]] = Field(
+        default=[revision_type.value for revision_type in RevisionType],
+        title="Revision Types",
+        description="The types of revisions that you should make to the text. This is helpful if you don't want a ton of changes made to your writing.",
+    )
+    creativity: Optional[conint(ge=0, le=100)] = Field(
+        50,
+        title="Creativity (0 = Least Creative, 100 = Most Creative)",
+        description="The creativity of the revision. More creativity tends to be more similar to the original text while less creativity tends to be more similar to the original text.",
+    )
+    tone: Optional[Tone] = Field(
+        default=Tone.FORMAL,
+        title="Tone of the Revision",
+        description="The tone used when making the revisions to the text.",
+    )
 
 SYSTEM_PROMPT = TextRevisorInstructions.__doc__
 
@@ -74,7 +86,11 @@ class TextRevisorRequest(TextRevisorInstructions):
 
     """
     __doc__ += TextRevisorInstructions.__doc__
-    text_to_revise: constr(min_length=1, max_length=int(MAX_TOKENS_FROM_GPT_RESPONSE / 3.5))
+    text_to_revise: constr(min_length=1, max_length=int(MAX_TOKENS_FROM_GPT_RESPONSE / 3.5)) = Field(
+        ...,
+        title="Text to Revise",
+        description="The text to revise. This can literally be any block of text. (e.g. blog post, article, song lyrics, etc.)",
+    )
 
 @docstring_parameter(ENDPOINT_NAME)
 class TextRevisorResponse(AIToolModel):
