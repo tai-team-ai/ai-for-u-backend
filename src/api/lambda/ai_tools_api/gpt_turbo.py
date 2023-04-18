@@ -13,7 +13,7 @@ from utils import (
 )
 
 
-MODEL_CONTEXT_WINDOW = 4096
+MODEL_CONTEXT_WINDOW = 2048
 GPT_MODEL = "gpt-3.5-turbo"
 MODEL_ENCODING = tiktoken.encoding_for_model(GPT_MODEL)
 
