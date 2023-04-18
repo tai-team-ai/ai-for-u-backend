@@ -7,7 +7,7 @@ from typing import Optional
 from fastapi import APIRouter, Response, status, Request
 import openai
 
-from pydantic import constr, Field
+from pydantic import conint, Field
 
 
 sys.path.append(Path(__file__, "../").absolute())
