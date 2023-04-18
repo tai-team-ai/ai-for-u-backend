@@ -6,7 +6,9 @@ import threading
 from typing import Optional
 from fastapi import APIRouter, Response, status, Request
 import openai
+
 from pydantic import constr, Field
+
 
 sys.path.append(Path(__file__, "../").absolute())
 from gpt_turbo import GPTTurboChatSession, GPTTurboChat, Role, get_gpt_turbo_response
@@ -67,12 +69,12 @@ class TextSummarizerRequest(BaseAIInstructionModel):
         title="Include Summary Sentence",
         description="Whether or not to include a summary sentence in the response.",
     )
-    number_of_bullets: Optional[int] = Field(
+    number_of_bullets: Optional[conint(ge=0, le=8)] = Field(
         default=3,
         title="Number of Bullets",
         description="The number of bullet points to include in the response.",
     )
-    number_of_action_items: Optional[int] = Field(
+    number_of_action_items: Optional[conint(ge=0, le=8)] = Field(
         default=None,
         title="Number of Action Items",
         description="The number of action items to include in the response. Action items are often applicable for meeting notes, lectures, etc.",
