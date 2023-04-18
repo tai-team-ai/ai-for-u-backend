@@ -50,7 +50,7 @@ class TextRevisorInstructions(BaseAIInstructionModel):
     """You are an expert {0}. I will provide a text to revise and should respond with a revised version of that text, nothing else.
 
     For each revision, only respond with the revision, nothing else (no explanations, not the original text, no comparisons between the original and the revised, etc.).
-    I will also provide a list of instructions that you should follow when revising the text.
+    I will also provide a list of instructions that you should follow when revising the text to help you make the bets revision possible that i like.
 
     **Instructions that I may provide you to assist you in how you revise the text:**
     * revision_types: The types of revisions that you should make to the text. The types of revisions that can be made are: {1}. Use this list as a guide to what types of revisions you should make. Do NOT revise the text in ways that I do not prescribe.
