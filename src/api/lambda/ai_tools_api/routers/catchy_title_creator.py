@@ -14,7 +14,7 @@ Attributes:
     catchy_title_creator (function): Post endpoint for the lambda function.
 """
 
-from pydantic import constr, conint
+from pydantic import constr, conint, Field
 from fastapi import APIRouter, Response, status, Request
 from typing import Optional, List
 from pathlib import Path
@@ -49,29 +49,55 @@ router = APIRouter()
 
 ENDPOINT_NAME = AIToolsEndpointName.CATCHY_TITLE_CREATOR.value
 MAX_TOKENS_FROM_GPT_RESPONSE = 200
-TITLE_RESPONSE_PREFIX = "Generated Title:: "
 
 AI_PURPOSE = " ".join(ENDPOINT_NAME.split("-")).lower()
-@docstring_parameter(AI_PURPOSE, TITLE_RESPONSE_PREFIX, [tone.value for tone in Tone])
+@docstring_parameter(AI_PURPOSE, [tone.value for tone in Tone])
 class CatchyTitleCreatorInstructions(BaseAIInstructionModel):
-    """You are an expert {0}. I will provide a text and should respond with a list of catchy titles for that text, nothing else.
-
-    For each title, only respond with the title, nothing else. For each title you should prefix each title with the string '{1}' to differentiate between the titles.
+    """You are an expert {0}. I will provide a text and should respond with a list of catchy titles in markdown format, nothing else.
     
-    **Instructions that I may provide you:**
-    * text_type: The type of text to generate a catchy title for (eg. book, article, song, documentary, public, social media post, etc.)
-    * target_audience: The target audience for the text (eg. children, adults, teenagers, public, superiors, etc.)
-    * tone: The expected tone of the titles you should generate. Here are the possible tones: {2}.
-    * specific_keywords_to_include: A list of specific keywords that you should include in every title that you generate.
-    * num_titles: The number of titles to generate (As instructed above, prefix each title with the string '{1}' to differentiate between the titles).
-    * creativity: The creativity of the titles. Where 0 is the least creative and 100 is the most creative. Further, a creativity closer to 0 signifies that the titles should be made in a way that is as close to the original text as possible while a creativity closer to 100 signifies that you have more freedom to embellish the text.
+    I will provide instructions for you to follow to help you generate the titles. These instructions should be followed exactly in order to generate the best titles that you can and that i like.
+
+    For each title, only respond with the title, nothing else. You should use markdown format when returning the titles and should return them as a list.
+    
+    **Instructions that I may provide you in order to assist you in creating the titles for me:**
+    * type_of_title: This can literally be anything. (eg. book, company, coffee shop, song, documentary, social media post, etc.)
+    * target_audience: The target audience for the title (eg. children, adults, teenagers, public, superiors, etc.)
+    * tone: The expected tone of the titles you should generate. Here are the possible tones: {1}.
+    * specific_keywords_to_include: A list of specific keywords that you should include in the titles. These can help your title perform better for SEO (e.g. 'how to', 'best', 'top', 'ultimate', 'ultimate guide', etc.).
+    * num_titles: The number of titles to generate (As instructed above, please use markdown format when returning the titles as a list).
+    * creativity: The creativity of the titles. Where 0 is the least creative and 100 is the most creative. More creativity may be more inspiring but less accurate while less creativity may be more accurate but less inspiring.
+    * text_or_description: The text or description of what you are generating catchy titles for. For generating titles for text (e.g. books, articles, blogs, social media posts, songs, etc.), this should probably be the text. For other types of things, (e.g. coffee shop, company name, etc.) this should be a description of the thing you are generating catchy titles for.
     """
-    text_type: Optional[constr(min_length=1, max_length=50)] = "document"
-    target_audience: Optional[constr(min_length=1, max_length=200)] = "public"
-    tone: Optional[Tone] = Tone.INFORMAL
-    specific_keywords_to_include: Optional[list[constr(min_length=1, max_length=20)]] = []
-    num_titles: Optional[conint(ge=1, le=10)] = 3
-    creativity: Optional[conint(ge=0, le=100)] = 50
+    type_of_title: Optional[constr(min_length=1, max_length=50)] = Field(
+        ...,
+        title="What's the Title For?",
+        description="This can literally be anything. (eg. book, company, coffee shop, song, documentary, social media post, etc.)"
+    )
+    target_audience: Optional[constr(min_length=1, max_length=200)] = Field(
+        ...,
+        title="Target Audience",
+        description="The target audience for the title (e.g. children, adults, teenagers, public, superiors, etc.)"
+    )
+    tone: Optional[Tone] = Field(
+        default=Tone.INFORMAL,
+        title="Tone",
+        description="The expected tone of the generated titles."
+    )
+    specific_keywords_to_include: Optional[List[constr(min_length=1, max_length=20)]] = Field(
+        default=[],
+        title="Keywords to Include in Titles",
+        description="These can help your title perform better for SEO (e.g. 'how to', 'best', 'top', 'ultimate', 'ultimate guide', etc.)."
+    )
+    num_titles: Optional[conint(ge=1, le=10)] = Field(
+        default=3,
+        title="Number of Titles to Create",
+        description="The number of titles that you want to generate."
+    )
+    creativity: Optional[conint(ge=0, le=100)] = Field(
+        50,
+        title="Creativity (0 = Least Creative, 100 = Most Creative)",
+        description="The creativity of the titles. More creativity may be more inspiring but less accurate while less creativity may be more accurate but less inspiring."
+    )
 
 SYSTEM_PROMPT = CatchyTitleCreatorInstructions.__doc__
 
@@ -88,7 +114,12 @@ class CatchyTitleCreatorRequest(CatchyTitleCreatorInstructions):
     """
 
     __doc__ += BaseAIInstructionModel.__doc__
-    text: constr(min_length=1, max_length=10000)
+    text_or_description: constr(min_length=1, max_length=10000) = Field(
+        ...,
+        title="Description of What you are Generating Titles for (if generating titles for something written, this should be the text)",
+        description="This can be the text you are generating titles for, or if you are generating titles for something else, you can describe what you are generating titles for. Example -> Coffee Shop, Company Name, etc."
+    )
+        
 
 
 
@@ -133,7 +164,7 @@ async def catchy_title_creator_examples():
         num_titles=8,
         creativity=100,
         specific_keywords_to_include=["Best Title Ever", "Amazing Title", "Catchy Title"],
-        text_type="document",
+        type_of_title="Coffee Shop Name",
     )
     example_response = CatchyTitleCreatorExamplesReponse(
         example_names=["Catchy Title Example"],
@@ -148,7 +179,7 @@ async def catchy_title_creator(catchy_title_creator_request: CatchyTitleCreatorR
     logger.info(f"Received request for {ENDPOINT_NAME} endpoint.")
     user_prompt = append_field_prompts_to_prompt(CatchyTitleCreatorInstructions(**catchy_title_creator_request.dict()), BASE_USER_PROMPT_PREFIX)
 
-    user_prompt += f"\nHere is the text you should create catchy titles for: {catchy_title_creator_request.text}"
+    user_prompt += f"\nHere is the text/description of what you should create catchy titles for: {catchy_title_creator_request.text_or_description}"
     uuid = request.headers.get(UUID_HEADER_NAME)
     user_chat = GPTTurboChat(
         role=Role.USER,
@@ -172,9 +203,6 @@ async def catchy_title_creator(catchy_title_creator_request: CatchyTitleCreatorR
     logger.info("Latest chat: %s", latest_chat)
     latest_chat = sanitize_string(latest_chat)
 
-    titles = latest_chat.split(TITLE_RESPONSE_PREFIX)
-    titles = [title.strip() for title in titles if title.strip()]
-
-    response_model = CatchyTitleCreatorResponse(titles=titles)
+    response_model = CatchyTitleCreatorResponse(titles=latest_chat)
     logger.info("Returning response: %s", response_model)
     return response_model

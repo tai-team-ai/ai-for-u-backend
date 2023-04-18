@@ -6,7 +6,9 @@ import threading
 from typing import Optional
 from fastapi import APIRouter, Response, status, Request
 import openai
-from pydantic import conint, Field
+
+from pydantic import constr, Field
+
 
 sys.path.append(Path(__file__, "../").absolute())
 from gpt_turbo import GPTTurboChatSession, GPTTurboChat, Role, get_gpt_turbo_response
@@ -33,10 +35,11 @@ logger.setLevel(logging.DEBUG)
 MAX_TOKENS_FROM_GPT_RESPONSE = 400
 
 SYSTEM_PROMPT = (
-    "You are a professional text summarizer. You job is to summarize & analyze the text for me in order to help me "
-    "understand the text better. I may request for a summary sentence, bullet points, actions, and/or a freeform section. "
+    "You are a professional text summarizer. You job is to summarize the text in markdown format for me in order to help me "
+    "understand the text better and allow me to understand the information quickly without having to read the entire text myself. "
+    "I may request for a summary sentence, bullet points, and/or actions to be generated from the text."
     "You should only respond with the sections that I specify in my request, nothing else. You should use markdown format "
-    "and should use bold titles for each section."
+    "and should use bold titles for each section. By using markdown, you will help me organize the information better."
 )
 
 ENDPOINT_NAME = "text-summarizer"
@@ -59,7 +62,7 @@ class TextSummarizerRequest(BaseAIInstructionModel):
     text_to_summarize: str = Field(
         ...,
         title="Text to Summarize",
-        description="The text that you wanted summarized. (e.g. articles, notes, transcript, etc.)",
+        description="The text that you wanted summarized. (e.g. articles, notes, trnascripts, etc.)",
     )
     include_summary_sentence: Optional[bool] = Field(
         default=True,

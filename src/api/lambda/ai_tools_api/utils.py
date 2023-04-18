@@ -119,7 +119,11 @@ class BaseAIInstructionModel(AIToolModel):
         class that inherits from this class should define the default tone for the AI and 
         provide instructions on what the tone should impact in the the response.
     """
-    tone: Optional[Tone] = Tone.FORMAL
+    tone: Optional[Tone] = Field(
+        default=Tone.FORMAL,
+        title="Tone of the Response",
+        description="The tone of the writing in the response.",
+    )
 
 
 BASE_USER_PROMPT_PREFIX = "Hi! Here are the instructions for you to follow:\n"
@@ -135,6 +139,7 @@ def append_field_prompts_to_prompt(model: BaseAIInstructionModel, base_prompt: s
     Returns:
         The base prompt with the fields appended to it.
     """
+    base_prompt += "\n"
     for field_name, field_value in model.dict().items():
         if field_value:
             if isinstance(field_value, list):
