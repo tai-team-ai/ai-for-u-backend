@@ -9,7 +9,7 @@ import openai
 import boto3
 from uuid import UUID
 from enum import Enum
-import jwt
+from jose import jwt
 from ai_tools_lambda_settings import AIToolsLambdaSettings
 from botocore.exceptions import ClientError
 from pydantic import BaseModel, constr, BaseSettings, Field
@@ -237,7 +237,7 @@ def get_user_uuid_from_jwt_token(jwt_token: str) -> UUID:
     jwt_secret = get_secret(lambda_settings.jwt_secret_name, "us-west-2")
     jwt_private_key = jwt_secret.get(lambda_settings.jwt_secret_key_name)
     header_data = jwt.get_unverified_header(jwt_token)
-    jwt_payload = jwt.decode(jwt_token, jwt_private_key, algorithms=[header_data["alg"]])
+    jwt_payload = jwt.decode(jwt_token, jwt_private_key, algorithms=[header_data["enc"]])
     uuid = jwt_payload.get(JWT_PAYLOAD_ID_FIELD_NAME, None)
     if not uuid:
         raise ValueError("No UUID in JWT payload.")
