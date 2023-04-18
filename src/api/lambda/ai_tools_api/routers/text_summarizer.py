@@ -6,11 +6,7 @@ import threading
 from typing import Optional
 from fastapi import APIRouter, Response, status, Request
 import openai
-<<<<<<< Updated upstream
-from pydantic import constr
-=======
 from pydantic import conint, Field
->>>>>>> Stashed changes
 
 sys.path.append(Path(__file__, "../").absolute())
 from gpt_turbo import GPTTurboChatSession, GPTTurboChat, Role, get_gpt_turbo_response
@@ -60,16 +56,10 @@ class TextSummarizerRequest(BaseAIInstructionModel):
     Inherit from BaseAIInstructionModel:    
     """
     __doc__ += BaseAIInstructionModel.__doc__
-<<<<<<< Updated upstream
-    text_to_summarize: str
-    include_summary_sentence: Optional[bool] = True
-    number_of_bullets: Optional[int] = None
-    number_of_action_items: Optional[int] = None
-=======
     text_to_summarize: str = Field(
         ...,
         title="Text to Summarize",
-        description="The text that you wanted summarized. (e.g. articles, notes, trnascripts, etc.)",
+        description="The text that you wanted summarized. (e.g. articles, notes, transcript, etc.)",
     )
     include_summary_sentence: Optional[bool] = Field(
         default=True,
@@ -86,7 +76,6 @@ class TextSummarizerRequest(BaseAIInstructionModel):
         title="Number of Action Items",
         description="The number of action items to include in the response. Action items are often applicable for meeting notes, lectures, etc.",
     )
->>>>>>> Stashed changes
 
 
 
