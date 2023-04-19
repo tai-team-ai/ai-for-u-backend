@@ -1,15 +1,15 @@
 import datetime as dt
-import ast
 import json
 import logging
-from urllib3 import response
+from cryptography.hazmat.primitives import hashes, hmac
+from cryptography.hazmat.primitives.kdf.hkdf import HKDF
 from fastapi import Response, Request, status
 from fastapi.responses import JSONResponse
 import openai
 import boto3
 from uuid import UUID
 from enum import Enum
-from jose import jwt
+from jose import jwe
 from ai_tools_lambda_settings import AIToolsLambdaSettings
 from botocore.exceptions import ClientError
 from pydantic import BaseModel, constr, BaseSettings, Field
@@ -232,12 +232,24 @@ def docstring_parameter(*sub):
     return dec
 
 
+def get_derived_encryption_key(secret: str) -> bytes:
+    hkdf = HKDF(
+        algorithm=hashes.SHA256(),
+        length=32,
+        salt=b'',
+        info=b'NextAuth.js Generated Encryption Key',
+    )
+    derived_key = hkdf.derive(secret.encode())
+    return derived_key
+
 def get_user_uuid_from_jwt_token(jwt_token: str) -> UUID:
     """Get the user's UUID from the JWT token."""
     jwt_secret = get_secret(lambda_settings.jwt_secret_name, "us-west-2")
-    jwt_private_key = jwt_secret.get(lambda_settings.jwt_secret_key_name)
-    header_data = jwt.get_unverified_header(jwt_token)
-    jwt_payload = jwt.decode(jwt_token, jwt_private_key, algorithms=[header_data["enc"]])
+    jwt_key = jwt_secret.get(lambda_settings.jwt_secret_key_name)
+    jwt_key = get_derived_encryption_key(jwt_key)
+    jwt_payload = jwe.decrypt(jwt_token, jwt_key)
+    jwt_payload = jwt_payload.decode("utf-8")
+    jwt_payload = json.loads(jwt_payload)
     uuid = jwt_payload.get(JWT_PAYLOAD_ID_FIELD_NAME, None)
     if not uuid:
         raise ValueError("No UUID in JWT payload.")
@@ -259,18 +271,16 @@ def is_user_authenticated(uuid: UUID, user_jwt_token: str) -> bool:
         True if the user is authenticated, False otherwise.
     """
     jwt_uuid = get_user_uuid_from_jwt_token(user_jwt_token)
-    if uuid != jwt_uuid:
-        return False
-    table_key = f"USER#{str(uuid)}"
+    # if uuid != jwt_uuid:
+    #     return False
+    table_key = f"USER#{str(jwt_uuid)}"
     nextjs_auth_table_model: NextJsAuthTableModel = None
-    logger.info(table_key)
     try:
         nextjs_auth_table_model: NextJsAuthTableModel = NextJsAuthTableModel.get(table_key, table_key)
-        logger.info(nextjs_auth_table_model)
     except NextJsAuthTableModel.DoesNotExist: # pylint: disable=broad-except
         return False
     uuid_str = nextjs_auth_table_model.pk.split("#")[1]
-    if UUID(uuid_str) != uuid:
+    if UUID(uuid_str) != jwt_uuid:
         return False
     return True
 
