@@ -62,7 +62,7 @@ class TextSummarizerRequest(BaseAIInstructionModel):
     text_to_summarize: str = Field(
         ...,
         title="Text to Summarize",
-        description="The text that you wanted summarized. (e.g. articles, notes, trnascripts, etc.)",
+        description="The text that you wanted summarized. (e.g. articles, notes, transcripts, etc.)",
     )
     include_summary_sentence: Optional[bool] = Field(
         default=True,
@@ -75,7 +75,7 @@ class TextSummarizerRequest(BaseAIInstructionModel):
         description="The number of bullet points to include in the response.",
     )
     number_of_action_items: Optional[conint(ge=0, le=8)] = Field(
-        default=None,
+        default=0,
         title="Number of Action Items",
         description="The number of action items to include in the response. Action items are often applicable for meeting notes, lectures, etc.",
     )
