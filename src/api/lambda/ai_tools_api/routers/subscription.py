@@ -5,6 +5,7 @@ from pathlib import Path
 from fastapi import APIRouter, Request, Response, status
 from email_validator import validate_email, EmailNotValidError
 from pydantic import validator
+from pynamodb.models import Model
 
 router = APIRouter()
 
@@ -62,10 +63,10 @@ def subscription(request: Request, response: Response, subscription_request: Sub
     """
     uuid = request.headers.get(UUID_HEADER_NAME)
     logger.info(f"Received request from user {uuid} for {ENDPOINT_NAME} endpoint.")
-    user_data_table_model = UserDataTableModel(
-        uuid,
-        email_address=subscription_request.email_address,
-        is_subscribed=True,
-    )
-    user_data_table_model.save()
+    try:
+        user_data_model: UserDataTableModel = UserDataTableModel.get(uuid)
+    except (Model.DoesNotExist, StopIteration):
+        user_data_model = UserDataTableModel(uuid)
+    user_data_model.email_address.set(subscription_request.email_address)
+    user_data_model.is_subscribed.set(True)
     return {}
