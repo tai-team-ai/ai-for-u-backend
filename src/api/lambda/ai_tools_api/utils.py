@@ -219,14 +219,15 @@ def get_secret(secret_name: str, region: str) -> dict:
 
 
 def update_user_token_count(user_uuid: UUID, token_count: int) -> None:
+    action_list = []
     try:
         user_data_model: UserDataTableModel = UserDataTableModel.get(str(user_uuid))
-        user_data_model.cumulative_token_count + token_count
     except (Model.DoesNotExist, StopIteration):
-        user_data_model = UserDataTableModel(str(user_uuid), cumulative_token_count=token_count)
-        user_data_model.save()
+        user_data_model = UserDataTableModel(str(user_uuid))
+    action_list.append(UserDataTableModel.cumulative_token_count.add(token_count))
     if os.environ.get(AUTHENTICATED_USER_ENV_VAR_NAME, False):
-        user_data_model.is_authenticated_user = True
+        action_list.append(UserDataTableModel.is_authenticated_user.set(True))
+    user_data_model.update(actions=action_list)
 
 
 def docstring_parameter(*sub):

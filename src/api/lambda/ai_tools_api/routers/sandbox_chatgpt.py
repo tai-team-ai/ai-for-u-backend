@@ -137,12 +137,14 @@ def save_sandbox_chat_history(user_uuid: UUID, sandbox_chat_history: GPTChatHist
     token_count += sandbox_chat_history.messages[-2].token_count # add token count for system prompt
     chat_dict = sandbox_chat_history.dict()
     chat_dict["conversation_uuid"] = str(sandbox_chat_history.conversation_uuid)
+    action_list = []
     try:
         user_data_model: UserDataTableModel = UserDataTableModel.get(str(user_uuid))
-        user_data_model.cumulative_token_count + token_count
     except (Model.DoesNotExist, StopIteration):
-        user_data_model = UserDataTableModel(str(user_uuid), sandbox_chat_history=chat_dict, cumulative_token_count=token_count)
-        user_data_model.save()
+        user_data_model = UserDataTableModel(str(user_uuid))
+    action_list.append(UserDataTableModel.sandbox_chat_history.set(chat_dict))
+    action_list.append(UserDataTableModel.cumulative_token_count.add(token_count))
+    user_data_model.update(actions=action_list)
 
 
 @router.post(f"/{ENDPOINT_NAME}", response_model=SandBoxChatGPTResponse, responses=error_responses)
