@@ -26,7 +26,7 @@ def get_eastern_time_previous_day_midnight() -> dt.datetime:
     # Convert the UTC time to Eastern Standard Time
     current_est_time = current_utc_time.replace(tzinfo=pytz.utc).astimezone(est_tz)
     # Set the time to 2am
-    previous_day_12am_est_time = current_est_time.replace(hour=0, minute=0, second=0, microsecond=0) - dt.timedelta(days=1)
+    previous_day_12am_est_time = current_est_time.replace(hour=0, minute=0, second=0, microsecond=0)
     # Convert back to UTC time
     previous_day_12am_utc_time = previous_day_12am_est_time.astimezone(pytz.utc).replace(tzinfo=None)
     return previous_day_12am_utc_time

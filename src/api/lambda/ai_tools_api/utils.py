@@ -303,14 +303,19 @@ def reset_token_count_if_time_elapsed(user_uuid: UUID, runtime_settings: Runtime
     user_data_model: UserDataTableModel = UserDataTableModel.get(str(user_uuid))
     last_reset_date = user_data_model.token_count_last_reset_date.replace(tzinfo=None)
     time_delta = dt.datetime.utcnow() - last_reset_date
+    logger.info("Time delta: %s", time_delta)
+    logger.info("Days before resetting token count: %s", runtime_settings.days_before_resetting_token_count)
+    logger.info("Last reset date: %s", last_reset_date)
     if time_delta > runtime_settings.days_before_resetting_token_count:
+        new_reset_time = get_eastern_time_previous_day_midnight()
+        logger.info("New reset time: %s", new_reset_time)
+        logger.info("Current UTC time: %s", dt.datetime.utcnow())
         user_data_model.update(
             actions=[
-                UserDataTableModel.token_count_last_reset_date.set(get_eastern_time_previous_day_midnight()),
+                UserDataTableModel.token_count_last_reset_date.set(new_reset_time),
                 UserDataTableModel.cumulative_token_count.set(0)
             ]
         )
-
 
 def get_number_of_tokens_before_limit_reached(user_uuid: UUID, runtime_settings: RuntimeSettings) -> int:
     """Get the number of tokens before the user reaches the limit."""
