@@ -6,8 +6,10 @@ from pathlib import Path
 from pydantic import constr, Field
 from fastapi import APIRouter, Request, Response, status
 sys.path.append(Path(__file__).parent / "../utils")
+sys.path.append(Path(__file__).parent / "../text_examples")
 sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), "../gpt_turbo"))
 from gpt_turbo import GPTTurboChatSession, GPTTurboChat, Role, get_gpt_turbo_response
+from text_examples import AEROSPACE_RESUME, SPACEX_JOB_POSTING, TEACHER_JOB_POSTING, TEACHER_RESUME
 from utils import (
     AIToolModel,
     sanitize_string,
@@ -33,71 +35,6 @@ router = APIRouter()
 
 ENDPOINT_NAME = AIToolsEndpointName.COVER_LETTER_WRITER.value
 MAX_TOKENS_FROM_GPT_RESPONSE = 400
-
-RESUME_EXAMPLE = """
-Name: John Doe
-
-Education: 
-- Bachelor of Arts in English Literature, University of California, Los Angeles
-- Master of Education in Teaching English as a Second Language, University of Southern California
-
-Experience: 
-- English Teacher, XYZ High School, Los Angeles, 2015-2020
-     - Developed and implemented lesson plans for 9th-12th grade English classes, resulting in an average improvement of 30% in student test scores
-     - Led a poetry club for students, resulting in several students being published in local literary magazines
-     - Coordinated with other teachers and administrators to create a school-wide reading initiative, resulting in increased student engagement and a positive school culture
-
-- English Instructor, ABC Language School, Tokyo, Japan, 2010-2015
-     - Taught English as a Second Language to students of all ages and levels, including business professionals and children
-     - Designed and implemented curriculum for specialized courses such as Business English and TOEFL preparation
-     - Conducted parent-teacher conferences and provided individualized feedback and progress reports for each student
-
-Skills: 
-- Excellent communication and interpersonal skills
-- Creative and innovative lesson planning and delivery
-- Strong understanding of English literature and grammar
-- Proficient in Microsoft Office and Google Suite
-
-Certifications: 
-- California Teaching Credential in English, 2015
-- TESOL Certification, 2010
-
-Professional Memberships: 
-- National Council of Teachers of English
-- TESOL International Association
-
-References: 
-Available upon request.
-"""
-
-JOB_POSTING_EXAMPLE = """
-Job Title: High School Teacher
-
-Job Type: Full-time
-
-Location: Rocky Mountain High School, Los Angeles, CA
-
-Are you passionate about education and working with young minds? Do you have a strong desire to help shape the future of our youth? If so, we are looking for a highly motivated and dynamic individual to join our team as a high school teacher.
-
-Responsibilities:
-
-- Develop and implement lesson plans that align with state and national standards
-- Create a positive and engaging learning environment for students
-- Assess student progress and provide timely feedback
-- Collaborate with other teachers and staff to support student success
-- Participate in professional development opportunities to stay current on best practices and teaching strategies
-- Maintain accurate records and communicate with parents/guardians as needed
-
-Requirements:
-
-- Bachelor's degree in Education or related field
-- State teaching certification or eligibility to obtain certification
-- Strong communication and interpersonal skills
-- Ability to work collaboratively with colleagues and administrators
-- Passion for working with high school students and helping them reach their full potential
-
-We offer a competitive salary and benefits package, as well as ongoing professional development opportunities. If you are interested in joining our team and making a positive impact on the lives of our students, please submit your resume and cover letter for consideration.
-"""
 
 
 AI_PURPOSE = " ".join(ENDPOINT_NAME.split("-")).lower()
@@ -182,17 +119,24 @@ async def cover_letter_writer_examples(request: Request):
     without modification.
     """
 
-    cover_letter_example = CoverLetterWriterRequest(
-        resume=RESUME_EXAMPLE,
-        job_posting=JOB_POSTING_EXAMPLE,
+    teacher_example = CoverLetterWriterRequest(
+        resume=TEACHER_RESUME,
+        job_posting=TEACHER_JOB_POSTING,
         skills_to_highlight_from_resume="international teaching experience and my TESOL certification",
         tone=Tone.ASSERTIVE,
         company_name="Rocky Mountain High School"
     )
+    engineer_example = CoverLetterWriterRequest(
+        resume=AEROSPACE_RESUME,
+        job_posting=SPACEX_JOB_POSTING,
+        skills_to_highlight_from_resume="my experience with Python and my ability to work in a team",
+        tone=Tone.ASSERTIVE,
+        company_name="SpaceX",
+    )
 
     example_response = CoverLetterWriterExamplesResponse(
-        example_names=["Highschool Teacher"],
-        examples=[cover_letter_example]
+        example_names=["Highschool Teacher", "Aerospace Engineer"],
+        examples=[teacher_example, engineer_example],
     )
     return example_response
 

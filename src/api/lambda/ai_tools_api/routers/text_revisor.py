@@ -1,5 +1,6 @@
 import logging
 import os
+from pathlib import Path
 import sys
 from typing import List, Optional
 from fastapi import APIRouter, Response, status, Request
@@ -7,7 +8,9 @@ from enum import Enum
 from pydantic import conint, constr, Field
 sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), "../utils"))
 sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), "../gpt_turbo"))
+sys.path.append(Path(__file__).parent / "../text_examples")
 from gpt_turbo import GPTTurboChatSession, GPTTurboChat, Role, get_gpt_turbo_response
+from text_examples import SPELLING_ERRORS_EXAMPLE, BADLY_WRITTEN_TRAVEL_BLOG, ARTICLE_EXAMPLE
 from utils import (
     AIToolModel,
     EXAMPLES_ENDPOINT_POSTFIX,
@@ -26,7 +29,7 @@ from utils import (
     TokensExhaustedException,
 )
 
-MAX_TOKENS_FROM_GPT_RESPONSE = 400
+MAX_TOKENS_FROM_GPT_RESPONSE = 1200
 
 
 class RevisionType(str, Enum):
@@ -88,7 +91,7 @@ class TextRevisorRequest(TextRevisorInstructions):
 
     """
     __doc__ += TextRevisorInstructions.__doc__
-    text_to_revise: constr(min_length=1, max_length=int(MAX_TOKENS_FROM_GPT_RESPONSE / 3.5)) = Field(
+    text_to_revise: constr(min_length=1, max_length=int(MAX_TOKENS_FROM_GPT_RESPONSE / 2.6)) = Field(
         ...,
         title="Text to Revise",
         description="The text to revise. This can literally be any block of text. (e.g. blog post, article, song lyrics, etc.)",
@@ -124,15 +127,29 @@ async def text_revisor_examples():
     This method returns examples for the {0} endpoint. These examples can be posted to the {0} endpoint
     without modification.
     """
-    text_revisor_example = TextRevisorRequest(
-        text_to_revise="This are some porrly written text. Its probaly needing to be revised in order to help it sound much more better.",
-        revision_types=[RevisionType.SPELLING, RevisionType.GRAMMAR, RevisionType.SENTENCE_STRUCTURE, RevisionType.WORD_CHOICE, RevisionType.CONSISTENCY, RevisionType.PUNCTUATION],
-        tone=Tone.ASSERTIVE,
-        creativity=100,
-    )
+    text_revisor_examples = [
+        TextRevisorRequest(
+            text_to_revise=BADLY_WRITTEN_TRAVEL_BLOG,
+            revision_types=[RevisionType.SPELLING, RevisionType.GRAMMAR, RevisionType.SENTENCE_STRUCTURE, RevisionType.WORD_CHOICE, RevisionType.CONSISTENCY, RevisionType.PUNCTUATION],
+            tone=Tone.INFORMAL,
+            creativity=100,
+        ),
+        TextRevisorRequest(
+            text_to_revise=SPELLING_ERRORS_EXAMPLE,
+            revision_types=[RevisionType.SPELLING],
+            tone=Tone.ASSERTIVE,
+            creativity=20,
+        ),
+        TextRevisorRequest(
+            text_to_revise=ARTICLE_EXAMPLE,
+            revision_types=[RevisionType.SENTENCE_STRUCTURE, RevisionType.WORD_CHOICE, RevisionType.CONSISTENCY, RevisionType.PUNCTUATION],
+            tone=Tone.ENCOURAGING,
+            creativity=50,
+        ),
+    ]
     example_response = TextRevisorExamplesResponse(
-        example_names=["Badly Written Text"],
-        examples=[text_revisor_example],
+        example_names=["Badly Written", "Spelling Errors", "Word Choice"],
+        examples=text_revisor_examples,
     )
     return example_response
 
