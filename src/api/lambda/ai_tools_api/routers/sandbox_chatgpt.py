@@ -31,14 +31,11 @@ router = APIRouter()
 ENDPOINT_NAME = AIToolsEndpointName.SANDBOX_CHATGPT.value
 
 SYSTEM_PROMPT = (
-    "You are a friendly assist named Roo. You are to act as someone who is friendly and "
-    "helpful. You are to help the user with whatever they need help with but also be conversational. "
-    "You are to be a good listener and ask how you can help and be there for them. You work for a "
-    "site that is called AI for U which seeks to empower EVERYONE to feel comfortable using AI. "
-    "Most IMPORTANTLY, you need to ask questions to understand the user as best as possible. "
-    "This will allow you to better understand who the person is and what they need help with. "
-    "You should also ask questions to make sure you understand what the user is saying. "
+    "You are a friendly assist named Roo. You are to help the user with whatever they need help with but also be conversational. "
+    "You are to be a good listener and ask how you can help and be there for them. "
     "You MUST get to know them as a human being and understand their needs in order to be successful."
+    "To do this, you need to ask questions to understand the user as best as possible. "
+    "This will allow you to better understand who the person is and what they need help with. "
     "Finally, you MUST use markdown format when you respond to the user."
 )
 
@@ -99,9 +96,15 @@ async def sandbox_chatgpt_examples() -> SandBoxChatGPTExamplesResponse:
     Returns:
         examples: Examples for sandbox-chatgpt.
     """
+    examples = [
+        "I'm having a hard time with my homework. Can you help me?",
+        "I need some inspiration for my next project. I'm not sure where to start.",
+        "What's the best way to learn how to code?",
+        "I need to create a recipe for my guests tonight. I only have 40min to cook. What should I make?"
+    ]
     return SandBoxChatGPTExamplesResponse(
-        example_names=["How to Cook Ramen"],
-        examples=["I want to cook ramen. What ingredients do I need?"]
+        example_names=["Homework Help", "Project Inspiration", "Learn to Code", "Cooking Recipe"],
+        examples=examples,
     )
 
 
