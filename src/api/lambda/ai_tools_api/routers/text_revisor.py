@@ -91,7 +91,7 @@ class TextRevisorRequest(TextRevisorInstructions):
 
     """
     __doc__ += TextRevisorInstructions.__doc__
-    text_to_revise: constr(min_length=1, max_length=int(MAX_TOKENS_FROM_GPT_RESPONSE * 0.75)) = Field(
+    text_to_revise: constr(min_length=1, max_length=int(MAX_TOKENS_FROM_GPT_RESPONSE * 0.75 * 0.75)) = Field( # first 0.75 accounts for 1 token being about 3/4 a word, second is to provide a safety factor in how many tokens is expected from gpt (close to a 1:1 ratio between prompt and response)
         ...,
         title="Text to Revise",
         description="The text to revise. This can literally be any block of text. (e.g. blog post, article, song lyrics, etc.)",
