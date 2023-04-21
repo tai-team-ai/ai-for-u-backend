@@ -80,8 +80,8 @@ class UserDataTableModel(Model):
         host = USER_DATA_TABLE_SETTINGS.host
 
     UUID = UnicodeAttribute(hash_key=True, attr_name=USER_DATA_TABLE_SETTINGS.partition_key)
-    cumulative_token_count = NumberAttribute(default_for_new=0)
-    token_count_last_reset_date = UTCDateTimeAttribute(default_for_new=get_eastern_time_previous_day_midnight())
+    cumulative_token_count = NumberAttribute(default=0)
+    token_count_last_reset_date = UTCDateTimeAttribute(default=get_eastern_time_previous_day_midnight())
     is_subscribed = BooleanAttribute(null=True)
     sandbox_chat_history = JSONAttribute(null=True)
     email_address = UnicodeAttribute(null=True)
