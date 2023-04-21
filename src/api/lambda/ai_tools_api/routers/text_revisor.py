@@ -29,7 +29,7 @@ from utils import (
     TokensExhaustedException,
 )
 
-MAX_TOKENS_FROM_GPT_RESPONSE = 400
+MAX_TOKENS_FROM_GPT_RESPONSE = 1200
 
 
 class RevisionType(str, Enum):
@@ -91,7 +91,7 @@ class TextRevisorRequest(TextRevisorInstructions):
 
     """
     __doc__ += TextRevisorInstructions.__doc__
-    text_to_revise: constr(min_length=1, max_length=int(MAX_TOKENS_FROM_GPT_RESPONSE / 3.5)) = Field(
+    text_to_revise: constr(min_length=1, max_length=int(MAX_TOKENS_FROM_GPT_RESPONSE / 2.6)) = Field(
         ...,
         title="Text to Revise",
         description="The text to revise. This can literally be any block of text. (e.g. blog post, article, song lyrics, etc.)",
