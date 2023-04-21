@@ -40,6 +40,7 @@ from utils import (
     error_responses,
     TOKEN_EXHAUSTED_JSON_RESPONSE,
     TokensExhaustedException,
+    AIToolResponse,
 )
 
 logger = logging.getLogger()
@@ -119,23 +120,10 @@ class CatchyTitleCreatorRequest(CatchyTitleCreatorInstructions):
         title="Description of What you are Generating Titles for (if generating titles for something written, this should be the text)",
         description="This can be the text you are generating titles for, or if you are generating titles for something else, you can describe what you are generating titles for. Example -> Coffee Shop, Company Name, etc."
     )
-        
-
-
-
-@docstring_parameter(ENDPOINT_NAME)
-class CatchyTitleCreatorResponse(AIToolModel):
-    """
-    **Define the model for the response body for {0} endpoint.**
-    
-    **Atrributes:**
-    - titles: The list of titles generated for the text. They are not in any particular order.
-    """
-    titles: List[str] = []
 
 
 @docstring_parameter(ENDPOINT_NAME)
-class CatchyTitleCreatorExamplesReponse(ExamplesResponse):
+class CatchyTitleCreatorExamplesResponse(ExamplesResponse):
     """
     **Define examples for teh {0} endpoint.**
     
@@ -149,7 +137,7 @@ class CatchyTitleCreatorExamplesReponse(ExamplesResponse):
     examples: list[CatchyTitleCreatorRequest]
 
 @docstring_parameter(ENDPOINT_NAME)
-@router.get(f"/{ENDPOINT_NAME}-{EXAMPLES_ENDPOINT_POSTFIX}", response_model=CatchyTitleCreatorExamplesReponse, status_code=status.HTTP_200_OK)
+@router.get(f"/{ENDPOINT_NAME}-{EXAMPLES_ENDPOINT_POSTFIX}", response_model=AIToolResponse, status_code=status.HTTP_200_OK)
 async def catchy_title_creator_examples():
     """
     **Get examples for the {0} endpoint.**
@@ -158,7 +146,7 @@ async def catchy_title_creator_examples():
     without modification.
     """
     catchy_title_example = CatchyTitleCreatorRequest(
-        text="This is an amazing text that I wrote. It is so amazing that I am going to write a catchy title for it.",
+        text_or_description="This is an amazing text that I wrote. It is so amazing that I am going to write a catchy title for it.",
         target_audience="My boss",
         tone=Tone.FRIENDLY,
         num_titles=8,
@@ -166,14 +154,14 @@ async def catchy_title_creator_examples():
         specific_keywords_to_include=["Best Title Ever", "Amazing Title", "Catchy Title"],
         type_of_title="Coffee Shop Name",
     )
-    example_response = CatchyTitleCreatorExamplesReponse(
+    example_response = CatchyTitleCreatorExamplesResponse(
         example_names=["Catchy Title Example"],
         examples=[catchy_title_example]
     )
     return example_response
 
 
-@router.post(f"/{ENDPOINT_NAME}", response_model=CatchyTitleCreatorResponse, responses=error_responses)
+@router.post(f"/{ENDPOINT_NAME}", response_model=AIToolResponse, responses=error_responses)
 async def catchy_title_creator(catchy_title_creator_request: CatchyTitleCreatorRequest, response: Response, request: Request):
     """**Generate catchy titles using GPT-3.**"""
     logger.info(f"Received request for {ENDPOINT_NAME} endpoint.")
@@ -203,6 +191,6 @@ async def catchy_title_creator(catchy_title_creator_request: CatchyTitleCreatorR
     logger.info("Latest chat: %s", latest_chat)
     latest_chat = sanitize_string(latest_chat)
 
-    response_model = CatchyTitleCreatorResponse(titles=[latest_chat])
+    response_model = AIToolResponse(response=latest_chat)
     logger.info("Returning response: %s", response_model)
     return response_model

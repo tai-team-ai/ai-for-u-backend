@@ -7,11 +7,11 @@ from uuid import uuid4
 from pydantic import constr, validator
 from loguru import logger
 from fastapi import APIRouter, Request, Response, status
-from catchy_title_creator import CatchyTitleCreatorRequest, CatchyTitleCreatorResponse
-from cover_letter_writer import CoverLetterWriterRequest, CoverLetterWriterResponse
+from catchy_title_creator import CatchyTitleCreatorRequest
+from cover_letter_writer import CoverLetterWriterRequest
 from sandbox_chatgpt import SandBoxChatGPTRequest, SandBoxChatGPTResponse
 from text_revisor import TextRevisorRequest, TextRevisorResponse
-from text_summarizer import TextSummarizerRequest, TextSummarizerResponse
+from text_summarizer import TextSummarizerRequest
 import catchy_title_creator, cover_letter_writer, sandbox_chatgpt, text_revisor, text_summarizer
 
 file_path = Path(__file__)
@@ -23,6 +23,7 @@ from utils import (
     docstring_parameter,
     AIToolsEndpointName,
     UUID_HEADER_NAME,
+    AIToolResponse,
 )
 from dynamodb_models import FeedbackTableModel
 
@@ -52,11 +53,9 @@ class SupportedRequest(str, Enum):
 
 class SupportedResponse(str, Enum):
     """Define the possible response types that can be given feedback on."""
-    CATCHY_TITLE_CREATOR = CatchyTitleCreatorResponse.__name__
-    COVER_LETTER_WRITER = CoverLetterWriterResponse.__name__
+    AI_TOOL_RESPONSE = AIToolResponse.__name__
     SANDBOX_CHATGPT = SandBoxChatGPTResponse.__name__
     TEXT_REVISOR = TextRevisorResponse.__name__
-    TEXT_SUMMARIZER = TextSummarizerResponse.__name__
 
 
 @docstring_parameter(ENDPOINT_NAME)

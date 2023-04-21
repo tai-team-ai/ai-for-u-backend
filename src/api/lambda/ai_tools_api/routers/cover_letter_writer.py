@@ -23,6 +23,7 @@ from utils import (
     error_responses,
     TOKEN_EXHAUSTED_JSON_RESPONSE,
     TokensExhaustedException,
+    AIToolResponse,
 )
 
 logger = logging.getLogger()
@@ -159,19 +160,6 @@ class CoverLetterWriterRequest(CoverLetterWriterInsructions):
     )
 
 
-
-@docstring_parameter(ENDPOINT_NAME)
-class CoverLetterWriterResponse(AIToolModel):
-    """
-    **Define the model for the response body for {0} endpoint.**
-    
-    **Atrributes:**
-    - cover_letter: The cover letter generated for the resume and job posting.
-    """
-
-    cover_letter: str
-
-
 @docstring_parameter(ENDPOINT_NAME)
 class CoverLetterWriterExamplesResponse(ExamplesResponse):
     """
@@ -210,7 +198,7 @@ async def cover_letter_writer_examples(request: Request):
     return example_response
 
 
-@router.post(f"/{ENDPOINT_NAME}", response_model=CoverLetterWriterResponse, responses=error_responses)
+@router.post(f"/{ENDPOINT_NAME}", response_model=AIToolResponse, responses=error_responses)
 async def cover_letter_writer(request: Request, cover_letter_writer_request: CoverLetterWriterRequest):
     """
     **Generate a cover letter for a resume and job posting.**
@@ -242,8 +230,8 @@ async def cover_letter_writer(request: Request, cover_letter_writer_request: Cov
     latest_chat = latest_gpt_chat_model.content
     latest_chat = sanitize_string(latest_chat)
 
-    response_model = CoverLetterWriterResponse(
-        cover_letter=latest_chat
+    response_model = AIToolResponse(
+        response=latest_chat
     )
     logger.info(f"Returning response for {ENDPOINT_NAME} endpoint.")
     return response_model
