@@ -303,6 +303,7 @@ def does_user_have_enough_tokens_to_make_request(user_uuid: UUID, expected_token
 
 def reset_token_count_if_time_elapsed(user_uuid: UUID, runtime_settings: RuntimeSettings) -> None:
     """Reset the token count if the time has elapsed."""
+    action_list = []
     try:
         user_data_model: UserDataTableModel = UserDataTableModel.get(str(user_uuid))
     except UserDataTableModel.DoesNotExist:
@@ -310,8 +311,12 @@ def reset_token_count_if_time_elapsed(user_uuid: UUID, runtime_settings: Runtime
     last_reset_date = user_data_model.token_count_last_reset_date.replace(tzinfo=None)
     time_delta = dt.datetime.utcnow() - last_reset_date
     if time_delta > runtime_settings.days_before_resetting_token_count:
-        user_data_model.token_count_last_reset_date.set(get_eastern_time_previous_day_midnight())
-        user_data_model.cumulative_token_count.set(0)
+        user_data_model.update(
+            actions=[
+                UserDataTableModel.token_count_last_reset_date.set(get_eastern_time_previous_day_midnight()),
+                UserDataTableModel.cumulative_token_count.set(0)
+            ]
+        )
 
 
 def get_number_of_tokens_before_limit_reached(user_uuid: UUID, runtime_settings: RuntimeSettings) -> int:

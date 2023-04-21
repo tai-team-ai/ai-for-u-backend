@@ -142,9 +142,11 @@ def save_sandbox_chat_history(user_uuid: UUID, sandbox_chat_history: GPTChatHist
         user_data_model: UserDataTableModel = UserDataTableModel.get(str(user_uuid))
     except (Model.DoesNotExist, StopIteration):
         user_data_model = UserDataTableModel(str(user_uuid))
-    action_list.append(UserDataTableModel.sandbox_chat_history.set(chat_dict))
-    action_list.append(UserDataTableModel.cumulative_token_count.add(token_count))
-    user_data_model.update(actions=action_list)
+    user_data_model.update(actions=[
+            action_list.append(UserDataTableModel.sandbox_chat_history.set(chat_dict)),
+            action_list.append(UserDataTableModel.cumulative_token_count.add(token_count)),
+        ]
+    )
 
 
 @router.post(f"/{ENDPOINT_NAME}", response_model=SandBoxChatGPTResponse, responses=error_responses)
