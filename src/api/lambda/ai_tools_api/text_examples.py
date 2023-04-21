@@ -133,3 +133,33 @@ Topic: Solving Quadratic Equations
 
 - Homework: Complete problems 1-20 on page 75 of the textbook.
 """
+
+COFFEE_SHOP = """
+This coffee shop is nestled in the heart of the picturesque Aria Valley, surrounded by rolling hills and stunning vistas. The building itself is a charming, rustic structure with plenty of character, and the interior is warm and inviting, with cozy seating options and lots of natural light.
+
+The coffee is exceptional, with a variety of beans and roasts sourced from around the world. Whether you're in the mood for a rich, bold espresso or a smooth, creamy latte, the baristas at this shop are experts at crafting the perfect cup.
+
+In addition to coffee, the shop also offers a delicious selection of baked goods, sandwiches, and other light bites, all made with fresh, locally sourced ingredients. Whether you're in the mood for a hearty breakfast burrito or a flaky croissant, you're sure to find something to satisfy your cravings here.
+
+One of the best things about this coffee shop is its location in the Aria Valley, which is a frequent destination for travelers seeking natural beauty and outdoor adventures. Whether you're hiking, biking, or just taking a scenic drive, this coffee shop is the perfect spot to fuel up before your next adventure or to relax and unwind after a long day of exploring. With friendly staff, delicious coffee, and a stunning location, it's no wonder this coffee shop is a beloved favorite among locals and visitors alike.
+"""
+
+SHORT_STORY = """
+Tiff was born with the sea in her blood. From the time she was a little girl, she would beg her father to take her out on his sailboat, and she would spend hours gazing out at the endless expanse of water, dreaming of the adventures that lay beyond. As she grew older, Tiff became more and more determined to explore the world by sea, and she spent every spare moment learning all she could about sailing and navigation.
+
+When Tiff turned 18, she decided it was time to set out on her own adventure. She saved up all her money and bought a small sailboat, which she christened the "Sea Spirit". With nothing but her wits and her love of the ocean, Tiff set sail, determined to see as much of the world as she could.
+
+Over the next few months, Tiff sailed from island to island, encountering all sorts of challenges and adventures along the way. She battled fierce storms, fended off pirates, and navigated treacherous waters with ease, her spirit unbroken and her love of the sea burning brighter than ever. And through it all, she knew that she was exactly where she was meant to be - on the open sea, with nothing but the wind and the waves to guide her.
+"""
+
+BAD_TRAVEL_WRITING = """
+Me want to share about travelling - it's very fun and good for the soul! When you travel, you get to see new places with your own eyes. It feels amazing when you explore different cultures and meet people from all around the world.
+
+Me have been blessed enough to visit many places like beaches, mountains or cities where I can experience their beauty first hand. There are so much things that one could do during travels but eating local foods is definitely on top of my list!
+
+There were times where me didn't know what food was being served because of language barriers but still took a bite anyways hoping its deliciousness will be worth it- sometimes they were great other times not so much haha!
+
+Taking photos while travelling has become an essential part too as these memories last forever which we'd often look back at in order bring those happy moments into our present lives once more.
+
+So if anyone reading this hasn’t travelled before then go ahead give them self some time off work/school & start planning now cuz exploring new destinations really does make life better :)
+"""
