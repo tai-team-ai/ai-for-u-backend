@@ -32,6 +32,14 @@ router = APIRouter()
 logger = logging.getLogger()
 logger.setLevel(logging.DEBUG)
 
+CHINCHILLA_EXAMPLE = """
+Chinchillas are small, furry rodents that are native to the Andes Mountains in South America. They are known for their adorable appearance, with their big ears, fluffy tails, and soft, dense fur. Chinchillas are highly social animals and are often kept as pets, but they require a lot of care and attention.
+
+One of the most interesting things about chinchillas is their fur. Their fur is so dense that it can prevent water from reaching their skin, which is why they take dust baths to keep their fur clean and healthy. In fact, chinchillas have the densest fur of any mammal, with up to 80 hairs growing from a single hair follicle! Their fur is also highly sought after by the fashion industry, which has led to a decline in wild populations.
+
+Chinchillas are herbivores and eat a diet that consists mainly of hay, pellets, and fresh vegetables. They have a unique digestive system that requires them to eat a lot of roughage to keep their teeth from overgrowing. Chinchillas are also known for their jumping abilities, which they use to navigate the rocky terrain of their native habitat. Overall, chinchillas are fascinating creatures that make great pets for those who are willing to put in the time and effort to care for them properly.
+"""
+
 
 MAX_TOKENS_FROM_GPT_RESPONSE = 400
 
@@ -90,14 +98,14 @@ async def sandbox_chatgpt_examples() -> TextSummarizerExampleResponse:
     """Return examples for the text summarizer endpoint."""
     examples = [
         TextSummarizerRequest(
-            text_to_summarize="This is a test. This is only a test. This is a test of the emergency broadcast system. ",
+            text_to_summarize=CHINCHILLA_EXAMPLE,
             include_summary_sentence=True,
             number_of_bullets=3,
             number_of_action_items=2,
         )
     ]
     response = TextSummarizerExampleResponse(
-        example_names=["Example 1"],
+        example_names=["Chinchillas"],
         examples=examples
     )
     return response
