@@ -24,6 +24,7 @@ from utils import (
     error_responses,
     TOKEN_EXHAUSTED_JSON_RESPONSE,
     TokensExhaustedException,
+    AIToolResponse,
 )
 
 router = APIRouter()
@@ -80,12 +81,6 @@ class TextSummarizerRequest(BaseAIInstructionModel):
         description="The number of action items to include in the response. Action items are often applicable for meeting notes, lectures, etc.",
     )
 
-
-
-class TextSummarizerResponse(AIToolModel):
-    summary: str
-    
-
 class TextSummarizerExampleResponse(ExamplesResponse):
     examples: list[TextSummarizerRequest]
     
@@ -107,7 +102,7 @@ async def sandbox_chatgpt_examples() -> TextSummarizerExampleResponse:
     )
     return response
 
-@router.post(f"/{ENDPOINT_NAME}", response_model=TextSummarizerResponse, responses=error_responses)
+@router.post(f"/{ENDPOINT_NAME}", response_model=AIToolResponse, responses=error_responses)
 async def text_summarizer(text_summarizer_request: TextSummarizerRequest, request: Request):
     """**Summarize text using GPT-3.**"""
     logger.info(f"Received request: {text_summarizer_request}")
@@ -147,8 +142,8 @@ async def text_summarizer(text_summarizer_request: TextSummarizerRequest, reques
     latest_chat = latest_gpt_chat_model.content
     latest_chat = sanitize_string(latest_chat)
 
-    reponse_model = TextSummarizerResponse(
-        summary=latest_chat,
+    response_model = AIToolResponse(
+        response=latest_chat,
     )
     logger.info(f"Returning response for {ENDPOINT_NAME} endpoint.")
-    return reponse_model
+    return response_model

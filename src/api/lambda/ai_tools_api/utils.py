@@ -69,6 +69,10 @@ class AIToolModel(BaseModel):
         allow_population_by_field_name = True
 
 
+class AIToolResponse(AIToolModel):
+    response: str
+
+
 class Tone(str, Enum):
     FORMAL = "formal"
     INFORMAL = "informal"
