@@ -104,7 +104,7 @@ async def sandbox_chatgpt_examples() -> SandBoxChatGPTExamplesResponse:
     ]
     return SandBoxChatGPTExamplesResponse(
         example_names=["Homework Help", "Project Inspiration", "Learn to Code", "Cooking Recipe"],
-        examples=examples,
+        examples=examples,  
     )
 
 
