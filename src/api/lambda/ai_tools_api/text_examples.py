@@ -163,3 +163,169 @@ Taking photos while travelling has become an essential part too as these memorie
 
 So if anyone reading this hasn’t travelled before then go ahead give them self some time off work/school & start planning now cuz exploring new destinations really does make life better :)
 """
+
+BADLY_WRITTEN_TRAVEL_BLOG = """
+Me want to share about travelling - it's very fun and good for the soul! When you travel, you get to see new places with your own eyes. It feels amazing when you explore different cultures and meet people from all around the world.
+
+Me have been blessed enough to visit many places like beaches, mountains or cities where I can experience their beauty first hand. There are so much things that one could do during travels but eating local foods is definitely on top of my list!
+
+There were times where me didn't know what food was being served because of language barriers but still took a bite anyways hoping its deliciousness will be worth it- sometimes they were great other times not so much haha!
+
+Taking photos while travelling has become an essential part too as these memories last forever which we'd often look back at in order bring those happy moments into our present lives once more.
+
+So if anyone reading this hasn’t travelled before then go ahead give them self some time off work/school & start planning now cuz exploring new destinations really does make life better :)
+"""
+
+CEO_EMAIL = """
+Subject: Celebrating Our Success Together
+
+Dear Best Company Ever Team,
+
+I am writing to express my heartfelt gratitude to each and every one of you for your hard work and dedication over the past year. Despite the challenges we've faced, you have all gone above and beyond to help us achieve our goals and exceed our expectations, and I am so proud to have you on our team.
+
+Thanks to your efforts, we have achieved some incredible milestones in the last 12 months. We launched several successful new products, expanded our reach into new markets, and increased our revenue by over 20%. These achievements are a testament to your talent, passion, and commitment, and I am truly honored to be leading such a fantastic team.
+
+I want to take this opportunity to celebrate our success together and to thank you all for your hard work and dedication. As a token of our appreciation, we will be hosting a company-wide celebration next month, where we can all come together to reflect on our achievements, share our experiences, and have some fun.
+
+Once again, thank you all for your outstanding contributions to our company's success. I am excited to see what we can achieve together in the year ahead.
+
+Best regards,
+
+Megan
+"""
+
+SPELLING_ERRORS_EXAMPLE = """
+Ima a singr and I luv to sinng. I've ben singin' since I wuz a litel kid and it's alwayz been my dreem to be a famus singr. I pracktis evry day and I hop won day I'll be discuverd and becom a big star.
+"""
+
+
+
+TEACHER_RESUME = """
+Name: Eliza Doe
+
+Education: 
+- Bachelor of Arts in English Literature, University of California, Los Angeles
+- Master of Education in Teaching English as a Second Language, University of Southern California
+
+Experience: 
+- English Teacher, XYZ High School, Los Angeles, 2015-2020
+     - Developed and implemented lesson plans for 9th-12th grade English classes, resulting in an average improvement of 30% in student test scores
+     - Led a poetry club for students, resulting in several students being published in local literary magazines
+     - Coordinated with other teachers and administrators to create a school-wide reading initiative, resulting in increased student engagement and a positive school culture
+
+- English Instructor, ABC Language School, Tokyo, Japan, 2010-2015
+     - Taught English as a Second Language to students of all ages and levels, including business professionals and children
+     - Designed and implemented curriculum for specialized courses such as Business English and TOEFL preparation
+     - Conducted parent-teacher conferences and provided individualized feedback and progress reports for each student
+
+Skills: 
+- Excellent communication and interpersonal skills
+- Creative and innovative lesson planning and delivery
+- Strong understanding of English literature and grammar
+- Proficient in Microsoft Office and Google Suite
+
+Certifications: 
+- California Teaching Credential in English, 2015
+- TESOL Certification, 2010
+
+Professional Memberships: 
+- National Council of Teachers of English
+- TESOL International Association
+
+References: 
+Available upon request.
+"""
+TEACHER_JOB_POSTING = """
+Job Title: High School Teacher
+
+Job Type: Full-time
+
+Location: Rocky Mountain High School, Los Angeles, CA
+
+Are you passionate about education and working with young minds? Do you have a strong desire to help shape the future of our youth? If so, we are looking for a highly motivated and dynamic individual to join our team as a high school teacher.
+
+Responsibilities:
+
+- Develop and implement lesson plans that align with state and national standards
+- Create a positive and engaging learning environment for students
+- Assess student progress and provide timely feedback
+- Collaborate with other teachers and staff to support student success
+- Participate in professional development opportunities to stay current on best practices and teaching strategies
+- Maintain accurate records and communicate with parents/guardians as needed
+
+Requirements:
+
+- Bachelor's degree in Education or related field
+- State teaching certification or eligibility to obtain certification
+- Strong communication and interpersonal skills
+- Ability to work collaboratively with colleagues and administrators
+- Passion for working with high school students and helping them reach their full potential
+
+We offer a competitive salary and benefits package, as well as ongoing professional development opportunities. If you are interested in joining our team and making a positive impact on the lives of our students, please submit your resume and cover letter for consideration.
+"""
+
+AEROSPACE_RESUME = """
+Name: Jonny Rockets
+
+Education: 
+- Bachelor of Science in Aerospace Engineering, University of Southern California
+- Master of Science in Mechanical Engineering, Massachusetts Institute of Technology
+
+Experience: 
+- Propulsion Engineer, Boeing, Huntington Beach, 2015-2021
+     - Designed and developed rocket propulsion systems for commercial and military spacecraft, resulting in successful missions and customer satisfaction
+     - Conducted analysis and optimization of propulsion system performance using computational tools and simulations
+     - Collaborated with cross-functional teams to integrate propulsion systems into spacecraft designs
+     - Supported the production and assembly of propulsion systems by providing technical guidance and troubleshooting assistance
+     - Prepared technical reports and presented findings to customers and senior management
+
+- Graduate Research Assistant, Massachusetts Institute of Technology, 2013-2015
+     - Conducted research on advanced propulsion technologies, including electric propulsion and plasma thrusters
+     - Designed and performed experiments to test propulsion system performance
+     - Analyzed experimental data and prepared technical reports for publication
+
+Skills: 
+- Proficient in propulsion system design and analysis
+- Strong understanding of fluid mechanics and thermodynamics
+- Experience with computational tools and simulations
+- Ability to work collaboratively with cross-functional teams
+- Excellent communication and interpersonal skills
+
+Certifications: 
+- Professional Engineer (PE) License, Aeronautical Engineering, 2018
+
+Professional Memberships: 
+- American Institute of Aeronautics and Astronautics (AIAA)
+- Society of Women Engineers (SWE)
+
+References: 
+Available upon request.
+"""
+SPACEX_JOB_POSTING = """
+Job Title: Space Propulsion Engineer
+
+Job Type: Full-time
+
+Location: SpaceX, Hawthorne, CA
+
+Are you passionate about space exploration and propulsion technology? Do you have a strong desire to work on cutting-edge projects that will shape the future of space travel? If so, we are looking for a highly motivated and dynamic individual to join our team as a Space Propulsion Engineer.
+
+Responsibilities:
+
+- Design, develop and test rocket propulsion systems for space vehicles
+- Analyze and optimize propulsion system performance using computational tools and simulations
+- Collaborate with other engineers and teams to integrate propulsion systems into spacecraft designs
+- Participate in the development and testing of new propulsion technologies
+- Support the production and assembly of propulsion systems
+- Maintain accurate records and prepare technical reports
+
+Requirements:
+
+- Bachelor's degree in Aerospace Engineering or related field
+- Experience in rocket propulsion system design and analysis
+- Strong analytical and problem-solving skills
+- Ability to work collaboratively with colleagues and teams
+- Passion for space exploration and propulsion technology
+
+We offer a competitive salary and benefits package, as well as ongoing professional development opportunities. If you are interested in joining our team and working on the forefront of space technology, please submit your resume and cover letter for consideration.
+"""

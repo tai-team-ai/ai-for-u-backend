@@ -178,7 +178,7 @@ async def catchy_title_creator_examples():
     ]
     
     example_response = CatchyTitleCreatorExamplesResponse(
-        example_names=["Textbook"],
+        example_names=["Textbook", "Coffee Shop", "Short Story"],
         examples=catchy_title_examples
     )
     return example_response

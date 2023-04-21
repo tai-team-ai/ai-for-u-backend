@@ -26,7 +26,7 @@ from utils import (
     TokensExhaustedException,
     AIToolResponse,
 )
-from text_examples import ARTICLE_EXAMPLE, CLASS_NOTES, TRANSCRIPT_EXAMPLE
+from text_examples import CEO_EMAIL, ARTICLE_EXAMPLE, CLASS_NOTES, TRANSCRIPT_EXAMPLE
 
 router = APIRouter()
 
@@ -104,13 +104,19 @@ async def sandbox_chatgpt_examples() -> TextSummarizerExampleResponse:
         ),
         TextSummarizerRequest(
             text_to_summarize=ARTICLE_EXAMPLE,
-            include_summary_sentence=True,
+            include_summary_sentence=False,
             number_of_bullets=6,
             number_of_action_items=3,
         ),
+        TextSummarizerRequest(
+            text_to_summarize=CEO_EMAIL,
+            include_summary_sentence=True,
+            number_of_bullets=0,
+            number_of_action_items=5,
+        ),
     ]
     response = TextSummarizerExampleResponse(
-        example_names=["Class Notes", "Transcript", "Article"],
+        example_names=["Class Notes", "Transcript", "Article", "Email"],
         examples=examples
     )
     return response

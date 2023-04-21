@@ -6,8 +6,10 @@ from pathlib import Path
 from pydantic import constr, Field
 from fastapi import APIRouter, Request, Response, status
 sys.path.append(Path(__file__).parent / "../utils")
+sys.path.append(Path(__file__).parent / "../text_examples")
 sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), "../gpt_turbo"))
 from gpt_turbo import GPTTurboChatSession, GPTTurboChat, Role, get_gpt_turbo_response
+from text_examples import AEROSPACE_RESUME, SPACEX_JOB_POSTING, TEACHER_JOB_POSTING, TEACHER_RESUME
 from utils import (
     AIToolModel,
     sanitize_string,
@@ -33,136 +35,6 @@ router = APIRouter()
 
 ENDPOINT_NAME = AIToolsEndpointName.COVER_LETTER_WRITER.value
 MAX_TOKENS_FROM_GPT_RESPONSE = 400
-
-TEACHER_RESUME = """
-Name: Eliza Doe
-
-Education: 
-- Bachelor of Arts in English Literature, University of California, Los Angeles
-- Master of Education in Teaching English as a Second Language, University of Southern California
-
-Experience: 
-- English Teacher, XYZ High School, Los Angeles, 2015-2020
-     - Developed and implemented lesson plans for 9th-12th grade English classes, resulting in an average improvement of 30% in student test scores
-     - Led a poetry club for students, resulting in several students being published in local literary magazines
-     - Coordinated with other teachers and administrators to create a school-wide reading initiative, resulting in increased student engagement and a positive school culture
-
-- English Instructor, ABC Language School, Tokyo, Japan, 2010-2015
-     - Taught English as a Second Language to students of all ages and levels, including business professionals and children
-     - Designed and implemented curriculum for specialized courses such as Business English and TOEFL preparation
-     - Conducted parent-teacher conferences and provided individualized feedback and progress reports for each student
-
-Skills: 
-- Excellent communication and interpersonal skills
-- Creative and innovative lesson planning and delivery
-- Strong understanding of English literature and grammar
-- Proficient in Microsoft Office and Google Suite
-
-Certifications: 
-- California Teaching Credential in English, 2015
-- TESOL Certification, 2010
-
-Professional Memberships: 
-- National Council of Teachers of English
-- TESOL International Association
-
-References: 
-Available upon request.
-"""
-TEACHER_JOB_POSTING = """
-Job Title: High School Teacher
-
-Job Type: Full-time
-
-Location: Rocky Mountain High School, Los Angeles, CA
-
-Are you passionate about education and working with young minds? Do you have a strong desire to help shape the future of our youth? If so, we are looking for a highly motivated and dynamic individual to join our team as a high school teacher.
-
-Responsibilities:
-
-- Develop and implement lesson plans that align with state and national standards
-- Create a positive and engaging learning environment for students
-- Assess student progress and provide timely feedback
-- Collaborate with other teachers and staff to support student success
-- Participate in professional development opportunities to stay current on best practices and teaching strategies
-- Maintain accurate records and communicate with parents/guardians as needed
-
-Requirements:
-
-- Bachelor's degree in Education or related field
-- State teaching certification or eligibility to obtain certification
-- Strong communication and interpersonal skills
-- Ability to work collaboratively with colleagues and administrators
-- Passion for working with high school students and helping them reach their full potential
-
-We offer a competitive salary and benefits package, as well as ongoing professional development opportunities. If you are interested in joining our team and making a positive impact on the lives of our students, please submit your resume and cover letter for consideration.
-"""
-
-AEROSPACE_RESUME = """
-Name: Jonny Rockets
-
-Education: 
-- Bachelor of Science in Aerospace Engineering, University of Southern California
-- Master of Science in Mechanical Engineering, Massachusetts Institute of Technology
-
-Experience: 
-- Propulsion Engineer, Boeing, Huntington Beach, 2015-2021
-     - Designed and developed rocket propulsion systems for commercial and military spacecraft, resulting in successful missions and customer satisfaction
-     - Conducted analysis and optimization of propulsion system performance using computational tools and simulations
-     - Collaborated with cross-functional teams to integrate propulsion systems into spacecraft designs
-     - Supported the production and assembly of propulsion systems by providing technical guidance and troubleshooting assistance
-     - Prepared technical reports and presented findings to customers and senior management
-
-- Graduate Research Assistant, Massachusetts Institute of Technology, 2013-2015
-     - Conducted research on advanced propulsion technologies, including electric propulsion and plasma thrusters
-     - Designed and performed experiments to test propulsion system performance
-     - Analyzed experimental data and prepared technical reports for publication
-
-Skills: 
-- Proficient in propulsion system design and analysis
-- Strong understanding of fluid mechanics and thermodynamics
-- Experience with computational tools and simulations
-- Ability to work collaboratively with cross-functional teams
-- Excellent communication and interpersonal skills
-
-Certifications: 
-- Professional Engineer (PE) License, Aeronautical Engineering, 2018
-
-Professional Memberships: 
-- American Institute of Aeronautics and Astronautics (AIAA)
-- Society of Women Engineers (SWE)
-
-References: 
-Available upon request.
-"""
-SPACEX_JOB_POSTING = """
-Job Title: Space Propulsion Engineer
-
-Job Type: Full-time
-
-Location: SpaceX, Hawthorne, CA
-
-Are you passionate about space exploration and propulsion technology? Do you have a strong desire to work on cutting-edge projects that will shape the future of space travel? If so, we are looking for a highly motivated and dynamic individual to join our team as a Space Propulsion Engineer.
-
-Responsibilities:
-
-- Design, develop and test rocket propulsion systems for space vehicles
-- Analyze and optimize propulsion system performance using computational tools and simulations
-- Collaborate with other engineers and teams to integrate propulsion systems into spacecraft designs
-- Participate in the development and testing of new propulsion technologies
-- Support the production and assembly of propulsion systems
-- Maintain accurate records and prepare technical reports
-
-Requirements:
-
-- Bachelor's degree in Aerospace Engineering or related field
-- Experience in rocket propulsion system design and analysis
-- Strong analytical and problem-solving skills
-- Ability to work collaboratively with colleagues and teams
-- Passion for space exploration and propulsion technology
-
-We offer a competitive salary and benefits package, as well as ongoing professional development opportunities. If you are interested in joining our team and working on the forefront of space technology, please submit your resume and cover letter for consideration.
-"""
 
 
 AI_PURPOSE = " ".join(ENDPOINT_NAME.split("-")).lower()
