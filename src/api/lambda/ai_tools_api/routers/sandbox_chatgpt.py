@@ -7,7 +7,6 @@ from uuid import UUID
 from fastapi import APIRouter, Request, status
 from typing import Any, Dict
 from pynamodb.models import Model
-from pynamodb.pagination import ResultIterator
 
 sys.path.append(Path(__file__, "../utils"))
 sys.path.append(Path(__file__, "../gpt_turbo"))
@@ -139,13 +138,10 @@ def save_sandbox_chat_history(user_uuid: UUID, sandbox_chat_history: GPTChatHist
     chat_dict = sandbox_chat_history.dict()
     chat_dict["conversation_uuid"] = str(sandbox_chat_history.conversation_uuid)
     try:
-        user_data_table_model: UserDataTableModel = UserDataTableModel.get(str(user_uuid))
-        new_token_count = token_count + user_data_table_model.cumulative_token_count
-        new_user_model = UserDataTableModel(str(user_uuid), cumulative_token_count=new_token_count, sandbox_chat_history=chat_dict)
-        user_data_table_model.delete()
+        user_data_model: UserDataTableModel = UserDataTableModel.get(str(user_uuid))
     except (Model.DoesNotExist, StopIteration):
-        new_user_model = UserDataTableModel(str(user_uuid), cumulative_token_count=token_count, sandbox_chat_history=chat_dict)
-    new_user_model.save()
+        user_data_model = UserDataTableModel(str(user_uuid), sandbox_chat_history=chat_dict)
+    user_data_model.cumulative_token_count.add(token_count)
 
 
 @router.post(f"/{ENDPOINT_NAME}", response_model=SandBoxChatGPTResponse, responses=error_responses)

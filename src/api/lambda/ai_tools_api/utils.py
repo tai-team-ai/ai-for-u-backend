@@ -220,17 +220,12 @@ def get_secret(secret_name: str, region: str) -> dict:
 
 def update_user_token_count(user_uuid: UUID, token_count: int) -> None:
     try:
-        results: ResultIterator[UserDataTableModel] = UserDataTableModel.query(str(user_uuid))
-        user_data_table_model = next(results)
-        new_token_count = token_count + user_data_table_model.cumulative_token_count
-        new_user_model = UserDataTableModel(str(user_uuid), cumulative_token_count=new_token_count, sandbox_chat_history=user_data_table_model.sandbox_chat_history)
-        user_data_table_model.delete()
+        user_data_model: UserDataTableModel = UserDataTableModel.get(str(user_uuid))
     except (Model.DoesNotExist, StopIteration):
-        if os.environ.get(AUTHENTICATED_USER_ENV_VAR_NAME, False):
-            new_user_model = UserDataTableModel(str(user_uuid), cumulative_token_count=token_count, is_authenticated_user=True)
-        else:
-            new_user_model = UserDataTableModel(str(user_uuid), cumulative_token_count=token_count)
-    new_user_model.save()
+        user_data_model = UserDataTableModel(str(user_uuid))
+    user_data_model.cumulative_token_count.add(token_count)
+    if os.environ.get(AUTHENTICATED_USER_ENV_VAR_NAME, False):
+        user_data_model.is_authenticated_user = True
 
 
 def docstring_parameter(*sub):
@@ -307,15 +302,14 @@ def does_user_have_enough_tokens_to_make_request(user_uuid: UUID, expected_token
 def reset_token_count_if_time_elapsed(user_uuid: UUID, runtime_settings: RuntimeSettings) -> None:
     """Reset the token count if the time has elapsed."""
     try:
-        user_data_table_model: UserDataTableModel = UserDataTableModel.get(str(user_uuid))
-        last_reset_date = user_data_table_model.token_count_last_reset_date.replace(tzinfo=None)
-        time_delta = dt.datetime.utcnow() - last_reset_date
-        if time_delta > runtime_settings.days_before_resetting_token_count:
-            user_data_table_model.cumulative_token_count = 0
-            user_data_table_model.token_count_last_reset_date = dt.datetime.utcnow()
-            user_data_table_model.save()
+        user_data_model: UserDataTableModel = UserDataTableModel.get(str(user_uuid))
     except UserDataTableModel.DoesNotExist:
-        pass
+        return
+    last_reset_date = user_data_model.token_count_last_reset_date.replace(tzinfo=None)
+    time_delta = dt.datetime.utcnow() - last_reset_date
+    if time_delta > runtime_settings.days_before_resetting_token_count:
+        user_data_model.cumulative_token_count.set(0)
+        user_data_model.token_count_last_reset_date.set(dt.datetime.utcnow())
 
 
 def get_number_of_tokens_before_limit_reached(user_uuid: UUID, runtime_settings: RuntimeSettings) -> int:
@@ -323,8 +317,8 @@ def get_number_of_tokens_before_limit_reached(user_uuid: UUID, runtime_settings:
     token_limit = runtime_settings.non_authenticate_user_daily_usage_token_limit
     try:
         user_data_table_model: UserDataTableModel = UserDataTableModel.get(str(user_uuid))
-        if runtime_settings.authenticated:
-            token_limit = runtime_settings.authenticate_user_daily_usage_token_limit
     except UserDataTableModel.DoesNotExist:
         return token_limit
+    if runtime_settings.authenticated:
+        token_limit = runtime_settings.authenticate_user_daily_usage_token_limit
     return token_limit - user_data_table_model.cumulative_token_count
