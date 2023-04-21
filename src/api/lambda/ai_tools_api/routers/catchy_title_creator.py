@@ -137,7 +137,7 @@ class CatchyTitleCreatorExamplesResponse(ExamplesResponse):
     examples: list[CatchyTitleCreatorRequest]
 
 @docstring_parameter(ENDPOINT_NAME)
-@router.get(f"/{ENDPOINT_NAME}-{EXAMPLES_ENDPOINT_POSTFIX}", response_model=AIToolResponse, status_code=status.HTTP_200_OK)
+@router.get(f"/{ENDPOINT_NAME}-{EXAMPLES_ENDPOINT_POSTFIX}", response_model=CatchyTitleCreatorExamplesResponse, status_code=status.HTTP_200_OK)
 async def catchy_title_creator_examples():
     """
     **Get examples for the {0} endpoint.**
