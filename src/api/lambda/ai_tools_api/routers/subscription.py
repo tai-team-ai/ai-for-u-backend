@@ -65,8 +65,8 @@ def subscription(request: Request, response: Response, subscription_request: Sub
     logger.info(f"Received request from user {uuid} for {ENDPOINT_NAME} endpoint.")
     try:
         user_data_model: UserDataTableModel = UserDataTableModel.get(uuid)
+        user_data_model.email_address.set(subscription_request.email_address)
+        user_data_model.is_subscribed.set(True)
     except (Model.DoesNotExist, StopIteration):
-        user_data_model = UserDataTableModel(uuid)
-    user_data_model.email_address.set(subscription_request.email_address)
-    user_data_model.is_subscribed.set(True)
+        user_data_model = UserDataTableModel(uuid, email_address=subscription_request.email_address, is_subscribed=True)
     return {}

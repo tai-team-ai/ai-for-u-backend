@@ -221,9 +221,10 @@ def get_secret(secret_name: str, region: str) -> dict:
 def update_user_token_count(user_uuid: UUID, token_count: int) -> None:
     try:
         user_data_model: UserDataTableModel = UserDataTableModel.get(str(user_uuid))
+        user_data_model.cumulative_token_count + token_count
     except (Model.DoesNotExist, StopIteration):
-        user_data_model = UserDataTableModel(str(user_uuid))
-    user_data_model.cumulative_token_count + token_count
+        user_data_model = UserDataTableModel(str(user_uuid), cumulative_token_count=token_count)
+        user_data_model.save()
     if os.environ.get(AUTHENTICATED_USER_ENV_VAR_NAME, False):
         user_data_model.is_authenticated_user = True
 

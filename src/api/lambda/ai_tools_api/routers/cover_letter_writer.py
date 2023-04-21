@@ -187,12 +187,11 @@ async def cover_letter_writer_examples(request: Request):
         job_posting=JOB_POSTING_EXAMPLE,
         skills_to_highlight_from_resume="international teaching experience and my TESOL certification",
         tone=Tone.ASSERTIVE,
-        freeform_command="Please don't talk about my lack of experience teaching high school students.",
         company_name="Rocky Mountain High School"
     )
 
     example_response = CoverLetterWriterExamplesResponse(
-        example_names=["Highschool Teacher Cover Letter"],
+        example_names=["Highschool Teacher"],
         examples=[cover_letter_example]
     )
     return example_response
