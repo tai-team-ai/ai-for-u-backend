@@ -1,5 +1,6 @@
 import datetime as dt
 import json
+import os
 import logging
 from cryptography.hazmat.primitives import hashes, hmac
 from cryptography.hazmat.primitives.kdf.hkdf import HKDF
@@ -225,7 +226,10 @@ def update_user_token_count(user_uuid: UUID, token_count: int) -> None:
         new_user_model = UserDataTableModel(str(user_uuid), cumulative_token_count=new_token_count, sandbox_chat_history=user_data_table_model.sandbox_chat_history)
         user_data_table_model.delete()
     except (Model.DoesNotExist, StopIteration):
-        new_user_model = UserDataTableModel(str(user_uuid), cumulative_token_count=token_count)
+        if os.environ.get(AUTHENTICATED_USER_ENV_VAR_NAME, False):
+            new_user_model = UserDataTableModel(str(user_uuid), cumulative_token_count=token_count, is_authenticated_user=True)
+        else:
+            new_user_model = UserDataTableModel(str(user_uuid), cumulative_token_count=token_count)
     new_user_model.save()
 
 
