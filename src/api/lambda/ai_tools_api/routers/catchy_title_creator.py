@@ -203,6 +203,6 @@ async def catchy_title_creator(catchy_title_creator_request: CatchyTitleCreatorR
     logger.info("Latest chat: %s", latest_chat)
     latest_chat = sanitize_string(latest_chat)
 
-    response_model = CatchyTitleCreatorResponse(titles=latest_chat)
+    response_model = CatchyTitleCreatorResponse(titles=[latest_chat])
     logger.info("Returning response: %s", response_model)
     return response_model
