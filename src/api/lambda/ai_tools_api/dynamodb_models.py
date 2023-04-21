@@ -85,7 +85,7 @@ class UserDataTableModel(Model):
     is_subscribed = BooleanAttribute(null=True)
     sandbox_chat_history = JSONAttribute(null=True)
     email_address = UnicodeAttribute(null=True)
-    is_authenticated_user = BooleanAttribute(null=True)
+    authenticated_user = BooleanAttribute(null=True)
 
 
 class NextJsAuthTableModel(Model):

@@ -67,9 +67,6 @@ def subscription(request: Request, response: Response, subscription_request: Sub
         UserDataTableModel.email_address.set(subscription_request.email_address),
         UserDataTableModel.is_subscribed.set(True),
     ]
-    try:
-        user_data_model: UserDataTableModel = UserDataTableModel.get(uuid)
-    except (Model.DoesNotExist, StopIteration):
-        user_data_model = UserDataTableModel(uuid)
+    user_data_model: UserDataTableModel = UserDataTableModel.get(uuid)
     user_data_model.update(actions=action_list)
     return {}
