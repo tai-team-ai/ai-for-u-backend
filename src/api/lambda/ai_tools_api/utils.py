@@ -2,6 +2,7 @@ import datetime as dt
 import json
 import os
 import logging
+import pytz
 from cryptography.hazmat.primitives import hashes, hmac
 from cryptography.hazmat.primitives.kdf.hkdf import HKDF
 from fastapi import Response, Request, status
@@ -308,8 +309,8 @@ def reset_token_count_if_time_elapsed(user_uuid: UUID, runtime_settings: Runtime
     last_reset_date = user_data_model.token_count_last_reset_date.replace(tzinfo=None)
     time_delta = dt.datetime.utcnow() - last_reset_date
     if time_delta > runtime_settings.days_before_resetting_token_count:
+        user_data_model.token_count_last_reset_date.set(get_eastern_time_previous_day_midnight())
         user_data_model.cumulative_token_count.set(0)
-        user_data_model.token_count_last_reset_date.set(dt.datetime.utcnow())
 
 
 def get_number_of_tokens_before_limit_reached(user_uuid: UUID, runtime_settings: RuntimeSettings) -> int:
@@ -322,3 +323,18 @@ def get_number_of_tokens_before_limit_reached(user_uuid: UUID, runtime_settings:
     if runtime_settings.authenticated:
         token_limit = runtime_settings.authenticate_user_daily_usage_token_limit
     return token_limit - user_data_table_model.cumulative_token_count
+
+
+def get_eastern_time_previous_day_midnight() -> dt.datetime:
+    """Get the eastern time previous day midnight."""
+    # Set the timezone to Eastern Standard Time
+    est_tz = pytz.timezone('US/Eastern')
+    # Get the current UTC time
+    current_utc_time = dt.datetime.utcnow()
+    # Convert the UTC time to Eastern Standard Time
+    current_est_time = current_utc_time.replace(tzinfo=pytz.utc).astimezone(est_tz)
+    # Set the time to 2am
+    previous_day_12am_est_time = current_est_time.replace(hour=0, minute=0, second=0, microsecond=0) - dt.timedelta(days=1)
+    # Convert back to UTC time
+    previous_day_12am_utc_time = previous_day_12am_est_time.astimezone(pytz.utc).replace(tzinfo=None)
+    return previous_day_12am_utc_time
