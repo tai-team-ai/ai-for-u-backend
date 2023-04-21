@@ -118,15 +118,12 @@ def load_sandbox_chat_history(user_uuid: UUID, conversation_uuid: UUID) -> GPTCh
     Returns:
         chat_history: Chat history for a sandbox-chatgpt session.
     """
-    try:
-        user_data_table_model = UserDataTableModel.get(str(user_uuid))
-        chat_history: Dict[str, Any] = user_data_table_model.sandbox_chat_history
-        if chat_history:
-            chat_history = GPTChatHistory(**chat_history)
-            if chat_history.conversation_uuid == conversation_uuid:
-                return chat_history
-    except (Model.DoesNotExist, StopIteration, KeyError):
-        logger.error(traceback.format_exc())
+    user_data_table_model = UserDataTableModel.get(str(user_uuid))
+    chat_history: Dict[str, Any] = user_data_table_model.sandbox_chat_history
+    if chat_history:
+        chat_history = GPTChatHistory(**chat_history)
+        if chat_history.conversation_uuid == conversation_uuid:
+            return chat_history
     return GPTChatHistory(conversation_uuid=conversation_uuid)
 
 def save_sandbox_chat_history(user_uuid: UUID, sandbox_chat_history: GPTChatHistory) -> None:
@@ -140,14 +137,10 @@ def save_sandbox_chat_history(user_uuid: UUID, sandbox_chat_history: GPTChatHist
     token_count += sandbox_chat_history.messages[-2].token_count # add token count for system prompt
     chat_dict = sandbox_chat_history.dict()
     chat_dict["conversation_uuid"] = str(sandbox_chat_history.conversation_uuid)
-    action_list = []
-    try:
-        user_data_model: UserDataTableModel = UserDataTableModel.get(str(user_uuid))
-    except (Model.DoesNotExist, StopIteration):
-        user_data_model = UserDataTableModel(str(user_uuid))
+    user_data_model: UserDataTableModel = UserDataTableModel.get(str(user_uuid))
     user_data_model.update(actions=[
-            action_list.append(UserDataTableModel.sandbox_chat_history.set(chat_dict)),
-            action_list.append(UserDataTableModel.cumulative_token_count.add(token_count)),
+            UserDataTableModel.sandbox_chat_history.set(chat_dict),
+            UserDataTableModel.cumulative_token_count.add(token_count),
         ]
     )
 

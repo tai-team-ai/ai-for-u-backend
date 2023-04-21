@@ -11,14 +11,17 @@ from mangum import Mangum
 from fastapi import FastAPI, APIRouter, Request, status , Response
 from fastapi.responses import JSONResponse
 from fastapi.exceptions import RequestValidationError
+from pynamodb.models import Model
 
 dir_path = Path(__file__).parent
 sys.path.append(str(dir_path / "../dependencies"))
 sys.path.append(str(dir_path / "utils"))
 sys.path.append(str(dir_path / "routers"))
 sys.path.append(str(dir_path))
+sys.path.append(Path(__file__, "../dynamodb_models"))
 from api_gateway_settings import APIGatewaySettings, DeploymentStage
 from ai_tools_lambda_settings import AIToolsLambdaSettings
+from dynamodb_models import UserDataTableModel
 from routers import (
     text_revisor,
     cover_letter_writer,
@@ -101,6 +104,14 @@ def handle_rate_limit_exception(request: Request, exc: RateLimitError):
     content = {"Rate Limit Exception": msg}
     return get_error_response(request, content)
 
+def initialize_user_db(uuid: UUID, is_user_authenticated: bool):
+    try:
+        user_data_model: UserDataTableModel = UserDataTableModel.get(str(uuid))
+    except (Model.DoesNotExist):
+        user_data_model = UserDataTableModel(str(uuid))
+    user_data_model.update(actions=[
+        UserDataTableModel.authenticated_user.set(is_user_authenticated),
+    ])
 
 def create_fastapi_app():
     """Create FastAPI app."""
@@ -143,6 +154,7 @@ def create_fastapi_app():
         if user_token is not None:
             authenticated = is_user_authenticated(uuid, user_token)
         os.environ[AUTHENTICATED_USER_ENV_VAR_NAME] = str(authenticated)
+        initialize_user_db(uuid, authenticated)
         logger.info(f"Authenticated: {authenticated}")
         response = await call_next(request)
         prepare_response(response, request)
