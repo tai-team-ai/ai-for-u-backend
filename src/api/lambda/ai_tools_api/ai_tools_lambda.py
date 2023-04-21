@@ -36,6 +36,7 @@ from utils import (
     UUID_HEADER_NAME,
     USER_TOKEN_HEADER_NAME,
     is_user_authenticated,
+    EXAMPLES_ENDPOINT_POSTFIX,
 )
 
 logger = logging.getLogger()
@@ -119,11 +120,18 @@ def create_fastapi_app():
     async def check_if_header_is_present(request: Request, call_next):
         """Check if user is authenticated."""
         path = request.url.path
+        examples_paths = []
+        for router_ in routers:
+            for route in router_.routes:
+                if route.path.endswith(EXAMPLES_ENDPOINT_POSTFIX):
+                    examples_paths.append(f"{root_path}/{api_gateway_settings.openai_route_prefix}{route.path}")
         allowed_paths = {
             f"{root_path}/{api_gateway_settings.openai_route_prefix}/docs",
             f"{root_path}/{api_gateway_settings.openai_route_prefix}/openapi.json",
         }
+        allowed_paths.update(examples_paths)
         uuid_str = request.headers.get(UUID_HEADER_NAME, None)
+        logger.info("path: %s", allowed_paths)
         logger.info("uuid_str: %s", uuid_str)
         try:
             uuid = UUID(uuid_str, version=4)
