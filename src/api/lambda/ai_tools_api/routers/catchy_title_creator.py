@@ -23,8 +23,10 @@ import sys
 import os
 
 sys.path.append(Path(__file__).parent / "../utils")
+sys.path.append(Path(__file__).parent / "../text_examples")
 sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), "../gpt_turbo"))
 from gpt_turbo import GPTTurboChatSession, GPTTurboChat, Role, get_gpt_turbo_response
+from text_examples import TEXT_BOOK_EXAMPLE, COFFEE_SHOP, SHORT_STORY
 from utils import (
     AIToolModel,
     sanitize_string,
@@ -42,6 +44,7 @@ from utils import (
     TokensExhaustedException,
     AIToolResponse,
 )
+
 
 logger = logging.getLogger()
 logger.setLevel(logging.DEBUG)
@@ -145,18 +148,38 @@ async def catchy_title_creator_examples():
     This method returns a list of examples for the {0} endpoint. These examples can be posted to the {0} endpoint 
     without modification.
     """
-    catchy_title_example = CatchyTitleCreatorRequest(
-        text_or_description="This is an amazing text that I wrote. It is so amazing that I am going to write a catchy title for it.",
-        target_audience="My boss",
-        tone=Tone.FRIENDLY,
-        num_titles=8,
-        creativity=100,
-        specific_keywords_to_include=["Best Title Ever", "Amazing Title", "Catchy Title"],
-        type_of_title="Coffee Shop Name",
-    )
+    catchy_title_examples = [
+        CatchyTitleCreatorRequest(
+            text_or_description=TEXT_BOOK_EXAMPLE,
+            target_audience="Young Adults",
+            tone=Tone.FRIENDLY,
+            num_titles=8,
+            creativity=60,
+            specific_keywords_to_include=["furry friends"],
+            type_of_title="Textbook",
+        ),
+        CatchyTitleCreatorRequest(
+            text_or_description=COFFEE_SHOP,
+            target_audience="Travelers & tourists",
+            tone=Tone.OPTIMISTIC,
+            num_titles=5,
+            creativity=100,
+            specific_keywords_to_include=["quaint", "cozy", "cute"],
+            type_of_title="Coffee Shop",
+        ),
+        CatchyTitleCreatorRequest(
+            text_or_description=SHORT_STORY,
+            target_audience="Kids",
+            tone=Tone.FRIENDLY,
+            num_titles=5,
+            creativity=80,
+            type_of_title="Short Story",
+        ),
+    ]
+    
     example_response = CatchyTitleCreatorExamplesResponse(
-        example_names=["Catchy Title Example"],
-        examples=[catchy_title_example]
+        example_names=["Textbook"],
+        examples=catchy_title_examples
     )
     return example_response
 
