@@ -144,19 +144,20 @@ def create_fastapi_app():
         uuid_str = request.headers.get(UUID_HEADER_NAME, None)
         logger.info("path: %s", allowed_paths)
         logger.info("uuid_str: %s", uuid_str)
+        uuid = None
         try:
             uuid = UUID(uuid_str, version=4)
+        except Exception as e: # pylint: disable=broad-except
+            if path not in allowed_paths:
+                raise UserTokenNotFoundError("User UUID not found.") from e
+        if uuid:
             user_token = request.headers.get(USER_TOKEN_HEADER_NAME, None)
             authenticated = False
             if user_token is not None:
                 authenticated = is_user_authenticated(uuid, user_token)
             os.environ[AUTHENTICATED_USER_ENV_VAR_NAME] = str(authenticated)
             initialize_user_db(uuid, authenticated)
-        except Exception as e: # pylint: disable=broad-except
-            if path not in allowed_paths:
-                raise UserTokenNotFoundError("User UUID not found.") from e
-
-        logger.info(f"Authenticated: {authenticated}")
+            logger.info(f"Authenticated: {authenticated}")
         response = await call_next(request)
         prepare_response(response, request)
         return response
