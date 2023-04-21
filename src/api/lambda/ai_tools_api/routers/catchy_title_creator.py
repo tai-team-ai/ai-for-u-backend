@@ -87,7 +87,7 @@ class CatchyTitleCreatorInstructions(BaseAIInstructionModel):
         title="Tone",
         description="The expected tone of the generated titles."
     )
-    specific_keywords_to_include: Optional[List[constr(min_length=1, max_length=20)]] = Field(
+    specific_keywords_to_include: Optional[List[constr(min_length=0, max_length=20)]] = Field(
         default=[],
         title="Keywords to Include in Titles",
         description="These can help your title perform better for SEO (e.g. 'how to', 'best', 'top', 'ultimate', 'ultimate guide', etc.)."

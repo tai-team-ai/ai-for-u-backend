@@ -166,9 +166,11 @@ def sandbox_chatgpt(sandbox_chatgpt_request: SandBoxChatGPTRequest, request: Req
             system_prompt=SYSTEM_PROMPT,
             chat_session=chat_session,
             frequency_penalty=0.9,
+            presence_penalty=0.5,
             temperature=0.9,
             uuid=uuid,
-            max_tokens=400
+            max_tokens=500,
+            override_model_context_window=1000,
         )
     except TokensExhaustedException:
         return TOKEN_EXHAUSTED_JSON_RESPONSE

@@ -13,7 +13,7 @@ from utils import (
 )
 
 
-MODEL_CONTEXT_WINDOW = 2048
+MODEL_CONTEXT_WINDOW = 3800
 GPT_MODEL = "gpt-3.5-turbo"
 MODEL_ENCODING = tiktoken.encoding_for_model(GPT_MODEL)
 
@@ -100,7 +100,7 @@ def count_tokens(string: str) -> int:
 
 
 @docstring_parameter(MODEL_CONTEXT_WINDOW)
-def truncate_chat_session(chat_session: GPTTurboChatSession, overhead_tokens: int) -> GPTTurboChatSession:
+def truncate_chat_session(chat_session: GPTTurboChatSession, overhead_tokens: int, context_window: int) -> GPTTurboChatSession:
     """
     Truncate the chat session to the model context window ({0})
 
@@ -118,9 +118,12 @@ def truncate_chat_session(chat_session: GPTTurboChatSession, overhead_tokens: in
         chat_session: The truncated chat session.
     """
     chat_history_cumulative_token_count = 0
+    logger.info(chat_session)
+    logger.info(overhead_tokens)
     for chat in chat_session.messages:
         chat_history_cumulative_token_count += chat.token_count
-    while chat_history_cumulative_token_count + overhead_tokens > MODEL_CONTEXT_WINDOW:
+    while chat_history_cumulative_token_count + overhead_tokens > context_window:
+        logger.info(chat_history_cumulative_token_count)
         chat_history_cumulative_token_count -= chat_session.messages[0].token_count
         chat_session = GPTTurboChatSession(messages=chat_session.messages[1:])
         logger.info(chat_session)
@@ -136,6 +139,7 @@ def get_gpt_turbo_response(
     stream: bool = False,
     uuid: str = "",
     max_tokens: int = 400,
+    override_model_context_window: int = None,
 ) -> GPTTurboChatSession:
     """
     Get response from GPT Turbo.
@@ -161,7 +165,7 @@ def get_gpt_turbo_response(
     user_prompt_token_count = count_tokens(chat_session.messages[-1].content)
     chat_session.messages[-1].token_count = user_prompt_token_count
     chat_session.messages[-1].content = sanitize_string(chat_session.messages[-1].content)
-    chat_session = truncate_chat_session(chat_session, tokens_for_request)
+    chat_session = truncate_chat_session(chat_session, tokens_for_request, override_model_context_window or MODEL_CONTEXT_WINDOW)
     for chat in chat_session.messages:
         tokens_for_request += chat.token_count
         prompt_messages.append(chat.dict(exclude={"token_count"}))
