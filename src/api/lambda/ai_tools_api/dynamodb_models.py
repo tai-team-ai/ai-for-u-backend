@@ -1,3 +1,5 @@
+import datetime as dt
+import pytz
 from typing import Optional
 import sys
 from pathlib import Path
@@ -5,15 +7,29 @@ from datetime import datetime
 from enum import Enum
 from pynamodb.models import Model
 from pynamodb.attributes import UnicodeAttribute, BooleanAttribute, NumberAttribute, JSONAttribute, UTCDateTimeAttribute
-from pydantic import BaseSettings, AnyUrl, constr, validator, Field
-sys.path.append(Path(__file__, "../utils"))
-from utils import get_eastern_time_previous_day_midnight
+from pydantic import BaseSettings, AnyUrl, constr, validator
+
 
 CDK_DEFAULT_REGION_VAR_NAME = "CDK_DEFAULT_REGION"
 
 class SupportedKeyTypes(Enum):
     STRING = "STRING"
     NUMBER = "NUMBER"
+
+
+def get_eastern_time_previous_day_midnight() -> dt.datetime:
+    """Get the eastern time previous day midnight."""
+    # Set the timezone to Eastern Standard Time
+    est_tz = pytz.timezone('US/Eastern')
+    # Get the current UTC time
+    current_utc_time = dt.datetime.utcnow()
+    # Convert the UTC time to Eastern Standard Time
+    current_est_time = current_utc_time.replace(tzinfo=pytz.utc).astimezone(est_tz)
+    # Set the time to 2am
+    previous_day_12am_est_time = current_est_time.replace(hour=0, minute=0, second=0, microsecond=0) - dt.timedelta(days=1)
+    # Convert back to UTC time
+    previous_day_12am_utc_time = previous_day_12am_est_time.astimezone(pytz.utc).replace(tzinfo=None)
+    return previous_day_12am_utc_time
 
 
 class DynamoDBSettings(BaseSettings):
