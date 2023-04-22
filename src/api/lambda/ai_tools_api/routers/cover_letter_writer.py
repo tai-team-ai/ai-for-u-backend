@@ -38,7 +38,7 @@ MAX_TOKENS_FROM_GPT_RESPONSE = 400
 
 
 AI_PURPOSE = " ".join(ENDPOINT_NAME.split("-")).lower()
-@docstring_parameter(AI_PURPOSE, [tone.value for tone in Tone])
+
 class CoverLetterWriterInsructions(BaseAIInstructionModel):
     """You are an expert {0}. I will provide a resume, job posting, and company name (if given) to write a cover letter for. You should respond with the cover letter and nothing else.
 
@@ -65,7 +65,7 @@ class CoverLetterWriterInsructions(BaseAIInstructionModel):
     skills_to_highlight_from_resume: constr(min_length=1, max_length=1000) = Field(
         ...,
         title="Skills to Highlight from Resume",
-        description="The skills to highlight form your resume. What's your best skills?",
+        description="What are your strengths? What skills do you have that are most relevant to the job posting?",
     )
     tone: Optional[Tone] = Field(
         default=Tone.ASSERTIVE,
@@ -73,9 +73,24 @@ class CoverLetterWriterInsructions(BaseAIInstructionModel):
         description="The tone used when writing the cover letter.",
     )
 
-SYSTEM_PROMPT = CoverLetterWriterInsructions.__doc__
+SYSTEM_PROMPT = (
+    "You are an expert at writing cover letters. You have spent hours "
+    "perfecting your cover letter writing skills. You have written cover "
+    "letters for hundreds of people. Because of your expertise, I want you "
+    "to write a cover letter for me. You should ONLY respond with the "
+    "cover letter and nothing else. I will provide you with a resume, job "
+    "posting, and optionally a company name to write a cover letter for. You "
+    "should respond with a cover letter that is tailored to the job posting "
+    "and company, highlights my skills, and demonstrates enthusiasm for "
+    "the company and role. I may also ask you to specifically highlight "
+    "certain skills from my resume that i feel are most relevant to the job "
+    "posting. It is important that you highlight these skills if I ask you to. "
+    "Remember, you are an expert at writing cover letters. I trust you to "
+    "write a cover letter that will get me the job. Please do not respond with "
+    "anything other than the cover letter."
+)
 
-@docstring_parameter(ENDPOINT_NAME)
+
 class CoverLetterWriterRequest(CoverLetterWriterInsructions):
     """
     **Define the model for the request body for {0} endpoint.**
@@ -97,7 +112,7 @@ class CoverLetterWriterRequest(CoverLetterWriterInsructions):
     )
 
 
-@docstring_parameter(ENDPOINT_NAME)
+
 class CoverLetterWriterExamplesResponse(ExamplesResponse):
     """
     **Define the model for the response body for {0} examples endpoint.**
@@ -130,7 +145,7 @@ async def cover_letter_writer_examples(request: Request):
         resume=AEROSPACE_RESUME,
         job_posting=SPACEX_JOB_POSTING,
         skills_to_highlight_from_resume="my experience with Python and my ability to work in a team",
-        tone=Tone.ASSERTIVE,
+        tone=Tone.FORMAL,
         company_name="SpaceX",
     )
 
@@ -150,19 +165,20 @@ async def cover_letter_writer(request: Request, cover_letter_writer_request: Cov
     """
     logger.info(f"Received request for {ENDPOINT_NAME} endpoint.")
     user_prompt = append_field_prompts_to_prompt(CoverLetterWriterInsructions(**cover_letter_writer_request.dict()), BASE_USER_PROMPT_PREFIX)
-    user_prompt += f"\nHere is my resume you should use as reference: {cover_letter_writer_request.resume}"
+    user_prompt += f"\nHere is my resume to use as a reference when writing the cover letter: {cover_letter_writer_request.resume}"
     uuid = request.headers.get(UUID_HEADER_NAME)
     user_chat = GPTTurboChat(
         role=Role.USER,
         content=user_prompt
     )
+    
     try:
         chat_session = get_gpt_turbo_response(
             system_prompt=SYSTEM_PROMPT,
             chat_session=GPTTurboChatSession(messages=[user_chat]),
-            frequency_penalty=0.0,
-            presence_penalty=0.0,
-            temperature=0.3,
+            frequency_penalty=1.3,
+            presence_penalty=0.8,
+            temperature=0.65,
             uuid=uuid,
             max_tokens=MAX_TOKENS_FROM_GPT_RESPONSE
         )
