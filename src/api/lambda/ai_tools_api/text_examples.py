@@ -64,7 +64,7 @@ Mindfulness and meditation can have a profound impact on mental health in today'
 
 Numerous studies have shown that mindfulness and meditation offer several benefits for mental health. These include reducing stress and anxiety, lowering symptoms of depression, improving sleep, boosting cognitive function, and enhancing self-awareness. By incorporating these practices into your daily routine, you can identify negative patterns and make positive changes in your life. To start, begin with just a few minutes of mindfulness or meditation each day, find a quiet space where you can focus without distractions, use guided meditations to help you stay focused and relaxed, and practice regularly. 
 
-In conclusion, mindfulness and meditation can be powerful tools for improving mental health and well-being. By reducing stress, increasing happiness
+In conclusion, mindfulness and meditation can be powerful tools for improving mental health and well-being. By reducing stress, increasing happiness and self-awareness, and improving cognitive function, these practices can help you live a more fulfilling life. If you're interested in learning more about mindfulness and meditation. You can find more information on the American Psychological Association website.
 """
 
 

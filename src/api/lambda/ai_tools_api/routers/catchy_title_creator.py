@@ -13,7 +13,6 @@ Attributes:
     get_openai_response (function): Method to get response from openai.
     catchy_title_creator (function): Post endpoint for the lambda function.
 """
-
 from pydantic import constr, conint, Field
 from fastapi import APIRouter, Response, status, Request
 from typing import Optional, List
