@@ -106,7 +106,6 @@ SYSTEM_PROMPT = (
         "this should be the text. For other types of things, (e.g. coffee shop, company name, street name etc.) this should be a description of the thing you are generating a name for.\n"
 )
 
-@docstring_parameter(ENDPOINT_NAME)
 class CatchyTitleCreatorRequest(CatchyTitleCreatorInstructions):
     """
     **Define the model for the request body for {0} endpoint.**
@@ -126,7 +125,7 @@ class CatchyTitleCreatorRequest(CatchyTitleCreatorInstructions):
     )
 
 
-@docstring_parameter(ENDPOINT_NAME)
+
 class CatchyTitleCreatorExamplesResponse(ExamplesResponse):
     """
     **Define examples for teh {0} endpoint.**

@@ -90,7 +90,7 @@ SYSTEM_PROMPT = (
     "anything other than the cover letter."
 )
 
-@docstring_parameter(ENDPOINT_NAME)
+
 class CoverLetterWriterRequest(CoverLetterWriterInsructions):
     """
     **Define the model for the request body for {0} endpoint.**
@@ -112,7 +112,7 @@ class CoverLetterWriterRequest(CoverLetterWriterInsructions):
     )
 
 
-@docstring_parameter(ENDPOINT_NAME)
+
 class CoverLetterWriterExamplesResponse(ExamplesResponse):
     """
     **Define the model for the response body for {0} examples endpoint.**
@@ -145,7 +145,7 @@ async def cover_letter_writer_examples(request: Request):
         resume=AEROSPACE_RESUME,
         job_posting=SPACEX_JOB_POSTING,
         skills_to_highlight_from_resume="my experience with Python and my ability to work in a team",
-        tone=Tone.ASSERTIVE,
+        tone=Tone.FORMAL,
         company_name="SpaceX",
     )
 
@@ -176,9 +176,9 @@ async def cover_letter_writer(request: Request, cover_letter_writer_request: Cov
         chat_session = get_gpt_turbo_response(
             system_prompt=SYSTEM_PROMPT,
             chat_session=GPTTurboChatSession(messages=[user_chat]),
-            frequency_penalty=1.0,
+            frequency_penalty=1.3,
             presence_penalty=0.8,
-            temperature=0.6,
+            temperature=0.65,
             uuid=uuid,
             max_tokens=MAX_TOKENS_FROM_GPT_RESPONSE
         )
