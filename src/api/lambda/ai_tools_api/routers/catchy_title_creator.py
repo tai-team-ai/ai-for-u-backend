@@ -60,7 +60,7 @@ AI_PURPOSE = " ".join(ENDPOINT_NAME.split("-")).lower()
 class CatchyTitleCreatorInstructions(BaseAIInstructionModel):
     type_of_title: Optional[constr(min_length=1, max_length=50)] = Field(
         ...,
-        title="What's the Title For?",
+        title="What's the Titles/Names For?",
         description="This can literally be anything. (eg. company, coffee shop, song, documentary, social media post, etc.)"
     )
     target_audience: Optional[constr(min_length=1, max_length=200)] = Field(
@@ -70,7 +70,7 @@ class CatchyTitleCreatorInstructions(BaseAIInstructionModel):
     )
     tone: Optional[Tone] = Field(
         default=Tone.INFORMAL,
-        title="Tone",
+        title="Tone of the Titles/Names",
         description="The expected tone of the generated titles."
     )
     specific_keywords_to_include: Optional[List[constr(min_length=0, max_length=20)]] = Field(
@@ -80,7 +80,7 @@ class CatchyTitleCreatorInstructions(BaseAIInstructionModel):
     )
     num_titles: Optional[conint(ge=1, le=15)] = Field(
         default=3,
-        title="Number of Titles to Create",
+        title="Number of Titles/Names to Generate",
         description="The number of titles that you want to generate."
     )
     creativity: Optional[conint(ge=0, le=100)] = Field(
