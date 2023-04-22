@@ -151,6 +151,7 @@ def append_field_prompts_to_prompt(model: BaseAIInstructionModel, base_prompt: s
                 if isinstance(field_value[0], Enum):
                     field_value = [field.value for field in field_value]
                 field_value = ", ".join(field_value)
+            field_name = field_name.replace("_", " ").title()
             base_prompt += f"{field_name}: {field_value}\n"
     return base_prompt
 
@@ -233,6 +234,12 @@ def docstring_parameter(*sub):
         return obj
     return dec
 
+def map_value_between_range(value: float, old_min: float, old_max: float, new_min: float, new_max: float) -> float:
+    """Map a value from one range to another range."""
+    old_range = old_max - old_min
+    new_range = new_max - new_min
+    new_value = (((value - old_min) * new_range) / old_range) + new_min
+    return new_value
 
 def get_derived_encryption_key(secret: str) -> bytes:
     hkdf = HKDF(
