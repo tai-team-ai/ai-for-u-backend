@@ -61,7 +61,7 @@ class CatchyTitleCreatorInstructions(BaseAIInstructionModel):
     type_of_title: Optional[constr(min_length=1, max_length=50)] = Field(
         ...,
         title="What's the Title For?",
-        description="This can literally be anything. (eg. dog name, company, coffee shop, song, documentary, social media post, etc.)"
+        description="This can literally be anything. (eg. company, coffee shop, song, documentary, social media post, etc.)"
     )
     target_audience: Optional[constr(min_length=1, max_length=200)] = Field(
         ...,
@@ -75,7 +75,7 @@ class CatchyTitleCreatorInstructions(BaseAIInstructionModel):
     )
     specific_keywords_to_include: Optional[List[constr(min_length=0, max_length=20)]] = Field(
         default=[],
-        title="Keywords to Include in Titles",
+        title="Keywords to Include",
         description="These can help your title perform better for SEO (e.g. 'how to', 'best', 'top', 'ultimate', 'ultimate guide', etc.)."
     )
     num_titles: Optional[conint(ge=1, le=15)] = Field(
@@ -96,14 +96,14 @@ SYSTEM_PROMPT = (
     "You should use markdown format when returning the titles and should return them as a list."
     "You should follow the instructions that I provide you in order to generate the best titles and names for me."
     "These instructions could include any of the following:\n"
-    "Type of Title: This is what defines the thing you are creating a name or title for. (eg. pet, company, coffee shop, song, documentary, social media post, etc.)\n"
+    "Type of Title: This is what defines the thing you are creating a name or title for. (eg. company, coffee shop, song, documentary, social media post, etc.)\n"
     "Target Audience: You should keep this audience in mind when you are writing the names and titles. Here are some examples: children, adults, teenagers, public, superiors, etc.\n"
     f"Tone: The expected tone of the titles and the names that you generate. Here are the possible tones: {[tone.value for tone in Tone]}.\n"
     "Specific Keywords to Include: You should try to include these keywords in the titles and names that you generate.\n"
     "Number of Titles: The number of name & titles that you should generate.\n"
     "Creativity: The creativity of the names and titles that you create. Where 0 is the least creative and 100 is the most creative.\n"
-    "Text or Description: The text or description of what you are generating catchy titles for. For generating titles for text (e.g. books, articles, blogs, social media posts, songs, etc.), "
-        "this should be the text. For other types of things, (e.g. coffee shop, company name, etc.) this should be a description of the thing you are generating a name for.\n"
+    "Text or Description: The text or description of what you are generating catchy titles for. For generating titles for text (e.g. articles, blogs, social media posts, songs, etc.), "
+        "this should be the text. For other types of things, (e.g. coffee shop, company name, street name etc.) this should be a description of the thing you are generating a name for.\n"
 )
 
 @docstring_parameter(ENDPOINT_NAME)
@@ -122,7 +122,7 @@ class CatchyTitleCreatorRequest(CatchyTitleCreatorInstructions):
     text_or_description: constr(min_length=1, max_length=10000) = Field(
         ...,
         title="Text or Description",
-        description="This can be the text you are generating titles for (article, notes, etc.), or if you are generating names, you can describe what the name is for. (Coffee Shop, Company Name, etc.)"
+        description="This can be the text you are generating titles for (article, notes, etc.), or if you are generating names for something (pet, company name, etc.), you can describe what the name is for."
     )
 
 
