@@ -65,7 +65,7 @@ class CoverLetterWriterInsructions(BaseAIInstructionModel):
     skills_to_highlight_from_resume: constr(min_length=1, max_length=1000) = Field(
         ...,
         title="Skills to Highlight from Resume",
-        description="The skills to highlight form your resume. What's your best skills?",
+        description="What are your strengths? What skills do you have that are most relevant to the job posting?",
     )
     tone: Optional[Tone] = Field(
         default=Tone.ASSERTIVE,
