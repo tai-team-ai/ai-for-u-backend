@@ -28,6 +28,7 @@ sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), "../gp
 from gpt_turbo import GPTTurboChatSession, GPTTurboChat, Role, get_gpt_turbo_response
 from text_examples import TEXT_BOOK_EXAMPLE, COFFEE_SHOP, SHORT_STORY
 from utils import (
+    map_value_between_range,
     AIToolModel,
     sanitize_string,
     BaseAIInstructionModel,
@@ -55,27 +56,12 @@ ENDPOINT_NAME = AIToolsEndpointName.CATCHY_TITLE_CREATOR.value
 MAX_TOKENS_FROM_GPT_RESPONSE = 200
 
 AI_PURPOSE = " ".join(ENDPOINT_NAME.split("-")).lower()
-@docstring_parameter(AI_PURPOSE, [tone.value for tone in Tone])
-class CatchyTitleCreatorInstructions(BaseAIInstructionModel):
-    """You are an expert {0}. I will provide a text and should respond with a list of catchy titles in markdown format, nothing else.
-    
-    I will provide instructions for you to follow to help you generate the titles. These instructions should be followed exactly in order to generate the best titles that you can and that i like.
 
-    For each title, only respond with the title, nothing else. You should use markdown format when returning the titles and should return them as a list.
-    
-    **Instructions that I may provide you in order to assist you in creating the titles for me:**
-    * type_of_title: This can literally be anything. (eg. book, company, coffee shop, song, documentary, social media post, etc.)
-    * target_audience: The target audience for the title (eg. children, adults, teenagers, public, superiors, etc.)
-    * tone: The expected tone of the titles you should generate. Here are the possible tones: {1}.
-    * specific_keywords_to_include: A list of specific keywords that you should include in the titles. These can help your title perform better for SEO (e.g. 'how to', 'best', 'top', 'ultimate', 'ultimate guide', etc.).
-    * num_titles: The number of titles to generate (As instructed above, please use markdown format when returning the titles as a list).
-    * creativity: The creativity of the titles. Where 0 is the least creative and 100 is the most creative. More creativity may be more inspiring but less accurate while less creativity may be more accurate but less inspiring.
-    * text_or_description: The text or description of what you are generating catchy titles for. For generating titles for text (e.g. books, articles, blogs, social media posts, songs, etc.), this should probably be the text. For other types of things, (e.g. coffee shop, company name, etc.) this should be a description of the thing you are generating catchy titles for.
-    """
+class CatchyTitleCreatorInstructions(BaseAIInstructionModel):
     type_of_title: Optional[constr(min_length=1, max_length=50)] = Field(
         ...,
         title="What's the Title For?",
-        description="This can literally be anything. (eg. book, company, coffee shop, song, documentary, social media post, etc.)"
+        description="This can literally be anything. (eg. dog name, company, coffee shop, song, documentary, social media post, etc.)"
     )
     target_audience: Optional[constr(min_length=1, max_length=200)] = Field(
         ...,
@@ -92,18 +78,33 @@ class CatchyTitleCreatorInstructions(BaseAIInstructionModel):
         title="Keywords to Include in Titles",
         description="These can help your title perform better for SEO (e.g. 'how to', 'best', 'top', 'ultimate', 'ultimate guide', etc.)."
     )
-    num_titles: Optional[conint(ge=1, le=10)] = Field(
+    num_titles: Optional[conint(ge=1, le=15)] = Field(
         default=3,
         title="Number of Titles to Create",
         description="The number of titles that you want to generate."
     )
     creativity: Optional[conint(ge=0, le=100)] = Field(
-        50,
+        65,
         title="Creativity (0 = Least Creative, 100 = Most Creative)",
         description="The creativity of the titles. More creativity may be more inspiring but less accurate while less creativity may be more accurate but less inspiring."
     )
 
-SYSTEM_PROMPT = CatchyTitleCreatorInstructions.__doc__
+SYSTEM_PROMPT = (
+    "You are an expert at creating catchy titles and names for things. I will provide a description of the thing that I want you to create a name for OR "
+    "I will provide you a text that you should create a catchy title for. You should infer from context whether I am asking you to create a name or a title. "
+    "You should respond with names/catchy titles and nothing else. You should just include titles, no sub titles or descriptions."
+    "You should use markdown format when returning the titles and should return them as a list."
+    "You should follow the instructions that I provide you in order to generate the best titles and names for me."
+    "These instructions could include any of the following:\n"
+    "Type of Title: This is what defines the thing you are creating a name or title for. (eg. pet, company, coffee shop, song, documentary, social media post, etc.)\n"
+    "Target Audience: You should keep this audience in mind when you are writing the names and titles. Here are some examples: children, adults, teenagers, public, superiors, etc.\n"
+    f"Tone: The expected tone of the titles and the names that you generate. Here are the possible tones: {[tone.value for tone in Tone]}.\n"
+    "Specific Keywords to Include: You should try to include these keywords in the titles and names that you generate.\n"
+    "Number of Titles: The number of name & titles that you should generate.\n"
+    "Creativity: The creativity of the names and titles that you create. Where 0 is the least creative and 100 is the most creative.\n"
+    "Text or Description: The text or description of what you are generating catchy titles for. For generating titles for text (e.g. books, articles, blogs, social media posts, songs, etc.), "
+        "this should be the text. For other types of things, (e.g. coffee shop, company name, etc.) this should be a description of the thing you are generating a name for.\n"
+)
 
 @docstring_parameter(ENDPOINT_NAME)
 class CatchyTitleCreatorRequest(CatchyTitleCreatorInstructions):
@@ -120,8 +121,8 @@ class CatchyTitleCreatorRequest(CatchyTitleCreatorInstructions):
     __doc__ += BaseAIInstructionModel.__doc__
     text_or_description: constr(min_length=1, max_length=10000) = Field(
         ...,
-        title="Description of What you are Generating Titles for (if generating titles for something written, this should be the text)",
-        description="This can be the text you are generating titles for, or if you are generating titles for something else, you can describe what you are generating titles for. Example -> Coffee Shop, Company Name, etc."
+        title="Text or Description",
+        description="This can be the text you are generating titles for (article, notes, etc.), or if you are generating names, you can describe what the name is for. (Coffee Shop, Company Name, etc.)"
     )
 
 
@@ -154,7 +155,7 @@ async def catchy_title_creator_examples():
             target_audience="Young Adults",
             tone=Tone.FRIENDLY,
             num_titles=8,
-            creativity=60,
+            creativity=30,
             specific_keywords_to_include=["furry friends"],
             type_of_title="Textbook",
         ),
@@ -163,7 +164,7 @@ async def catchy_title_creator_examples():
             target_audience="Travelers & tourists",
             tone=Tone.OPTIMISTIC,
             num_titles=5,
-            creativity=100,
+            creativity=75,
             specific_keywords_to_include=["quaint", "cozy", "cute"],
             type_of_title="Coffee Shop",
         ),
@@ -172,7 +173,7 @@ async def catchy_title_creator_examples():
             target_audience="Kids",
             tone=Tone.FRIENDLY,
             num_titles=5,
-            creativity=80,
+            creativity=90,
             type_of_title="Short Story",
         ),
     ]
@@ -190,19 +191,23 @@ async def catchy_title_creator(catchy_title_creator_request: CatchyTitleCreatorR
     logger.info(f"Received request for {ENDPOINT_NAME} endpoint.")
     user_prompt = append_field_prompts_to_prompt(CatchyTitleCreatorInstructions(**catchy_title_creator_request.dict()), BASE_USER_PROMPT_PREFIX)
 
-    user_prompt += f"\nHere is the text/description of what you should create catchy titles for: {catchy_title_creator_request.text_or_description}"
+    user_prompt += f"\nHere is the text/description of what you should create a name or title for: {catchy_title_creator_request.text_or_description}"
     uuid = request.headers.get(UUID_HEADER_NAME)
     user_chat = GPTTurboChat(
         role=Role.USER,
         content=user_prompt,
     )
+    logger.info("User prompt: %s", user_prompt)
+    temperature = map_value_between_range(catchy_title_creator_request.creativity, 0, 100, 0.2, 1.0)
+    presence_penalty = map_value_between_range(catchy_title_creator_request.creativity, 0, 100, 0.3, 1.3)
+    frequency_penalty = map_value_between_range(catchy_title_creator_request.creativity, 0, 100, 0.8, 2.0)
     try:
         chat_session = get_gpt_turbo_response(
             system_prompt=SYSTEM_PROMPT,
             chat_session=GPTTurboChatSession(messages=[user_chat]),
-            frequency_penalty=0.0,
-            presence_penalty=0.0,
-            temperature=0.3,
+            temperature=temperature,
+            presence_penalty=presence_penalty,
+            frequency_penalty=frequency_penalty,
             uuid=uuid,
             max_tokens=MAX_TOKENS_FROM_GPT_RESPONSE,
         )
