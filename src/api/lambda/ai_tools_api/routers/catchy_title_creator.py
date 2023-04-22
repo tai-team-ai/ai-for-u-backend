@@ -61,7 +61,7 @@ class CatchyTitleCreatorInstructions(BaseAIInstructionModel):
     type_of_title: Optional[constr(min_length=1, max_length=50)] = Field(
         ...,
         title="What's the Title For?",
-        description="This can literally be anything. (eg. book, company, coffee shop, song, documentary, social media post, etc.)"
+        description="This can literally be anything. (eg. dog name, company, coffee shop, song, documentary, social media post, etc.)"
     )
     target_audience: Optional[constr(min_length=1, max_length=200)] = Field(
         ...,
@@ -78,13 +78,13 @@ class CatchyTitleCreatorInstructions(BaseAIInstructionModel):
         title="Keywords to Include in Titles",
         description="These can help your title perform better for SEO (e.g. 'how to', 'best', 'top', 'ultimate', 'ultimate guide', etc.)."
     )
-    num_titles: Optional[conint(ge=1, le=10)] = Field(
+    num_titles: Optional[conint(ge=1, le=15)] = Field(
         default=3,
         title="Number of Titles to Create",
         description="The number of titles that you want to generate."
     )
     creativity: Optional[conint(ge=0, le=100)] = Field(
-        50,
+        65,
         title="Creativity (0 = Least Creative, 100 = Most Creative)",
         description="The creativity of the titles. More creativity may be more inspiring but less accurate while less creativity may be more accurate but less inspiring."
     )
@@ -121,8 +121,8 @@ class CatchyTitleCreatorRequest(CatchyTitleCreatorInstructions):
     __doc__ += BaseAIInstructionModel.__doc__
     text_or_description: constr(min_length=1, max_length=10000) = Field(
         ...,
-        title="Description of What you are Generating Titles for (if generating titles for something written, this should be the text)",
-        description="This can be the text you are generating titles for, or if you are generating titles for something else, you can describe what you are generating titles for. Example -> Coffee Shop, Company Name, etc."
+        title="Text or Description",
+        description="This can be the text you are generating titles for (article, notes, etc.), or if you are generating names, you can describe what the name is for. (Coffee Shop, Company Name, etc.)"
     )
 
 
@@ -155,7 +155,7 @@ async def catchy_title_creator_examples():
             target_audience="Young Adults",
             tone=Tone.FRIENDLY,
             num_titles=8,
-            creativity=60,
+            creativity=30,
             specific_keywords_to_include=["furry friends"],
             type_of_title="Textbook",
         ),
@@ -164,7 +164,7 @@ async def catchy_title_creator_examples():
             target_audience="Travelers & tourists",
             tone=Tone.OPTIMISTIC,
             num_titles=5,
-            creativity=100,
+            creativity=75,
             specific_keywords_to_include=["quaint", "cozy", "cute"],
             type_of_title="Coffee Shop",
         ),
@@ -173,7 +173,7 @@ async def catchy_title_creator_examples():
             target_audience="Kids",
             tone=Tone.FRIENDLY,
             num_titles=5,
-            creativity=80,
+            creativity=90,
             type_of_title="Short Story",
         ),
     ]
