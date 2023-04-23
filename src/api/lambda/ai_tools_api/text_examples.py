@@ -1,13 +1,13 @@
-TEXT_BOOK_EXAMPLE = """
-Chinchillas are small, furry rodents that are native to the Andes Mountains in South America. They are known for their adorable appearance, with their big ears, fluffy tails, and soft, dense fur. Chinchillas are highly social animals and are often kept as pets, but they require a lot of care and attention.
+TEXT_BOOK_EXAMPLE = \
+"""Chinchillas are small, furry rodents that are native to the Andes Mountains in South America. They are known for their adorable appearance, with their big ears, fluffy tails, and soft, dense fur. Chinchillas are highly social animals and are often kept as pets, but they require a lot of care and attention.
 
 One of the most interesting things about chinchillas is their fur. Their fur is so dense that it can prevent water from reaching their skin, which is why they take dust baths to keep their fur clean and healthy. In fact, chinchillas have the densest fur of any mammal, with up to 80 hairs growing from a single hair follicle! Their fur is also highly sought after by the fashion industry, which has led to a decline in wild populations.
 
 Chinchillas are herbivores and eat a diet that consists mainly of hay, pellets, and fresh vegetables. They have a unique digestive system that requires them to eat a lot of roughage to keep their teeth from overgrowing. Chinchillas are also known for their jumping abilities, which they use to navigate the rocky terrain of their native habitat. Overall, chinchillas are fascinating creatures that make great pets for those who are willing to put in the time and effort to care for them properly.
 """
 
-TRANSCRIPT_EXAMPLE = """
-0:00
+TRANSCRIPT_EXAMPLE = \
+"""0:00
 Hi everyone! My name is Jessica and I'm a photographer who has been fortunate enough to travel around the world and capture some truly amazing cultures and people.
 
 0:05
@@ -68,8 +68,8 @@ In conclusion, mindfulness and meditation can be powerful tools for improving me
 """
 
 
-CLASS_NOTES = """
-Topic: Solving Quadratic Equations
+CLASS_NOTES = \
+"""Topic: Solving Quadratic Equations
 
 - Quadratic equations have x^2 in them.
 
@@ -98,8 +98,8 @@ Topic: Solving Quadratic Equations
 - Homework: Complete problems 1-20 on page 75 of the textbook.
 """
 
-COFFEE_SHOP = """
-This coffee shop is nestled in the heart of the picturesque Aria Valley, surrounded by rolling hills and stunning vistas. The building itself is a charming, rustic structure with plenty of character, and the interior is warm and inviting, with cozy seating options and lots of natural light.
+COFFEE_SHOP = \
+"""This coffee shop is nestled in the heart of the picturesque Aria Valley, surrounded by rolling hills and stunning vistas. The building itself is a charming, rustic structure with plenty of character, and the interior is warm and inviting, with cozy seating options and lots of natural light.
 
 The coffee is exceptional, with a variety of beans and roasts sourced from around the world. Whether you're in the mood for a rich, bold espresso or a smooth, creamy latte, the baristas at this shop are experts at crafting the perfect cup.
 
@@ -108,16 +108,16 @@ In addition to coffee, the shop also offers a delicious selection of baked goods
 One of the best things about this coffee shop is its location in the Aria Valley, which is a frequent destination for travelers seeking natural beauty and outdoor adventures. Whether you're hiking, biking, or just taking a scenic drive, this coffee shop is the perfect spot to fuel up before your next adventure or to relax and unwind after a long day of exploring. With friendly staff, delicious coffee, and a stunning location, it's no wonder this coffee shop is a beloved favorite among locals and visitors alike.
 """
 
-SHORT_STORY = """
-Tiff was born with the sea in her blood. From the time she was a little girl, she would beg her father to take her out on his sailboat, and she would spend hours gazing out at the endless expanse of water, dreaming of the adventures that lay beyond. As she grew older, Tiff became more and more determined to explore the world by sea, and she spent every spare moment learning all she could about sailing and navigation.
+SHORT_STORY = \
+"""Tiff was born with the sea in her blood. From the time she was a little girl, she would beg her father to take her out on his sailboat, and she would spend hours gazing out at the endless expanse of water, dreaming of the adventures that lay beyond. As she grew older, Tiff became more and more determined to explore the world by sea, and she spent every spare moment learning all she could about sailing and navigation.
 
 When Tiff turned 18, she decided it was time to set out on her own adventure. She saved up all her money and bought a small sailboat, which she christened the "Sea Spirit". With nothing but her wits and her love of the ocean, Tiff set sail, determined to see as much of the world as she could.
 
 Over the next few months, Tiff sailed from island to island, encountering all sorts of challenges and adventures along the way. She battled fierce storms, fended off pirates, and navigated treacherous waters with ease, her spirit unbroken and her love of the sea burning brighter than ever. And through it all, she knew that she was exactly where she was meant to be - on the open sea, with nothing but the wind and the waves to guide her.
 """
 
-BAD_TRAVEL_WRITING = """
-Me want to share about travelling - it's very fun and good for the soul! When you travel, you get to see new places with your own eyes. It feels amazing when you explore different cultures and meet people from all around the world.
+BAD_TRAVEL_WRITING = \
+"""Me want to share about travelling - it's very fun and good for the soul! When you travel, you get to see new places with your own eyes. It feels amazing when you explore different cultures and meet people from all around the world.
 
 Me have been blessed enough to visit many places like beaches, mountains or cities where I can experience their beauty first hand. There are so much things that one could do during travels but eating local foods is definitely on top of my list!
 
@@ -128,8 +128,8 @@ Taking photos while travelling has become an essential part too as these memorie
 So if anyone reading this hasn’t travelled before then go ahead give them self some time off work/school & start planning now cuz exploring new destinations really does make life better :)
 """
 
-BADLY_WRITTEN_TRAVEL_BLOG = """
-Me want to share about travelling - it's very fun and good for the soul! When you travel, you get to see new places with your own eyes. It feels amazing when you explore different cultures and meet people from all around the world.
+BADLY_WRITTEN_TRAVEL_BLOG = \
+"""Me want to share about travelling - it's very fun and good for the soul! When you travel, you get to see new places with your own eyes. It feels amazing when you explore different cultures and meet people from all around the world.
 
 Me have been blessed enough to visit many places like beaches, mountains or cities where I can experience their beauty first hand. There are so much things that one could do during travels but eating local foods is definitely on top of my list!
 
@@ -140,8 +140,8 @@ Taking photos while travelling has become an essential part too as these memorie
 So if anyone reading this hasn’t travelled before then go ahead give them self some time off work/school & start planning now cuz exploring new destinations really does make life better :)
 """
 
-CEO_EMAIL = """
-Subject: Celebrating Our Success Together
+CEO_EMAIL = \
+"""Subject: Celebrating Our Success Together
 
 Dear Best Company Ever Team,
 
@@ -158,14 +158,14 @@ Best regards,
 Megan
 """
 
-SPELLING_ERRORS_EXAMPLE = """
-Ima a singr and I luv to sinng. I've ben singin' since I wuz a litel kid and it's alwayz been my dreem to be a famus singr. I pracktis evry day and I hop won day I'll be discuverd and becom a big star.
+SPELLING_ERRORS_EXAMPLE = \
+"""Ima a singr and I luv to sinng. I've ben singin' since I wuz a litel kid and it's alwayz been my dreem to be a famus singr. I pracktis evry day and I hop won day I'll be discuverd and becom a big star.
 """
 
 
 
-TEACHER_RESUME = """
-Name: Eliza Doe
+TEACHER_RESUME = \
+"""Name: Eliza Doe
 
 Education: 
 - Bachelor of Arts in English Literature, University of California, Los Angeles
@@ -199,8 +199,9 @@ Professional Memberships:
 References: 
 Available upon request.
 """
-TEACHER_JOB_POSTING = """
-Job Title: High School Teacher
+
+TEACHER_JOB_POSTING = \
+"""Job Title: High School Teacher
 
 Job Type: Full-time
 
@@ -228,8 +229,8 @@ Requirements:
 We offer a competitive salary and benefits package, as well as ongoing professional development opportunities. If you are interested in joining our team and making a positive impact on the lives of our students, please submit your resume and cover letter for consideration.
 """
 
-AEROSPACE_RESUME = """
-Name: Jonny Rockets
+AEROSPACE_RESUME = \
+"""Name: Jonny Rockets
 
 Education: 
 - Bachelor of Science in Aerospace Engineering, University of Southern California
@@ -265,8 +266,8 @@ Professional Memberships:
 References: 
 Available upon request.
 """
-SPACEX_JOB_POSTING = """
-Job Title: Space Propulsion Engineer
+SPACEX_JOB_POSTING = \
+"""Job Title: Space Propulsion Engineer
 
 Job Type: Full-time
 
