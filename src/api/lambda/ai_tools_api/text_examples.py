@@ -1,13 +1,13 @@
-TEXT_BOOK_EXAMPLE = """
-Chinchillas are small, furry rodents that are native to the Andes Mountains in South America. They are known for their adorable appearance, with their big ears, fluffy tails, and soft, dense fur. Chinchillas are highly social animals and are often kept as pets, but they require a lot of care and attention.
+TEXT_BOOK_EXAMPLE = \
+"""Chinchillas are small, furry rodents that are native to the Andes Mountains in South America. They are known for their adorable appearance, with their big ears, fluffy tails, and soft, dense fur. Chinchillas are highly social animals and are often kept as pets, but they require a lot of care and attention.
 
 One of the most interesting things about chinchillas is their fur. Their fur is so dense that it can prevent water from reaching their skin, which is why they take dust baths to keep their fur clean and healthy. In fact, chinchillas have the densest fur of any mammal, with up to 80 hairs growing from a single hair follicle! Their fur is also highly sought after by the fashion industry, which has led to a decline in wild populations.
 
 Chinchillas are herbivores and eat a diet that consists mainly of hay, pellets, and fresh vegetables. They have a unique digestive system that requires them to eat a lot of roughage to keep their teeth from overgrowing. Chinchillas are also known for their jumping abilities, which they use to navigate the rocky terrain of their native habitat. Overall, chinchillas are fascinating creatures that make great pets for those who are willing to put in the time and effort to care for them properly.
 """
 
-TRANSCRIPT_EXAMPLE = """
-0:00
+TRANSCRIPT_EXAMPLE = \
+"""0:00
 Hi everyone! My name is Jessica and I'm a photographer who has been fortunate enough to travel around the world and capture some truly amazing cultures and people.
 
 0:05
@@ -64,42 +64,48 @@ Mindfulness and meditation can have a profound impact on mental health in today'
 
 Numerous studies have shown that mindfulness and meditation offer several benefits for mental health. These include reducing stress and anxiety, lowering symptoms of depression, improving sleep, boosting cognitive function, and enhancing self-awareness. By incorporating these practices into your daily routine, you can identify negative patterns and make positive changes in your life. To start, begin with just a few minutes of mindfulness or meditation each day, find a quiet space where you can focus without distractions, use guided meditations to help you stay focused and relaxed, and practice regularly. 
 
-In conclusion, mindfulness and meditation can be powerful tools for improving mental health and well-being. By reducing stress, increasing happiness
+In conclusion, mindfulness and meditation can be powerful tools for improving mental health and well-being. By reducing stress, increasing happiness and self-awareness, and improving cognitive function, these practices can help you live a more fulfilling life. If you're interested in learning more about mindfulness and meditation. You can find more information on the American Psychological Association website.
 """
 
 
-CLASS_NOTES = """
-Topic: Solving Quadratic Equations
+CONTRACT_EXAMPLE = \
+"""Business Agreement Contract between John and Sally for the Sale of Cabbages
 
-- Quadratic equations have x^2 in them.
+This agreement ("Agreement") is made and entered into on the ______ day of ______, 20__, between John ("Seller") and Sally ("Buyer").
 
-- The standard form of a quadratic equation is ax^2 + bx + c = 0.
+The parties agree as follows:
 
-- To solve a quadratic equation, use the quadratic formula: x = (-b ± sqrt(b^2 - 4ac)) / 2a.
+1. Sale of Cabbages: Seller agrees to sell and deliver to Buyer, and Buyer agrees to purchase and receive from Seller, the quantity of cabbages as specified in the Purchase Order.
 
-- First, identify the values of a, b, and c.
+2. Delivery: Seller agrees to deliver the cabbages to Buyer's premises on the dates specified in the Purchase Order, unless otherwise agreed upon in writing by both parties.
 
-- Then, plug those values into the quadratic formula.
+3. Quality of Cabbages: The cabbages delivered by Seller shall be of the quality specified in the Purchase Order and shall conform to all applicable industry standards.
 
-- Use the plus or minus sign to find two solutions for x.
+4. Price and Payment Terms: The total price for the cabbages shall be as specified in the Purchase Order. Payment terms shall be as follows: ____________.
 
-- Simplify the solutions if possible.
+5. Cancellation and Termination: Either party may terminate this Agreement upon written notice to the other party. In the event of termination, Buyer shall pay for all cabbages delivered up to the date of termination.
 
-- Check your answers by plugging them back into the original equation.
+6. Force Majeure: Neither party shall be liable for any delay or failure in performance under this Agreement resulting from acts beyond the control of the party, including but not limited to acts of God, acts of government, war, riot, or natural disaster.
 
-- If the solutions don't work, there may be no real solutions.
+7. Non-Assignment: Neither party may assign this Agreement without the prior written consent of the other party.
 
-- If the square root part of the formula is negative, there are no real solutions.
+8. Governing Law: This Agreement shall be governed by and construed in accordance with the laws of the state of _________.
 
-- If the quadratic equation has only one solution, the discriminant (b^2 - 4ac) is equal to zero.
+9. Entire Agreement: This Agreement constitutes the entire understanding between the parties and supersedes any prior agreements or understandings, whether written or oral.
 
-- Practice solving quadratic equations using the quadratic formula.
+10. Amendments: This Agreement may be amended or modified only in writing signed by both parties.
 
-- Homework: Complete problems 1-20 on page 75 of the textbook.
+11. Counterparts: This Agreement may be executed in counterparts, each of which shall be deemed an original, but all of which together shall constitute one and the same instrument.
+
+IN WITNESS WHEREOF, the parties have executed this Agreement as of the date first above written.
+
+SELLER: ___________________________________________
+
+BUYER: ___________________________________________
 """
 
-COFFEE_SHOP = """
-This coffee shop is nestled in the heart of the picturesque Aria Valley, surrounded by rolling hills and stunning vistas. The building itself is a charming, rustic structure with plenty of character, and the interior is warm and inviting, with cozy seating options and lots of natural light.
+COFFEE_SHOP = \
+"""This coffee shop is nestled in the heart of the picturesque Aria Valley, surrounded by rolling hills and stunning vistas. The building itself is a charming, rustic structure with plenty of character, and the interior is warm and inviting, with cozy seating options and lots of natural light.
 
 The coffee is exceptional, with a variety of beans and roasts sourced from around the world. Whether you're in the mood for a rich, bold espresso or a smooth, creamy latte, the baristas at this shop are experts at crafting the perfect cup.
 
@@ -108,16 +114,16 @@ In addition to coffee, the shop also offers a delicious selection of baked goods
 One of the best things about this coffee shop is its location in the Aria Valley, which is a frequent destination for travelers seeking natural beauty and outdoor adventures. Whether you're hiking, biking, or just taking a scenic drive, this coffee shop is the perfect spot to fuel up before your next adventure or to relax and unwind after a long day of exploring. With friendly staff, delicious coffee, and a stunning location, it's no wonder this coffee shop is a beloved favorite among locals and visitors alike.
 """
 
-SHORT_STORY = """
-Tiff was born with the sea in her blood. From the time she was a little girl, she would beg her father to take her out on his sailboat, and she would spend hours gazing out at the endless expanse of water, dreaming of the adventures that lay beyond. As she grew older, Tiff became more and more determined to explore the world by sea, and she spent every spare moment learning all she could about sailing and navigation.
+SHORT_STORY = \
+"""Tiff was born with the sea in her blood. From the time she was a little girl, she would beg her father to take her out on his sailboat, and she would spend hours gazing out at the endless expanse of water, dreaming of the adventures that lay beyond. As she grew older, Tiff became more and more determined to explore the world by sea, and she spent every spare moment learning all she could about sailing and navigation.
 
 When Tiff turned 18, she decided it was time to set out on her own adventure. She saved up all her money and bought a small sailboat, which she christened the "Sea Spirit". With nothing but her wits and her love of the ocean, Tiff set sail, determined to see as much of the world as she could.
 
 Over the next few months, Tiff sailed from island to island, encountering all sorts of challenges and adventures along the way. She battled fierce storms, fended off pirates, and navigated treacherous waters with ease, her spirit unbroken and her love of the sea burning brighter than ever. And through it all, she knew that she was exactly where she was meant to be - on the open sea, with nothing but the wind and the waves to guide her.
 """
 
-BAD_TRAVEL_WRITING = """
-Me want to share about travelling - it's very fun and good for the soul! When you travel, you get to see new places with your own eyes. It feels amazing when you explore different cultures and meet people from all around the world.
+BAD_TRAVEL_WRITING = \
+"""Me want to share about travelling - it's very fun and good for the soul! When you travel, you get to see new places with your own eyes. It feels amazing when you explore different cultures and meet people from all around the world.
 
 Me have been blessed enough to visit many places like beaches, mountains or cities where I can experience their beauty first hand. There are so much things that one could do during travels but eating local foods is definitely on top of my list!
 
@@ -128,8 +134,8 @@ Taking photos while travelling has become an essential part too as these memorie
 So if anyone reading this hasn’t travelled before then go ahead give them self some time off work/school & start planning now cuz exploring new destinations really does make life better :)
 """
 
-BADLY_WRITTEN_TRAVEL_BLOG = """
-Me want to share about travelling - it's very fun and good for the soul! When you travel, you get to see new places with your own eyes. It feels amazing when you explore different cultures and meet people from all around the world.
+BADLY_WRITTEN_TRAVEL_BLOG = \
+"""Me want to share about travelling - it's very fun and good for the soul! When you travel, you get to see new places with your own eyes. It feels amazing when you explore different cultures and meet people from all around the world.
 
 Me have been blessed enough to visit many places like beaches, mountains or cities where I can experience their beauty first hand. There are so much things that one could do during travels but eating local foods is definitely on top of my list!
 
@@ -140,8 +146,8 @@ Taking photos while travelling has become an essential part too as these memorie
 So if anyone reading this hasn’t travelled before then go ahead give them self some time off work/school & start planning now cuz exploring new destinations really does make life better :)
 """
 
-CEO_EMAIL = """
-Subject: Celebrating Our Success Together
+CEO_EMAIL = \
+"""Subject: Celebrating Our Success Together
 
 Dear Best Company Ever Team,
 
@@ -158,14 +164,14 @@ Best regards,
 Megan
 """
 
-SPELLING_ERRORS_EXAMPLE = """
-Ima a singr and I luv to sinng. I've ben singin' since I wuz a litel kid and it's alwayz been my dreem to be a famus singr. I pracktis evry day and I hop won day I'll be discuverd and becom a big star.
+SPELLING_ERRORS_EXAMPLE = \
+"""Ima a singr and I luv to sinng. I've ben singin' since I wuz a litel kid and it's alwayz been my dreem to be a famus singr. I pracktis evry day and I hop won day I'll be discuverd and becom a big star.
 """
 
 
 
-TEACHER_RESUME = """
-Name: Eliza Doe
+TEACHER_RESUME = \
+"""Name: Eliza Doe
 
 Education: 
 - Bachelor of Arts in English Literature, University of California, Los Angeles
@@ -199,8 +205,9 @@ Professional Memberships:
 References: 
 Available upon request.
 """
-TEACHER_JOB_POSTING = """
-Job Title: High School Teacher
+
+TEACHER_JOB_POSTING = \
+"""Job Title: High School Teacher
 
 Job Type: Full-time
 
@@ -228,8 +235,8 @@ Requirements:
 We offer a competitive salary and benefits package, as well as ongoing professional development opportunities. If you are interested in joining our team and making a positive impact on the lives of our students, please submit your resume and cover letter for consideration.
 """
 
-AEROSPACE_RESUME = """
-Name: Jonny Rockets
+AEROSPACE_RESUME = \
+"""Name: Jonny Rockets
 
 Education: 
 - Bachelor of Science in Aerospace Engineering, University of Southern California
@@ -265,8 +272,8 @@ Professional Memberships:
 References: 
 Available upon request.
 """
-SPACEX_JOB_POSTING = """
-Job Title: Space Propulsion Engineer
+SPACEX_JOB_POSTING = \
+"""Job Title: Space Propulsion Engineer
 
 Job Type: Full-time
 

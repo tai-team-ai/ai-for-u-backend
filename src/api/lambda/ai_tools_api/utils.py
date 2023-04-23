@@ -2,6 +2,8 @@ import datetime as dt
 import json
 import os
 import logging
+from numbers import Number
+from typing import Sequence, Union
 from cryptography.hazmat.primitives import hashes, hmac
 from cryptography.hazmat.primitives.kdf.hkdf import HKDF
 from fastapi import Response, Request, status
@@ -133,9 +135,48 @@ class BaseAIInstructionModel(AIToolModel):
 
 BASE_USER_PROMPT_PREFIX = "Hi! Here are the instructions for you to follow:\n"
 
+def transform_field_for_prompt(field_name: str, field_value: Union[str, bool, Enum, Sequence, Number]) -> str:
+    """
+    Transform the field name and value into a string that can be appended to the prompt.
+
+    Args:
+        field_name: The name of the field to transform.
+        field_value: The value of the field to transform.
+
+    Returns:
+        The transformed field name and value.
+    """
+    logger.info(f"Transforming field name {field_name} and value {field_value} for prompt.")
+    logger.info(type(field_value))
+    field_name = field_name.replace("_", " ")
+    if isinstance(field_value, Sequence) and not isinstance(field_value, str):
+        if isinstance(field_value[0], Enum):
+            field_value = [field.value for field in field_value]
+        field_value = ", ".join(field_value)
+    elif isinstance(field_value, Enum):
+        field_value = field_value.value
+    elif isinstance(field_value, bool):
+        if field_value:
+            return f"Please include a {field_name} in your response.\n"
+        else:
+            return f"Please do not include a(n) {field_name} in your response.\n"
+    elif isinstance(field_value, Number):
+        try:
+            field_value = int(field_value)
+        except ValueError:
+            pass
+        if field_value == 0:
+            return ""
+        field_value = str(field_value)
+    return f"{field_name.title()}: {field_value}\n"
+
+
 def append_field_prompts_to_prompt(model: BaseAIInstructionModel, base_prompt: str) -> str:
     """
     Append the fields in the model to the base prompt.
+    
+    This is likely the most important function in the entire project as it is 
+    is what builds the user prompt for the AI.
 
     Args:
         model: The model to append the fields to the base prompt for.
@@ -145,14 +186,8 @@ def append_field_prompts_to_prompt(model: BaseAIInstructionModel, base_prompt: s
         The base prompt with the fields appended to it.
     """
     base_prompt += "\n"
-    for field_name, field_value in model.dict().items():
-        if field_value:
-            if isinstance(field_value, list):
-                if isinstance(field_value[0], Enum):
-                    field_value = [field.value for field in field_value]
-                field_value = ", ".join(field_value)
-            field_name = field_name.replace("_", " ").title()
-            base_prompt += f"{field_name}: {field_value}\n"
+    for field_name, field_value in model.dict(exclude_none=True).items():
+        base_prompt += transform_field_for_prompt(field_name, field_value)
     return base_prompt
 
 
