@@ -124,7 +124,7 @@ async def sandbox_chatgpt_examples() -> TextSummarizerExampleResponse:
         ),
         TextSummarizerRequest(
             text_to_summarize=TRANSCRIPT_EXAMPLE,
-            length_of_summary_section=SummarySectionLength.LONG,
+            length_of_summary_section=SummarySectionLength.SHORT,
             bullet_points_section=True,
             action_items_section=False,
         ),
