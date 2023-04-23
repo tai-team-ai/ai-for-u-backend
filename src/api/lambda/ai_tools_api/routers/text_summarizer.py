@@ -1,5 +1,6 @@
 import logging
 import os
+from enum import Enum
 from pathlib import Path
 import sys
 import threading
@@ -40,41 +41,64 @@ MAX_TOKENS_FROM_GPT_RESPONSE = 400
 ENDPOINT_NAME = "text-summarizer"
 
 
+class SummarySectionLength(Enum):
+    SHORT = 'short'
+    MEDIUM = 'medium'
+    LONG =  'long'
+
+
 class TextSummarizerInstructions(BaseAIInstructionModel):
-    number_of_sentences_in_summary: Optional[conint(ge=1, le=5)] = Field(
-        default=3,
-        description="This controls the number of sentences in the summary. The actual number of sentences in the response may slightly vary from this number.",
-        title="Number of Sentences in Summary",
+    length_of_summary_section: Optional[SummarySectionLength] = Field(
+        default=SummarySectionLength.MEDIUM,
+        title="Length of Summary Section",
+        description="This controls the relative length of the summary paragraph.",
     )
-    number_of_bullets: Optional[conint(ge=0, le=8)] = Field(
-        default=3,
-        title="Number of Bullets",
-        description="The number of bullet points to include in the response.",
+    bullet_points_section: Optional[bool] = Field(
+        default=False,
+        title="Include Bullet Points Section",
+        description="Whether or not to include a bullet points section in the response.",
     )
-    number_of_action_items: Optional[conint(ge=0, le=8)] = Field(
-        default=0,
-        title="Number of Action Items",
-        description="The number of action items to include in the response. Action items are often applicable for meeting notes, lectures, etc.",
+    action_items_section: Optional[bool] = Field(
+        default=False,
+        title="Include Action Items Section",
+        description="Whether or not to include a bullet points section in the response. Action items are often applicable for meeting notes, lectures, etc.",
     )
+
+SYSTEM_PROMPT = (
+    "You are an expert at writing cover letters. You have spent hours "
+    "perfecting your cover letter writing skills. You have written cover "
+    "letters for hundreds of people. Because of your expertise, I want you "
+    "to write a cover letter for me. You should ONLY respond with the "
+    "cover letter and nothing else. I will provide you with a resume, job "
+    "posting, and optionally a company name to write a cover letter for. You "
+    "should respond with a cover letter that is tailored to the job posting "
+    "and company, highlights my skills, and demonstrates enthusiasm for "
+    "the company and role. I may also ask you to specifically highlight "
+    "certain skills from my resume that i feel are most relevant to the job "
+    "posting. It is important that you highlight these skills if I ask you to. "
+    "Remember, you are an expert at writing cover letters. I trust you to "
+    "write a cover letter that will get me the job. Please do not respond with "
+    "anything other than the cover letter."
+)
+
+valid_summary_lengths = ", ".join([section.value for section in SummarySectionLength])
 
 SYSTEM_PROMPT = (
     "You are an expert at summarizing text. You have spent hours "
     "perfecting your summarization skills. You have summarized text for "
     "hundreds of people. Because of your expertise, I want you to summarize "
-    "text for me. You should ONLY respond with the summary and nothing else. "
-    "I will provide you with a text to summarize and instructions about how to "
-    "structure the summary. You should respond with a summary that is tailored "
-    "to the instructions. The instructions I include will include instructions "
-    "about how many sentences to include in the summary. I may optionally ask "
-    "you to include a number of bullet points and action items. It is important that you "
-    "include these if I ask you to. If I ask you to "
-    "include a number of bullet points or action items, you should ensure that "
-    "the number of bullet points and action items you include is equal to the "
-    "number I ask you to include. If I don't ask you to include a section, "
-    "you should not include it. Remember, you are an expert at summarizing "
+    "text for me. You should ONLY respond with the summary in markdown format "
+    "and nothing else. I will provide you with a text to summarize. You "
+    "should respond with a summary that is tailored to the text, highlights "
+    "the most important points, and writes from the same perspective as the "
+    "writer of the text. I will specify how long this summary should be by specifying "
+    f"it's length with the following options: {valid_summary_lengths}. You should ensure "
+    "that you keep this length in mind when summarizing the text. If I ask you to include "
+    "bullet points or action items, please use a minimum of 3 bullet points or action items "
+    "unless you feel that less is appropriate. Remember, you are an expert at summarizing "
     "text. I trust you to summarize text that will be useful to me. Please do "
     "not respond with anything other than the summary in markdown format with "
-    "each section heading bolded."
+    "each section header in bold."
 )
 
 class TextSummarizerRequest(TextSummarizerInstructions):
@@ -94,27 +118,27 @@ async def sandbox_chatgpt_examples() -> TextSummarizerExampleResponse:
     examples = [
         TextSummarizerRequest(
             text_to_summarize=CLASS_NOTES,
-            number_of_sentences_in_summary=2,
-            number_of_bullets=5,
-            number_of_action_items=2,
+            length_of_summary_section=SummarySectionLength.SHORT,
+            bullet_points_section=True,
+            action_items_section=True,
         ),
         TextSummarizerRequest(
             text_to_summarize=TRANSCRIPT_EXAMPLE,
-            number_of_sentences_in_summary=5,
-            number_of_bullets=3,
-            number_of_action_items=0,
+            length_of_summary_section=SummarySectionLength.LONG,
+            bullet_points_section=True,
+            action_items_section=False,
         ),
         TextSummarizerRequest(
             text_to_summarize=ARTICLE_EXAMPLE,
-            number_of_sentences_in_summary=1,
-            number_of_bullets=6,
-            number_of_action_items=3,
+            length_of_summary_section=SummarySectionLength.MEDIUM,
+            bullet_points_section=True,
+            action_items_section=True,
         ),
         TextSummarizerRequest(
             text_to_summarize=CEO_EMAIL,
-            number_of_sentences_in_summary=3,
-            number_of_bullets=0,
-            number_of_action_items=5,
+            length_of_summary_section=SummarySectionLength.SHORT,
+            bullet_points_section=True,
+            action_items_section=True,
         ),
     ]
     response = TextSummarizerExampleResponse(
@@ -141,8 +165,8 @@ async def text_summarizer(text_summarizer_request: TextSummarizerRequest, reques
         chat_session = get_gpt_turbo_response(
             system_prompt=SYSTEM_PROMPT,
             chat_session=GPTTurboChatSession(messages=[user_chat]),
-            frequency_penalty=0.0,
-            presence_penalty=0.0,
+            frequency_penalty=0.6,
+            presence_penalty=0.5,
             temperature=0.3,
             uuid=uuid,
             max_tokens=MAX_TOKENS_FROM_GPT_RESPONSE
