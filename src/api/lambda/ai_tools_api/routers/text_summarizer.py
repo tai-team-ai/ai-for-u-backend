@@ -41,10 +41,10 @@ ENDPOINT_NAME = "text-summarizer"
 
 
 class TextSummarizerInstructions(BaseAIInstructionModel):
-    summary_sentence: Optional[bool] = Field(
-        default=True,
-        title="Include Summary Sentence",
-        description="Whether or not to include a summary sentence in the response.",
+    number_of_sentences_in_summary: Optional[int] = Field(
+        default=3,
+        description="This controls the number of sentences in the summary. The actual number of sentences in the response may slightly vary from this number.",
+        title="Number of Sentences in Summary",
     )
     number_of_bullets: Optional[conint(ge=0, le=8)] = Field(
         default=3,
@@ -64,9 +64,13 @@ SYSTEM_PROMPT = (
     "text for me. You should ONLY respond with the summary and nothing else. "
     "I will provide you with a text to summarize and instructions about how to "
     "structure the summary. You should respond with a summary that is tailored "
-    "to the instructions. The instructions may ask you to include a summary "
-    "sentence, bullet points, or action items. It is important that you "
-    "include these if I ask you to. If I don't ask you to include a section, "
+    "to the instructions. The instructions I include will include instructions "
+    "about how many sentences to include in the summary. I may optionally ask "
+    "you to include a number of bullet points and action items. It is important that you "
+    "include these if I ask you to. If I ask you to "
+    "include a number of bullet points or action items, you should ensure that "
+    "the number of bullet points and action items you include is equal to the "
+    "number I ask you to include. If I don't ask you to include a section, "
     "you should not include it. Remember, you are an expert at summarizing "
     "text. I trust you to summarize text that will be useful to me. Please do "
     "not respond with anything other than the summary."
