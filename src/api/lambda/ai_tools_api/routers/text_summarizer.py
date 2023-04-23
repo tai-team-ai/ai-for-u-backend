@@ -73,7 +73,8 @@ SYSTEM_PROMPT = (
     "number I ask you to include. If I don't ask you to include a section, "
     "you should not include it. Remember, you are an expert at summarizing "
     "text. I trust you to summarize text that will be useful to me. Please do "
-    "not respond with anything other than the summary."
+    "not respond with anything other than the summary in markdown format with "
+    "each section heading bolded."
 )
 
 class TextSummarizerRequest(TextSummarizerInstructions):
