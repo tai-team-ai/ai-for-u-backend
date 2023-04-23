@@ -41,7 +41,7 @@ ENDPOINT_NAME = "text-summarizer"
 
 
 class TextSummarizerInstructions(BaseAIInstructionModel):
-    number_of_sentences_in_summary: Optional[int] = Field(
+    number_of_sentences_in_summary: Optional[conint(ge=1, le=5)] = Field(
         default=3,
         description="This controls the number of sentences in the summary. The actual number of sentences in the response may slightly vary from this number.",
         title="Number of Sentences in Summary",
@@ -94,25 +94,25 @@ async def sandbox_chatgpt_examples() -> TextSummarizerExampleResponse:
     examples = [
         TextSummarizerRequest(
             text_to_summarize=CLASS_NOTES,
-            include_summary_sentence=True,
+            number_of_sentences_in_summary=2,
             number_of_bullets=5,
             number_of_action_items=2,
         ),
         TextSummarizerRequest(
             text_to_summarize=TRANSCRIPT_EXAMPLE,
-            include_summary_sentence=True,
+            number_of_sentences_in_summary=5,
             number_of_bullets=3,
             number_of_action_items=0,
         ),
         TextSummarizerRequest(
             text_to_summarize=ARTICLE_EXAMPLE,
-            include_summary_sentence=False,
+            number_of_sentences_in_summary=1,
             number_of_bullets=6,
             number_of_action_items=3,
         ),
         TextSummarizerRequest(
             text_to_summarize=CEO_EMAIL,
-            include_summary_sentence=True,
+            number_of_sentences_in_summary=3,
             number_of_bullets=0,
             number_of_action_items=5,
         ),
