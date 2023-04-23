@@ -28,7 +28,7 @@ from utils import (
     AIToolResponse,
     append_field_prompts_to_prompt,
 )
-from text_examples import CEO_EMAIL, ARTICLE_EXAMPLE, CLASS_NOTES, TRANSCRIPT_EXAMPLE
+from text_examples import CEO_EMAIL, ARTICLE_EXAMPLE, CONTRACT_EXAMPLE, TRANSCRIPT_EXAMPLE
 
 router = APIRouter()
 
@@ -117,7 +117,7 @@ async def sandbox_chatgpt_examples() -> TextSummarizerExampleResponse:
     """Return examples for the text summarizer endpoint."""
     examples = [
         TextSummarizerRequest(
-            text_to_summarize=CLASS_NOTES,
+            text_to_summarize=CONTRACT_EXAMPLE,
             length_of_summary_section=SummarySectionLength.SHORT,
             bullet_points_section=True,
             action_items_section=True,
@@ -142,7 +142,7 @@ async def sandbox_chatgpt_examples() -> TextSummarizerExampleResponse:
         ),
     ]
     response = TextSummarizerExampleResponse(
-        example_names=["Class Notes", "Transcript", "Article", "Email"],
+        example_names=["Contract", "Transcript", "Article", "Email"],
         examples=examples
     )
     return response

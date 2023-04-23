@@ -68,34 +68,40 @@ In conclusion, mindfulness and meditation can be powerful tools for improving me
 """
 
 
-CLASS_NOTES = \
-"""Topic: Solving Quadratic Equations
+CONTRACT_EXAMPLE = \
+"""Business Agreement Contract between John and Sally for the Sale of Cabbages
 
-- Quadratic equations have x^2 in them.
+This agreement ("Agreement") is made and entered into on the ______ day of ______, 20__, between John ("Seller") and Sally ("Buyer").
 
-- The standard form of a quadratic equation is ax^2 + bx + c = 0.
+The parties agree as follows:
 
-- To solve a quadratic equation, use the quadratic formula: x = (-b ± sqrt(b^2 - 4ac)) / 2a.
+1. Sale of Cabbages: Seller agrees to sell and deliver to Buyer, and Buyer agrees to purchase and receive from Seller, the quantity of cabbages as specified in the Purchase Order.
 
-- First, identify the values of a, b, and c.
+2. Delivery: Seller agrees to deliver the cabbages to Buyer's premises on the dates specified in the Purchase Order, unless otherwise agreed upon in writing by both parties.
 
-- Then, plug those values into the quadratic formula.
+3. Quality of Cabbages: The cabbages delivered by Seller shall be of the quality specified in the Purchase Order and shall conform to all applicable industry standards.
 
-- Use the plus or minus sign to find two solutions for x.
+4. Price and Payment Terms: The total price for the cabbages shall be as specified in the Purchase Order. Payment terms shall be as follows: ____________.
 
-- Simplify the solutions if possible.
+5. Cancellation and Termination: Either party may terminate this Agreement upon written notice to the other party. In the event of termination, Buyer shall pay for all cabbages delivered up to the date of termination.
 
-- Check your answers by plugging them back into the original equation.
+6. Force Majeure: Neither party shall be liable for any delay or failure in performance under this Agreement resulting from acts beyond the control of the party, including but not limited to acts of God, acts of government, war, riot, or natural disaster.
 
-- If the solutions don't work, there may be no real solutions.
+7. Non-Assignment: Neither party may assign this Agreement without the prior written consent of the other party.
 
-- If the square root part of the formula is negative, there are no real solutions.
+8. Governing Law: This Agreement shall be governed by and construed in accordance with the laws of the state of _________.
 
-- If the quadratic equation has only one solution, the discriminant (b^2 - 4ac) is equal to zero.
+9. Entire Agreement: This Agreement constitutes the entire understanding between the parties and supersedes any prior agreements or understandings, whether written or oral.
 
-- Practice solving quadratic equations using the quadratic formula.
+10. Amendments: This Agreement may be amended or modified only in writing signed by both parties.
 
-- Homework: Complete problems 1-20 on page 75 of the textbook.
+11. Counterparts: This Agreement may be executed in counterparts, each of which shall be deemed an original, but all of which together shall constitute one and the same instrument.
+
+IN WITNESS WHEREOF, the parties have executed this Agreement as of the date first above written.
+
+SELLER: ___________________________________________
+
+BUYER: ___________________________________________
 """
 
 COFFEE_SHOP = \
