@@ -25,6 +25,7 @@ from utils import (
     TOKEN_EXHAUSTED_JSON_RESPONSE,
     TokensExhaustedException,
     AIToolResponse,
+    append_field_prompts_to_prompt,
 )
 from text_examples import CEO_EMAIL, ARTICLE_EXAMPLE, CLASS_NOTES, TRANSCRIPT_EXAMPLE
 
@@ -36,37 +37,11 @@ logger.setLevel(logging.DEBUG)
 
 MAX_TOKENS_FROM_GPT_RESPONSE = 400
 
-SYSTEM_PROMPT = (
-    "You are a professional text summarizer. You job is to summarize the text in markdown format for me in order to help me "
-    "understand the text better and allow me to understand the information quickly without having to read the entire text myself. "
-    "I may request for a summary sentence, bullet points, and/or actions to be generated from the text."
-    "You should only respond with the sections that I specify in my request, nothing else. You should use markdown format "
-    "and should use bold titles for each section. By using markdown, you will help me organize the information better."
-)
-
 ENDPOINT_NAME = "text-summarizer"
 
 
-class TextSummarizerRequest(BaseAIInstructionModel):
-    """
-    **Define the request model for the text summarizer endpoint.**
-    
-    **Attributes:**
-    - text_to_summarize: text for the endpoint to summarize
-    - include_summary_sentence: whether or not to include a summary sentence in the response
-    - number_of_bullets: number of bullet points to include in the response
-    - number_of_action_items: number of action items to include in the response (this is suggested to use with 
-        summaries of things such as meeting minutes)
-    
-    Inherit from BaseAIInstructionModel:    
-    """
-    __doc__ += BaseAIInstructionModel.__doc__
-    text_to_summarize: str = Field(
-        ...,
-        title="Text to Summarize",
-        description="The text that you wanted summarized. (e.g. articles, notes, transcripts, etc.)",
-    )
-    include_summary_sentence: Optional[bool] = Field(
+class TextSummarizerInstructions(BaseAIInstructionModel):
+    summary_sentence: Optional[bool] = Field(
         default=True,
         title="Include Summary Sentence",
         description="Whether or not to include a summary sentence in the response.",
@@ -77,9 +52,30 @@ class TextSummarizerRequest(BaseAIInstructionModel):
         description="The number of bullet points to include in the response.",
     )
     number_of_action_items: Optional[conint(ge=0, le=8)] = Field(
-        default=0,
         title="Number of Action Items",
         description="The number of action items to include in the response. Action items are often applicable for meeting notes, lectures, etc.",
+    )
+
+SYSTEM_PROMPT = (
+    "You are an expert at summarizing text. You have spent hours "
+    "perfecting your summarization skills. You have summarized text for "
+    "hundreds of people. Because of your expertise, I want you to summarize "
+    "text for me. You should ONLY respond with the summary and nothing else. "
+    "I will provide you with a text to summarize and instructions about how to "
+    "structure the summary. You should respond with a summary that is tailored "
+    "to the instructions. The instructions may ask you to include a summary "
+    "sentence, bullet points, or action items. It is important that you "
+    "include these if I ask you to. If I don't ask you to include a section, "
+    "you should not include it. Remember, you are an expert at summarizing "
+    "text. I trust you to summarize text that will be useful to me. Please do "
+    "not respond with anything other than the summary."
+)
+
+class TextSummarizerRequest(TextSummarizerInstructions):
+    text_to_summarize: str = Field(
+        ...,
+        title="Text to Summarize",
+        description="The text that you wanted summarized. (e.g. articles, notes, transcripts, etc.)",
     )
 
 class TextSummarizerExampleResponse(ExamplesResponse):
@@ -125,19 +121,11 @@ async def sandbox_chatgpt_examples() -> TextSummarizerExampleResponse:
 async def text_summarizer(text_summarizer_request: TextSummarizerRequest, request: Request):
     """**Summarize text using GPT-3.**"""
     logger.info(f"Received request: {text_summarizer_request}")
-    for field_name, value in text_summarizer_request:
-        if isinstance(value, str):
-            setattr(text_summarizer_request, field_name, value.strip())
-    user_prompt = BASE_USER_PROMPT_PREFIX
-    if text_summarizer_request.include_summary_sentence:
-        user_prompt += f"Please provide me with a summary sentance.\n"
-    if text_summarizer_request.number_of_bullets:
-        user_prompt += f"Please provide me with {text_summarizer_request.number_of_bullets} bullet points.\n"
-    if text_summarizer_request.number_of_action_items:
-        user_prompt += f"Please provide me with {text_summarizer_request.number_of_action_items} action items.\n"
-
-    user_prompt += "Finally, here's the text I want you to summarize: " + text_summarizer_request.text_to_summarize
-
+    user_prompt = append_field_prompts_to_prompt(
+        TextSummarizerInstructions(**text_summarizer_request.dict()),
+        BASE_USER_PROMPT_PREFIX,
+    )
+    user_prompt += f"\nHere's the text that i want you to summarize for me:\n{text_summarizer_request.text_to_summarize}"
     uuid = request.headers.get(UUID_HEADER_NAME)
     user_chat = GPTTurboChat(
         role=Role.USER,
