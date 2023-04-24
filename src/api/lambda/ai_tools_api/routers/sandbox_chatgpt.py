@@ -18,7 +18,8 @@ from utils import (
     AIToolsEndpointName,
     error_responses,
     TokensExhaustedException,
-    TOKEN_EXHAUSTED_JSON_RESPONSE,
+    TOKENS_EXHAUSTED_LOGIN_JSON_RESPONSE,
+    TOKENS_EXHAUSTED_FOR_DAY_JSON_RESPONSE,
 )
 from gpt_turbo import GPTTurboChatSession, get_gpt_turbo_response, GPTTurboChat, Role
 from dynamodb_models import UserDataTableModel
@@ -172,8 +173,10 @@ def sandbox_chatgpt(sandbox_chatgpt_request: SandBoxChatGPTRequest, request: Req
             max_tokens=500,
             override_model_context_window=1000,
         )
-    except TokensExhaustedException:
-        return TOKEN_EXHAUSTED_JSON_RESPONSE
+    except TokensExhaustedException as e:
+        if e.login:
+            return TOKENS_EXHAUSTED_LOGIN_JSON_RESPONSE
+        return TOKENS_EXHAUSTED_FOR_DAY_JSON_RESPONSE
     logger.info("chat_session after response: %s", chat_session)
     chat_history = GPTChatHistory(**chat_session.dict(), conversation_uuid=sandbox_chatgpt_request.conversation_uuid)
     save_sandbox_chat_history(user_uuid=uuid, sandbox_chat_history=chat_history)
