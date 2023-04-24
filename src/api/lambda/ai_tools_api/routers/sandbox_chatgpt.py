@@ -100,7 +100,7 @@ async def sandbox_chatgpt_examples() -> SandBoxChatGPTExamplesResponse:
     examples = [
         "I'm having a hard time with my homework. Can you help me?",
         "I need some inspiration for my next project. I'm not sure where to start.",
-        "What's the best way to learn how to code?",
+        "I don't know how to code. Can you teach me?",
         "I need to create a recipe for my guests tonight. I only have 40min to cook. What should I make?"
     ]
     return SandBoxChatGPTExamplesResponse(
@@ -134,14 +134,11 @@ def save_sandbox_chat_history(user_uuid: UUID, sandbox_chat_history: GPTChatHist
     Args:
         chat_session: Chat history for a sandbox-chatgpt session.
     """
-    token_count = sandbox_chat_history.messages[-1].token_count
-    token_count += sandbox_chat_history.messages[-2].token_count # add token count for system prompt
     chat_dict = sandbox_chat_history.dict()
     chat_dict["conversation_uuid"] = str(sandbox_chat_history.conversation_uuid)
     user_data_model: UserDataTableModel = UserDataTableModel.get(str(user_uuid))
     user_data_model.update(actions=[
             UserDataTableModel.sandbox_chat_history.set(chat_dict),
-            UserDataTableModel.cumulative_token_count.add(token_count),
         ]
     )
 
