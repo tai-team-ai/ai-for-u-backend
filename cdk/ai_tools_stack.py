@@ -137,7 +137,7 @@ class AIToolsStack(Stack):
             environment=settings_dict,
             tracing=lambda_.Tracing.ACTIVE,
             layers=[self.create_dependencies_layer(id_, path_to_requirements)],
-            timeout=Duration.seconds(30),
+            timeout=Duration.seconds(35),
             role=role,
             memory_size=448,
             ephemeral_storage_size=Size.mebibytes(512),

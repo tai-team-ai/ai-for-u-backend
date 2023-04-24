@@ -85,16 +85,10 @@ def can_user_make_request(user_uuid: str, expected_token_count: int) -> None:
     )
     if not can_make_request:
         can_user_login = can_user_login_to_continue_using_after_token_limit_reached(user_uuid=user_uuid)
-        if can_user_login:
-            raise TokensExhaustedException(
-                message=f"User does not have enough tokens to make request. Token quota: {tokens_allowed}, Tokens required for request: {expected_token_count}",
-                login=True,
-            )
-        else:
-            raise TokensExhaustedException(
-                message=f"User does not have enough tokens to make request. Token quota: {tokens_allowed}, Tokens required for request: {expected_token_count}",
-                login=False,
-            )
+        raise TokensExhaustedException(
+            message=f"User does not have enough tokens to make request. Token quota: {tokens_allowed}, Tokens required for request: {expected_token_count}",
+            login=can_user_login,
+        )
 
 
 def count_tokens(string: str) -> int:

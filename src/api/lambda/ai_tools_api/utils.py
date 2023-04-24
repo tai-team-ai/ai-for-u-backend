@@ -56,12 +56,18 @@ error_responses = {
 
 TOKENS_EXHAUSTED_LOGIN_JSON_RESPONSE = JSONResponse(
     status_code=status.HTTP_429_TOO_MANY_REQUESTS,
-    content={"message": "Tokens exhausted for the day. Please sign up for a free account or sign in to continue using AIforU or wait until tomorrow to use the AIforU again.", "login": True},
+    content={
+        "message": "Tokens exhausted for the day. Please sign up for a free account or sign in to continue using AIforU or wait until tomorrow to use the AIforU again.",
+        "login": True
+    },
 )
 
 TOKENS_EXHAUSTED_FOR_DAY_JSON_RESPONSE = JSONResponse(
     status_code=status.HTTP_429_TOO_MANY_REQUESTS,
-    content={"message": "Tokens exhausted for the day. Please check back tomorrow to use the AIforU again.", "login": False},
+    content={
+        "message": "Tokens exhausted for the day. Please check back tomorrow to use the AIforU again.",
+        "login": False
+    },
 )
 
 
@@ -168,7 +174,7 @@ def transform_field_for_prompt(field_name: str, field_value: Union[str, bool, En
         if field_value:
             return f"Please include a {field_name} in your response.\n"
         else:
-            return f"Please do not include a(n) {field_name} in your response.\n"
+            return f"Please do not include a {field_name} in your response.\n"
     elif isinstance(field_value, Number):
         try:
             field_value = int(field_value)
@@ -368,6 +374,7 @@ def get_number_of_tokens_before_limit_reached(user_uuid: UUID, runtime_settings:
     """Get the number of tokens before the user reaches the limit."""
     token_limit = runtime_settings.non_authenticate_user_daily_usage_token_limit
     user_data_table_model: UserDataTableModel = UserDataTableModel.get(str(user_uuid))
+    logger.info("Authenticated user: %s", runtime_settings.authenticated)
     if runtime_settings.authenticated:
         token_limit = runtime_settings.authenticate_user_daily_usage_token_limit
     return token_limit - user_data_table_model.cumulative_token_count
@@ -381,7 +388,9 @@ def can_user_login_to_continue_using_after_token_limit_reached(user_uuid: UUID) 
     """
     runtime_settings = RuntimeSettings()
     user_data_table_model: UserDataTableModel = UserDataTableModel.get(str(user_uuid))
-    if runtime_settings.authenticated:
+    unauthenticated_user = not user_data_table_model.authenticated_user
+    logger.info("Unauthenticated user: %s", unauthenticated_user)
+    if unauthenticated_user:
         if user_data_table_model.cumulative_token_count < runtime_settings.authenticate_user_daily_usage_token_limit:
             return True
     return False
