@@ -162,8 +162,8 @@ def get_gpt_turbo_response(
     """
 
     # This line counts the tokens for the last user message and adds it to the chat session 
-    chat_session.messages[-1].token_count = count_tokens(chat_session.messages[-1].content)
     chat_session.messages[-1].content = sanitize_string(chat_session.messages[-1].content)
+    chat_session.messages[-1].token_count = count_tokens(chat_session.messages[-1].content)
 
     prompt_messages = [
         {"role": Role.SYSTEM.value, "content": system_prompt}
