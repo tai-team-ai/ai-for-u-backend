@@ -10,6 +10,7 @@ from utils import (
     TokensExhaustedException,
     update_user_token_count,
     sanitize_string,
+    can_user_login_to_continue_using_after_token_limit_reached,
 )
 
 
@@ -83,7 +84,11 @@ def can_user_make_request(user_uuid: str, expected_token_count: int) -> None:
         expected_token_count=expected_token_count,
     )
     if not can_make_request:
-        raise TokensExhaustedException(f"User does not have enough tokens to make request. Token quota: {tokens_allowed}, Tokens required for request: {expected_token_count}")
+        can_user_login = can_user_login_to_continue_using_after_token_limit_reached(user_uuid=user_uuid)
+        raise TokensExhaustedException(
+            message=f"User does not have enough tokens to make request. Token quota: {tokens_allowed}, Tokens required for request: {expected_token_count}",
+            login=can_user_login,
+        )
 
 
 def count_tokens(string: str) -> int:
@@ -155,22 +160,29 @@ def get_gpt_turbo_response(
     Returns:
         response: Response from GPT Turbo.
     """
+
+    # This line counts the tokens for the last user message and adds it to the chat session 
+    chat_session.messages[-1].content = sanitize_string(chat_session.messages[-1].content)
+    chat_session.messages[-1].token_count = count_tokens(chat_session.messages[-1].content)
+
     prompt_messages = [
         {"role": Role.SYSTEM.value, "content": system_prompt}
     ]
-
     system_token_count = count_tokens(system_prompt)
     tokens_for_request = system_token_count + max_tokens
-    # This line counts the tokens for the last user message and adds it to the chat session
-    user_prompt_token_count = count_tokens(chat_session.messages[-1].content)
-    chat_session.messages[-1].token_count = user_prompt_token_count
-    chat_session.messages[-1].content = sanitize_string(chat_session.messages[-1].content)
-    chat_session = truncate_chat_session(chat_session, tokens_for_request, override_model_context_window or MODEL_CONTEXT_WINDOW)
     for chat in chat_session.messages:
         tokens_for_request += chat.token_count
         prompt_messages.append(chat.dict(exclude={"token_count"}))
+    chat_session = truncate_chat_session(chat_session, tokens_for_request, override_model_context_window or MODEL_CONTEXT_WINDOW)
+
+    # After truncating the chat session, we need to re-count the tokens to get the correct token count to update the user's token count
+    historical_messages_token_count = system_token_count
+    for chat in chat_session.messages:
+        historical_messages_token_count += chat.token_count
+        prompt_messages.append(chat.dict(exclude={"token_count"}))
+
     can_user_make_request(uuid, tokens_for_request)
-    update_user_token_count(uuid, user_prompt_token_count + system_token_count)
+    update_user_token_count(uuid, historical_messages_token_count)
     logger.info(prompt_messages)
     response = openai.ChatCompletion.create(
         model=GPT_MODEL,

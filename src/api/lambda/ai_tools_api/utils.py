@@ -38,10 +38,14 @@ class TokensExhaustedResponse(BaseModel):
     """Define the model for the client error response."""
 
     message: str = "Tokens exhausted for the day. Please Sign Up for a free account to continue using AIforU or wait until tomorrow to use the AIforU again."
-
+    login: bool
 
 class TokensExhaustedException(Exception):
-    pass
+
+    def __init__(self, message: str, login: bool):
+        self.message = message
+        self.login = login
+        super().__init__(self.message)
 
 
 error_responses = {
@@ -50,9 +54,20 @@ error_responses = {
     },
 }
 
-TOKEN_EXHAUSTED_JSON_RESPONSE = JSONResponse(
+TOKENS_EXHAUSTED_LOGIN_JSON_RESPONSE = JSONResponse(
     status_code=status.HTTP_429_TOO_MANY_REQUESTS,
-    content={"message": "Tokens exhausted for the day."},
+    content={
+        "message": "Tokens exhausted for the day. Please sign up for a free account or sign in to continue using AIforU or wait until tomorrow to use the AIforU again.",
+        "login": True
+    },
+)
+
+TOKENS_EXHAUSTED_FOR_DAY_JSON_RESPONSE = JSONResponse(
+    status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+    content={
+        "message": "Tokens exhausted for the day. Please check back tomorrow to use the AIforU again.",
+        "login": False
+    },
 )
 
 
@@ -159,7 +174,7 @@ def transform_field_for_prompt(field_name: str, field_value: Union[str, bool, En
         if field_value:
             return f"Please include a {field_name} in your response.\n"
         else:
-            return f"Please do not include a(n) {field_name} in your response.\n"
+            return f"Please do not include a {field_name} in your response.\n"
     elif isinstance(field_value, Number):
         try:
             field_value = int(field_value)
@@ -345,13 +360,8 @@ def reset_token_count_if_time_elapsed(user_uuid: UUID, runtime_settings: Runtime
     user_data_model: UserDataTableModel = UserDataTableModel.get(str(user_uuid))
     last_reset_date = user_data_model.token_count_last_reset_date.replace(tzinfo=None)
     time_delta = dt.datetime.utcnow() - last_reset_date
-    logger.info("Time delta: %s", time_delta)
-    logger.info("Days before resetting token count: %s", runtime_settings.days_before_resetting_token_count)
-    logger.info("Last reset date: %s", last_reset_date)
     if time_delta > runtime_settings.days_before_resetting_token_count:
         new_reset_time = get_eastern_time_previous_day_midnight()
-        logger.info("New reset time: %s", new_reset_time)
-        logger.info("Current UTC time: %s", dt.datetime.utcnow())
         user_data_model.update(
             actions=[
                 UserDataTableModel.token_count_last_reset_date.set(new_reset_time),
@@ -359,10 +369,28 @@ def reset_token_count_if_time_elapsed(user_uuid: UUID, runtime_settings: Runtime
             ]
         )
 
+
 def get_number_of_tokens_before_limit_reached(user_uuid: UUID, runtime_settings: RuntimeSettings) -> int:
     """Get the number of tokens before the user reaches the limit."""
     token_limit = runtime_settings.non_authenticate_user_daily_usage_token_limit
     user_data_table_model: UserDataTableModel = UserDataTableModel.get(str(user_uuid))
+    logger.info("Authenticated user: %s", runtime_settings.authenticated)
     if runtime_settings.authenticated:
         token_limit = runtime_settings.authenticate_user_daily_usage_token_limit
     return token_limit - user_data_table_model.cumulative_token_count
+
+
+def can_user_login_to_continue_using_after_token_limit_reached(user_uuid: UUID) -> bool:
+    """
+    Check if the user can login to continue using the service after the token limit is reached.
+
+    Should be called after the token limit is reached.
+    """
+    runtime_settings = RuntimeSettings()
+    user_data_table_model: UserDataTableModel = UserDataTableModel.get(str(user_uuid))
+    unauthenticated_user = not user_data_table_model.authenticated_user
+    logger.info("Unauthenticated user: %s", unauthenticated_user)
+    if unauthenticated_user:
+        if user_data_table_model.cumulative_token_count < runtime_settings.authenticate_user_daily_usage_token_limit:
+            return True
+    return False

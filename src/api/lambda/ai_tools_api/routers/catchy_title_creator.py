@@ -40,7 +40,8 @@ from utils import (
     append_field_prompts_to_prompt,
     BASE_USER_PROMPT_PREFIX,
     error_responses,
-    TOKEN_EXHAUSTED_JSON_RESPONSE,
+    TOKENS_EXHAUSTED_LOGIN_JSON_RESPONSE,
+    TOKENS_EXHAUSTED_FOR_DAY_JSON_RESPONSE,
     TokensExhaustedException,
     AIToolResponse,
 )
@@ -209,8 +210,10 @@ async def catchy_title_creator(catchy_title_creator_request: CatchyTitleCreatorR
             uuid=uuid,
             max_tokens=MAX_TOKENS_FROM_GPT_RESPONSE,
         )
-    except TokensExhaustedException:
-        return TOKEN_EXHAUSTED_JSON_RESPONSE
+    except TokensExhaustedException as e:
+        if e.login:
+            return TOKENS_EXHAUSTED_LOGIN_JSON_RESPONSE
+        return TOKENS_EXHAUSTED_FOR_DAY_JSON_RESPONSE
 
     latest_gpt_chat_model = chat_session.messages[-1]
     latest_chat = latest_gpt_chat_model.content
