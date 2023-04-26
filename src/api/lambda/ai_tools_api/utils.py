@@ -273,8 +273,6 @@ def update_user_token_count(user_uuid: UUID, token_count: int) -> None:
     action_list = []
     user_data_model: UserDataTableModel = UserDataTableModel.get(str(user_uuid))
     action_list.append(UserDataTableModel.cumulative_token_count.add(token_count))
-    if os.environ.get(AUTHENTICATED_USER_ENV_VAR_NAME, False):
-        action_list.append(UserDataTableModel.authenticated_user.set(True))
     user_data_model.update(actions=action_list)
 
 
@@ -315,7 +313,7 @@ def get_user_uuid_from_jwt_token(jwt_token: str) -> UUID:
     return UUID(uuid)
 
 
-def is_user_authenticated(uuid: UUID, user_jwt_token: str) -> bool:
+def is_user_authenticated(uuid: UUID, jwt_uuid: UUID) -> bool:
     """
     Check if the user is authenticated.
 
@@ -329,7 +327,6 @@ def is_user_authenticated(uuid: UUID, user_jwt_token: str) -> bool:
     Returns:
         True if the user is authenticated, False otherwise.
     """
-    jwt_uuid = get_user_uuid_from_jwt_token(user_jwt_token)
     # if uuid != jwt_uuid:
     #     return False
     table_key = f"USER#{str(jwt_uuid)}"
