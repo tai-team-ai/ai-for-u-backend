@@ -109,9 +109,10 @@ def initialize_user_db(uuid: UUID, is_user_authenticated: bool):
     try:
         user_data_model: UserDataTableModel = UserDataTableModel.get(str(uuid))
     except (Model.DoesNotExist):
-        logger.info("User not found in DB. Is user authenticated? %s", is_user_authenticated)
         user_data_model = UserDataTableModel(str(uuid), authenticated_user=is_user_authenticated)
         user_data_model.save()
+    if is_user_authenticated:
+        user_data_model.update(actions=[UserDataTableModel.authenticated_user.set(True)])
 
 def create_fastapi_app():
     """Create FastAPI app."""
@@ -152,13 +153,13 @@ def create_fastapi_app():
                 raise UserTokenNotFoundError("User UUID not found.") from e
         if uuid:
             user_token = request.headers.get(USER_TOKEN_HEADER_NAME, None)
-
             authenticated = False
             if user_token:
                 jwt_uuid = get_user_uuid_from_jwt_token(user_token)
-                authenticated = is_user_authenticated(uuid, UUID(jwt_uuid))
+                authenticated = is_user_authenticated(uuid, jwt_uuid)
             os.environ[AUTHENTICATED_USER_ENV_VAR_NAME] = str(authenticated)
-            uuid_to_use = jwt_uuid if authenticated else uuid
+            # uuid_to_use = jwt_uuid if authenticated else uuid # once both tokens match (future pull), we can use either, for now, we need to use the uuid as other endpoints look up user data with it
+            uuid_to_use = uuid
             initialize_user_db(uuid_to_use, authenticated)
             logger.info(f"Authenticated: {authenticated}")
         response = await call_next(request)
