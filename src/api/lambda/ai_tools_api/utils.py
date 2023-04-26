@@ -383,11 +383,12 @@ def can_user_login_to_continue_using_after_token_limit_reached(user_uuid: UUID) 
 
     Should be called after the token limit is reached.
     """
+    authenticated = os.environ.get(AUTHENTICATED_USER_ENV_VAR_NAME, False)
+    authenticated = authenticated == "True"
     runtime_settings = RuntimeSettings()
     user_data_table_model: UserDataTableModel = UserDataTableModel.get(str(user_uuid))
-    unauthenticated_user = not user_data_table_model.authenticated_user
-    logger.info("Unauthenticated user: %s", unauthenticated_user)
-    if unauthenticated_user:
-        if user_data_table_model.cumulative_token_count < runtime_settings.authenticate_user_daily_usage_token_limit:
-            return True
+    if authenticated:
+        return False
+    if user_data_table_model.cumulative_token_count < runtime_settings.authenticate_user_daily_usage_token_limit:
+        return True
     return False
