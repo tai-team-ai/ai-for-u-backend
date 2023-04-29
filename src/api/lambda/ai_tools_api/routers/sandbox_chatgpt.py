@@ -167,8 +167,8 @@ def sandbox_chatgpt(sandbox_chatgpt_request: SandBoxChatGPTRequest, request: Req
             presence_penalty=0.5,
             temperature=0.9,
             uuid=uuid,
-            max_tokens=500,
-            override_model_context_window=1000,
+            max_tokens=400,
+            override_model_context_window=1300,
         )
     except TokensExhaustedException as e:
         if e.login:
