@@ -1,4 +1,5 @@
 from __future__ import annotations
+from typing import Optional
 from pydantic import BaseModel
 from enum import Enum
 import openai
@@ -104,9 +105,32 @@ def count_tokens(string: str) -> int:
     """
     return len(MODEL_ENCODING.encode(string))
 
+def split_message_until_below_token_count(message: str, max_tokens_allotted_for_message: int) -> str:
+    """
+    Reduce the message to a token count reduction speed is multiplied by how far off from the target.
+
+    Args:
+        message: The message to reduce.
+        max_tokens_allotted_for_message: The max tokens allotted for the message.
+
+    Returns:
+        message: The reduced message.
+    """
+    while True:
+        token_delta = count_tokens(message) - max_tokens_allotted_for_message
+        logger.info(f"Token delta before offset: {token_delta}")
+        if token_delta <= 0:
+            return message
+        offset = int(token_delta * 4.15)
+        message = message[offset:]
 
 @docstring_parameter(MODEL_CONTEXT_WINDOW)
-def truncate_chat_session(chat_session: GPTTurboChatSession, overhead_tokens: int, context_window: int) -> GPTTurboChatSession:
+def truncate_chat_session(
+    chat_session: GPTTurboChatSession,
+    system_prompt_token_count: int,
+    max_tokens_expected_from_response: int,
+    context_window: int
+) -> GPTTurboChatSession:
     """
     Truncate the chat session to the model context window ({0})
 
@@ -123,16 +147,34 @@ def truncate_chat_session(chat_session: GPTTurboChatSession, overhead_tokens: in
     Returns:
         chat_session: The truncated chat session.
     """
+    overhead_token_count = system_prompt_token_count + max_tokens_expected_from_response
     chat_history_cumulative_token_count = 0
-    logger.info(chat_session)
-    logger.info(overhead_tokens)
+
     for chat in chat_session.messages:
         chat_history_cumulative_token_count += chat.token_count
-    while chat_history_cumulative_token_count + overhead_tokens > context_window:
-        logger.info(chat_history_cumulative_token_count)
-        chat_history_cumulative_token_count -= chat_session.messages[0].token_count
-        chat_session = GPTTurboChatSession(messages=chat_session.messages[1:])
-        logger.info(chat_session)
+    while chat_history_cumulative_token_count + overhead_token_count > context_window:
+        token_count_delta = 0
+        if len(chat_session.messages) == 1:
+            # If 1 message exists we don't want to chop it, we want to chop it to make it short enough
+            new_message = split_message_until_below_token_count(
+                message=chat_session.messages[0].content,
+                max_tokens_allotted_for_message=context_window - overhead_token_count,
+            )
+            new_message_token_count = count_tokens(new_message)
+            token_count_delta = chat_session.messages[0].token_count - new_message_token_count
+            chat_session = GPTTurboChatSession(
+                messages = (
+                    GPTTurboChat(
+                        role=chat_session.messages[0].role,
+                        content=new_message,
+                        token_count=new_message_token_count,
+                    ),
+                )
+            )
+        else:
+            token_count_delta = chat_session.messages[0].token_count
+            chat_session = GPTTurboChatSession(messages=chat_session.messages[1:])
+        chat_history_cumulative_token_count -= token_count_delta
     return chat_session
 
 
@@ -145,7 +187,7 @@ def get_gpt_turbo_response(
     stream: bool = False,
     uuid: str = "",
     max_tokens: int = 400,
-    override_model_context_window: int = None,
+    override_model_context_window: Optional[int] = None,
 ) -> GPTTurboChatSession:
     """
     Get response from GPT Turbo.
@@ -166,24 +208,21 @@ def get_gpt_turbo_response(
     chat_session.messages[-1].content = sanitize_string(chat_session.messages[-1].content)
     chat_session.messages[-1].token_count = count_tokens(chat_session.messages[-1].content)
 
+    system_token_count = count_tokens(system_prompt)
+    token_context_window = override_model_context_window or MODEL_CONTEXT_WINDOW
+    chat_session = truncate_chat_session(chat_session, system_token_count, max_tokens, token_context_window)
+    logger.info(f"Chat session after truncation is complete: {chat_session}")
+
     prompt_messages = [
         {"role": Role.SYSTEM.value, "content": system_prompt}
     ]
-    system_token_count = count_tokens(system_prompt)
-    tokens_for_request = system_token_count + max_tokens
+    user_tokens_for_request = 0
     for chat in chat_session.messages:
-        tokens_for_request += chat.token_count
-        prompt_messages.append(chat.dict(exclude={"token_count"}))
-    chat_session = truncate_chat_session(chat_session, tokens_for_request, override_model_context_window or MODEL_CONTEXT_WINDOW)
-
-    # After truncating the chat session, we need to re-count the tokens to get the correct token count to update the user's token count
-    historical_messages_token_count = system_token_count
-    for chat in chat_session.messages:
-        historical_messages_token_count += chat.token_count
+        user_tokens_for_request += chat.token_count
         prompt_messages.append(chat.dict(exclude={"token_count"}))
 
-    can_user_make_request(uuid, tokens_for_request)
-    update_user_token_count(uuid, historical_messages_token_count)
+    can_user_make_request(uuid, user_tokens_for_request)
+    update_user_token_count(uuid, user_tokens_for_request)
     logger.info(prompt_messages)
     response = openai.ChatCompletion.create(
         model=GPT_MODEL,
