@@ -42,7 +42,6 @@ from utils import (
     TOKENS_EXHAUSTED_FOR_DAY_JSON_RESPONSE,
     TokensExhaustedException,
     AIToolResponse,
-    RuntimeSettings,
 )
 
 
@@ -193,7 +192,6 @@ async def catchy_title_creator(catchy_title_creator_request: CatchyTitleCreatorR
         role=Role.USER,
         content=user_prompt,
     )
-    logger.info("User prompt: %s", user_prompt)
     temperature = map_value_between_range(catchy_title_creator_request.creativity, 0, 100, 0.2, 1.0)
     presence_penalty = map_value_between_range(catchy_title_creator_request.creativity, 0, 100, 0.3, 1.3)
     frequency_penalty = map_value_between_range(catchy_title_creator_request.creativity, 0, 100, 0.8, 2.0)
@@ -213,7 +211,7 @@ async def catchy_title_creator(catchy_title_creator_request: CatchyTitleCreatorR
 
     latest_gpt_chat_model = chat_session.messages[-1]
     latest_chat = latest_gpt_chat_model.content
-    logger.info("Latest chat: %s", latest_chat)
+
     latest_chat = sanitize_string(latest_chat)
 
     response_model = AIToolResponse(response=latest_chat)

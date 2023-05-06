@@ -5,27 +5,20 @@ from typing import Optional, List
 from pathlib import Path
 from pydantic import constr, Field
 from fastapi import APIRouter, Request, Response, status
+
+from template_utils import AITemplateModel, get_ai_tool_response
 sys.path.append(Path(__file__).parent / "../utils")
 sys.path.append(Path(__file__).parent / "../text_examples")
 sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), "../gpt_turbo"))
-from gpt_turbo import GPTTurboChatSession, GPTTurboChat, Role, get_gpt_turbo_response
 from text_examples import AEROSPACE_RESUME, SPACEX_JOB_POSTING, TEACHER_JOB_POSTING, TEACHER_RESUME
 from utils import (
-    AIToolModel,
-    sanitize_string,
     BaseAIInstructionModel,
     Tone,
     EXAMPLES_ENDPOINT_POSTFIX,
     docstring_parameter,
     ExamplesResponse,
     AIToolsEndpointName,
-    UUID_HEADER_NAME,
-    BASE_USER_PROMPT_PREFIX,
-    append_field_prompts_to_prompt,
     error_responses,
-    TOKENS_EXHAUSTED_LOGIN_JSON_RESPONSE,
-    TOKENS_EXHAUSTED_FOR_DAY_JSON_RESPONSE,
-    TokensExhaustedException,
     AIToolResponse,
 )
 
@@ -37,10 +30,7 @@ router = APIRouter()
 ENDPOINT_NAME = AIToolsEndpointName.COVER_LETTER_WRITER.value
 MAX_TOKENS_FROM_GPT_RESPONSE = 400
 
-
-AI_PURPOSE = " ".join(ENDPOINT_NAME.split("-")).lower()
-
-class CoverLetterWriterInsructions(BaseAIInstructionModel):
+class CoverLetterWriterInstructions(BaseAIInstructionModel):
     job_posting: constr(min_length=1, max_length=10000) = Field(
         ...,
         title="Job Posting",
@@ -79,7 +69,7 @@ SYSTEM_PROMPT = (
 )
 
 
-class CoverLetterWriterRequest(CoverLetterWriterInsructions):
+class CoverLetterWriterRequest(CoverLetterWriterInstructions):
     """
     **Define the model for the request body for {0} endpoint.**
     
@@ -144,40 +134,21 @@ async def cover_letter_writer_examples(request: Request):
 
 
 @router.post(f"/{ENDPOINT_NAME}", response_model=AIToolResponse, responses=error_responses)
-async def cover_letter_writer(request: Request, cover_letter_writer_request: CoverLetterWriterRequest):
+async def cover_letter_writer(cover_letter_writer_request: CoverLetterWriterRequest):
     """
     **Generate a cover letter for a resume and job posting.**
     
     This method takes a resume and job posting as input and generates a cover letter for the resume and job posting.
     """
-    logger.info(f"Received request for {ENDPOINT_NAME} endpoint.")
-    user_prompt = append_field_prompts_to_prompt(CoverLetterWriterInsructions(**cover_letter_writer_request.dict()), BASE_USER_PROMPT_PREFIX)
-    user_prompt += f"\nHere is my resume to use as a reference when writing the cover letter: {cover_letter_writer_request.resume}"
-    user_chat = GPTTurboChat(
-        role=Role.USER,
-        content=user_prompt
+    user_prompt_postfix = f"\nHere is my resume to use as a reference when writing the cover letter: {cover_letter_writer_request.resume}"
+    template_config = AITemplateModel(
+        endpoint_name=ENDPOINT_NAME,
+        ai_instructions=CoverLetterWriterInstructions(**cover_letter_writer_request.dict()),
+        user_prompt_postfix=user_prompt_postfix,
+        system_prompt=SYSTEM_PROMPT,
+        frequency_penalty=1.3,
+        presence_penalty=0.8,
+        temperature=0.65,
+        max_tokens=MAX_TOKENS_FROM_GPT_RESPONSE
     )
-    
-    try:
-        chat_session = get_gpt_turbo_response(
-            system_prompt=SYSTEM_PROMPT,
-            chat_session=GPTTurboChatSession(messages=[user_chat]),
-            frequency_penalty=1.3,
-            presence_penalty=0.8,
-            temperature=0.65,
-            max_tokens=MAX_TOKENS_FROM_GPT_RESPONSE
-        )
-    except TokensExhaustedException as e:
-        if e.login:
-            return TOKENS_EXHAUSTED_LOGIN_JSON_RESPONSE
-        return TOKENS_EXHAUSTED_FOR_DAY_JSON_RESPONSE
-
-    latest_gpt_chat_model = chat_session.messages[-1]
-    latest_chat = latest_gpt_chat_model.content
-    latest_chat = sanitize_string(latest_chat)
-
-    response_model = AIToolResponse(
-        response=latest_chat
-    )
-    logger.info(f"Returning response for {ENDPOINT_NAME} endpoint.")
-    return response_model
+    return get_ai_tool_response(template_config)
