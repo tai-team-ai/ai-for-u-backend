@@ -19,7 +19,6 @@ from utils import (
     ExamplesResponse,
     Tone,
     AIToolsEndpointName,
-    UUID_HEADER_NAME,
     sanitize_string,
     append_field_prompts_to_prompt,
     BASE_USER_PROMPT_PREFIX,
@@ -166,7 +165,6 @@ async def text_revisor(text_revision_request: TextRevisorRequest, request: Reque
     user_prompt = append_field_prompts_to_prompt(TextRevisorInstructions(**text_revision_request.dict()), BASE_USER_PROMPT_PREFIX)
 
     user_prompt += f"\nHere is the text that I want you to revise for me: {text_revision_request.text_to_revise}"
-    uuid = request.headers.get(UUID_HEADER_NAME)
     user_chat = GPTTurboChat(
         role=Role.USER,
         content=user_prompt
@@ -179,7 +177,6 @@ async def text_revisor(text_revision_request: TextRevisorRequest, request: Reque
             frequency_penalty=0.0,
             presence_penalty=0.0,
             temperature=temperature,
-            uuid=uuid,
             max_tokens=MAX_TOKENS_FROM_GPT_RESPONSE,
         )
     except TokensExhaustedException as e:

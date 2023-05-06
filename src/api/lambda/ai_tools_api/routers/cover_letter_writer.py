@@ -153,7 +153,6 @@ async def cover_letter_writer(request: Request, cover_letter_writer_request: Cov
     logger.info(f"Received request for {ENDPOINT_NAME} endpoint.")
     user_prompt = append_field_prompts_to_prompt(CoverLetterWriterInsructions(**cover_letter_writer_request.dict()), BASE_USER_PROMPT_PREFIX)
     user_prompt += f"\nHere is my resume to use as a reference when writing the cover letter: {cover_letter_writer_request.resume}"
-    uuid = request.headers.get(UUID_HEADER_NAME)
     user_chat = GPTTurboChat(
         role=Role.USER,
         content=user_prompt
@@ -166,7 +165,6 @@ async def cover_letter_writer(request: Request, cover_letter_writer_request: Cov
             frequency_penalty=1.3,
             presence_penalty=0.8,
             temperature=0.65,
-            uuid=uuid,
             max_tokens=MAX_TOKENS_FROM_GPT_RESPONSE
         )
     except TokensExhaustedException as e:
