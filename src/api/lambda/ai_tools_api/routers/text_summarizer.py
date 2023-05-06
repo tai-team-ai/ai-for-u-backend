@@ -14,9 +14,7 @@ from pydantic import conint, Field
 sys.path.append(Path(__file__, "../").absolute())
 from gpt_turbo import GPTTurboChatSession, GPTTurboChat, Role, get_gpt_turbo_response
 from utils import (
-    AIToolModel,
     BaseAIInstructionModel,
-    UUID_HEADER_NAME,
     update_user_token_count,
     sanitize_string,
     EXAMPLES_ENDPOINT_POSTFIX,
@@ -65,23 +63,6 @@ class TextSummarizerInstructions(BaseAIInstructionModel):
         description="Whether or not to include a bullet points section in the response. Action items are often applicable for meeting notes, lectures, etc.",
     )
 
-SYSTEM_PROMPT = (
-    "You are an expert at writing cover letters. You have spent hours "
-    "perfecting your cover letter writing skills. You have written cover "
-    "letters for hundreds of people. Because of your expertise, I want you "
-    "to write a cover letter for me. You should ONLY respond with the "
-    "cover letter and nothing else. I will provide you with a resume, job "
-    "posting, and optionally a company name to write a cover letter for. You "
-    "should respond with a cover letter that is tailored to the job posting "
-    "and company, highlights my skills, and demonstrates enthusiasm for "
-    "the company and role. I may also ask you to specifically highlight "
-    "certain skills from my resume that i feel are most relevant to the job "
-    "posting. It is important that you highlight these skills if I ask you to. "
-    "Remember, you are an expert at writing cover letters. I trust you to "
-    "write a cover letter that will get me the job. Please do not respond with "
-    "anything other than the cover letter."
-)
-
 valid_summary_lengths = ", ".join([section.value for section in SummarySectionLength])
 
 SYSTEM_PROMPT = (
@@ -106,7 +87,7 @@ class TextSummarizerRequest(TextSummarizerInstructions):
     text_to_summarize: str = Field(
         ...,
         title="Text to Summarize",
-        description="The text that you wanted summarized. (e.g. articles, notes, transcripts, etc.)",
+        description="The text that you want summarized. (e.g. articles, notes, transcripts, etc.)",
     )
 
 class TextSummarizerExampleResponse(ExamplesResponse):
@@ -157,7 +138,6 @@ async def text_summarizer(text_summarizer_request: TextSummarizerRequest, reques
         BASE_USER_PROMPT_PREFIX,
     )
     user_prompt += f"\nHere's the text that i want you to summarize for me:\n{text_summarizer_request.text_to_summarize}"
-    uuid = request.headers.get(UUID_HEADER_NAME)
     user_chat = GPTTurboChat(
         role=Role.USER,
         content=user_prompt
@@ -169,7 +149,6 @@ async def text_summarizer(text_summarizer_request: TextSummarizerRequest, reques
             frequency_penalty=0.6,
             presence_penalty=0.5,
             temperature=0.3,
-            uuid=uuid,
             max_tokens=MAX_TOKENS_FROM_GPT_RESPONSE
         )
     except TokensExhaustedException as e:
@@ -178,7 +157,6 @@ async def text_summarizer(text_summarizer_request: TextSummarizerRequest, reques
         return TOKENS_EXHAUSTED_FOR_DAY_JSON_RESPONSE
 
     latest_gpt_chat_model = chat_session.messages[-1]
-    update_user_token_count(uuid, latest_gpt_chat_model.token_count)
     latest_chat = latest_gpt_chat_model.content
     latest_chat = sanitize_string(latest_chat)
 
