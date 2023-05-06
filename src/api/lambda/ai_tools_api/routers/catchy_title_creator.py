@@ -28,7 +28,6 @@ from gpt_turbo import GPTTurboChatSession, GPTTurboChat, Role, get_gpt_turbo_res
 from text_examples import TEXT_BOOK_EXAMPLE, COFFEE_SHOP, SHORT_STORY
 from utils import (
     map_value_between_range,
-    AIToolModel,
     sanitize_string,
     BaseAIInstructionModel,
     Tone,
@@ -36,7 +35,6 @@ from utils import (
     docstring_parameter,
     ExamplesResponse,
     AIToolsEndpointName,
-    UUID_HEADER_NAME,
     append_field_prompts_to_prompt,
     BASE_USER_PROMPT_PREFIX,
     error_responses,
@@ -44,6 +42,7 @@ from utils import (
     TOKENS_EXHAUSTED_FOR_DAY_JSON_RESPONSE,
     TokensExhaustedException,
     AIToolResponse,
+    RuntimeSettings,
 )
 
 
@@ -189,9 +188,7 @@ async def catchy_title_creator(catchy_title_creator_request: CatchyTitleCreatorR
     """**Generate catchy titles using GPT-3.**"""
     logger.info(f"Received request for {ENDPOINT_NAME} endpoint.")
     user_prompt = append_field_prompts_to_prompt(CatchyTitleCreatorInstructions(**catchy_title_creator_request.dict()), BASE_USER_PROMPT_PREFIX)
-
     user_prompt += f"\nHere is the text/description of what you should create a name or title for: {catchy_title_creator_request.text_or_description}"
-    uuid = request.headers.get(UUID_HEADER_NAME)
     user_chat = GPTTurboChat(
         role=Role.USER,
         content=user_prompt,
@@ -207,7 +204,6 @@ async def catchy_title_creator(catchy_title_creator_request: CatchyTitleCreatorR
             temperature=temperature,
             presence_penalty=presence_penalty,
             frequency_penalty=frequency_penalty,
-            uuid=uuid,
             max_tokens=MAX_TOKENS_FROM_GPT_RESPONSE,
         )
     except TokensExhaustedException as e:

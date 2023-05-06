@@ -28,6 +28,7 @@ lambda_settings = AIToolsLambdaSettings()
 
 
 AUTHENTICATED_USER_ENV_VAR_NAME = "AUTHENTICATED_USER"
+USER_UUID_ENV_VAR_NAME = "USER_UUID"
 UUID_HEADER_NAME = "UUID"
 USER_TOKEN_HEADER_NAME = "JWT"
 JWT_PAYLOAD_ID_FIELD_NAME = "sub"
@@ -116,6 +117,7 @@ class RuntimeSettings(BaseSettings):
     """Define the runtime settings for the runtime session."""
 
     authenticated: bool = Field(..., env=AUTHENTICATED_USER_ENV_VAR_NAME)
+    uuid: UUID = Field(..., env=USER_UUID_ENV_VAR_NAME)
     authenticate_user_daily_usage_token_limit: int = 8000
     non_authenticate_user_daily_usage_token_limit: int = 2000
     allowed_token_overflow: int = 1000

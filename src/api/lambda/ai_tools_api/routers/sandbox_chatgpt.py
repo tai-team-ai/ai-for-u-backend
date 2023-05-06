@@ -16,6 +16,7 @@ from utils import (
     UUID_HEADER_NAME,
     EXAMPLES_ENDPOINT_POSTFIX,
     AIToolsEndpointName,
+    RuntimeSettings,
     error_responses,
     TokensExhaustedException,
     TOKENS_EXHAUSTED_LOGIN_JSON_RESPONSE,
@@ -67,6 +68,7 @@ class SandBoxChatGPTRequest(AIToolModel):
 
 class SandBoxChatGPTResponse(AIToolModel):
     gpt_response: str
+    response: str
     
     
 class GPTChatHistory(GPTTurboChatSession):
@@ -154,8 +156,8 @@ def sandbox_chatgpt(sandbox_chatgpt_request: SandBoxChatGPTRequest, request: Req
     Returns:
         gpt_response: Response from openAI Turbo GPT-3 model.
     """
-    uuid = request.headers.get(UUID_HEADER_NAME)
-    logger.info("uuid: %s", uuid)
+    runtime_settings = RuntimeSettings()
+    uuid = runtime_settings.uuid
     chat_session = load_sandbox_chat_history(user_uuid=uuid, conversation_uuid=sandbox_chatgpt_request.conversation_uuid)
     logger.info("chat_session before response: %s", chat_session)
     chat_session = chat_session.add_message(GPTTurboChat(role=Role.USER, content=sandbox_chatgpt_request.user_message))
@@ -166,7 +168,6 @@ def sandbox_chatgpt(sandbox_chatgpt_request: SandBoxChatGPTRequest, request: Req
             frequency_penalty=0.9,
             presence_penalty=0.5,
             temperature=0.9,
-            uuid=uuid,
             max_tokens=400,
             override_model_context_window=1300,
         )
@@ -180,7 +181,7 @@ def sandbox_chatgpt(sandbox_chatgpt_request: SandBoxChatGPTRequest, request: Req
 
     latest_gpt_chat_model = chat_session.messages[-1]
     latest_message = latest_gpt_chat_model.content
-    return SandBoxChatGPTResponse(gpt_response=latest_message)
+    return SandBoxChatGPTResponse(gpt_response=latest_message, response=latest_message)
 
 
 

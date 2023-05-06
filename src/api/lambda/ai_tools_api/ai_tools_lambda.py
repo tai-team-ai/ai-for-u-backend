@@ -36,6 +36,7 @@ from utils import (
     UserTokenNotFoundError,
     initialize_openai,
     AUTHENTICATED_USER_ENV_VAR_NAME,
+    USER_UUID_ENV_VAR_NAME,
     UUID_HEADER_NAME,
     USER_TOKEN_HEADER_NAME,
     is_user_authenticated,
@@ -158,8 +159,8 @@ def create_fastapi_app():
                 jwt_uuid = get_user_uuid_from_jwt_token(user_token)
                 authenticated = is_user_authenticated(uuid, jwt_uuid)
             os.environ[AUTHENTICATED_USER_ENV_VAR_NAME] = str(authenticated)
-            # uuid_to_use = jwt_uuid if authenticated else uuid # once both tokens match (future pull), we can use either, for now, we need to use the uuid as other endpoints look up user data with it
-            uuid_to_use = uuid
+            uuid_to_use = jwt_uuid if authenticated else uuid
+            os.environ[USER_UUID_ENV_VAR_NAME] = str(uuid_to_use)
             initialize_user_db(uuid_to_use, authenticated)
             logger.info(f"Authenticated: {authenticated}")
         response = await call_next(request)
