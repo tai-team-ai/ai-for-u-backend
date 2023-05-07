@@ -1,11 +1,13 @@
 from __future__ import annotations
 from typing import Optional
+from uuid import UUID
 from pydantic import BaseModel
 from enum import Enum
 import openai
 import tiktoken
 from loguru import logger
 from utils import (
+    RuntimeSettings,
     does_user_have_enough_tokens_to_make_request,
     docstring_parameter,
     TokensExhaustedException,
@@ -68,7 +70,7 @@ class GPTTurboChatSession(BaseModel):
         new_messages = self.messages + (message,)
         return GPTTurboChatSession(messages=new_messages)
 
-def can_user_make_request(user_uuid: str, expected_token_count: int) -> None:
+def can_user_make_request(user_uuid: UUID, expected_token_count: int) -> None:
     """
     Check if a user has enough tokens to make a request.
 
@@ -185,7 +187,6 @@ def get_gpt_turbo_response(
     frequency_penalty: float = 0.0,
     presence_penalty: float = 0.0,
     stream: bool = False,
-    uuid: str = "",
     max_tokens: int = 400,
     override_model_context_window: Optional[int] = None,
 ) -> GPTTurboChatSession:
@@ -203,7 +204,8 @@ def get_gpt_turbo_response(
     Returns:
         response: Response from GPT Turbo.
     """
-
+    runtime_settings = RuntimeSettings()
+    uuid = runtime_settings.uuid
     # This line counts the tokens for the last user message and adds it to the chat session 
     chat_session.messages[-1].content = sanitize_string(chat_session.messages[-1].content)
     chat_session.messages[-1].token_count = count_tokens(chat_session.messages[-1].content)
@@ -231,7 +233,7 @@ def get_gpt_turbo_response(
         frequency_penalty=frequency_penalty,
         presence_penalty=presence_penalty,
         stream=stream,
-        user=uuid,
+        user=str(uuid),
         max_tokens=max_tokens,
     )
 

@@ -10,7 +10,7 @@ from fastapi import APIRouter, Request, Response, status
 from catchy_title_creator import CatchyTitleCreatorRequest
 from cover_letter_writer import CoverLetterWriterRequest
 from sandbox_chatgpt import SandBoxChatGPTRequest, SandBoxChatGPTResponse
-from text_revisor import TextRevisorRequest, TextRevisorResponse
+from text_revisor import TextRevisorRequest
 from text_summarizer import TextSummarizerRequest
 import catchy_title_creator, cover_letter_writer, sandbox_chatgpt, text_revisor, text_summarizer
 
@@ -55,7 +55,6 @@ class SupportedResponse(str, Enum):
     """Define the possible response types that can be given feedback on."""
     AI_TOOL_RESPONSE = AIToolResponse.__name__
     SANDBOX_CHATGPT = SandBoxChatGPTResponse.__name__
-    TEXT_REVISOR = TextRevisorResponse.__name__
 
 
 @docstring_parameter(ENDPOINT_NAME)

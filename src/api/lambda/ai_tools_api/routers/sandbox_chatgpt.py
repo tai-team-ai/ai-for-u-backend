@@ -1,4 +1,5 @@
 from pathlib import Path
+import random
 import sys
 import logging
 import traceback
@@ -16,7 +17,8 @@ from utils import (
     UUID_HEADER_NAME,
     EXAMPLES_ENDPOINT_POSTFIX,
     AIToolsEndpointName,
-    error_responses,
+    RuntimeSettings,
+    ERROR_RESPONSES,
     TokensExhaustedException,
     TOKENS_EXHAUSTED_LOGIN_JSON_RESPONSE,
     TOKENS_EXHAUSTED_FOR_DAY_JSON_RESPONSE,
@@ -30,6 +32,13 @@ logger.setLevel(logging.INFO)
 router = APIRouter()
 
 ENDPOINT_NAME = AIToolsEndpointName.SANDBOX_CHATGPT.value
+
+FIRST_RESPONSES = [
+    "Hello there! How can I assist you today?",
+    "Hello! How can I assist you today?",
+    "Hi! I'm Roo. How can I help you today?",
+    "Hello! I'm Roo, your friendly assistant. How can I assist you today?",
+]
 
 SYSTEM_PROMPT = (
     "You are a friendly assist named Roo. You are to help the user with whatever they need help with but also be conversational. "
@@ -67,6 +76,7 @@ class SandBoxChatGPTRequest(AIToolModel):
 
 class SandBoxChatGPTResponse(AIToolModel):
     gpt_response: str
+    response: str
     
     
 class GPTChatHistory(GPTTurboChatSession):
@@ -89,7 +99,7 @@ class SandBoxChatGPTExamplesResponse(AIToolModel):
     examples: list[str]
 
 
-@router.get(f"/{ENDPOINT_NAME}-{EXAMPLES_ENDPOINT_POSTFIX}", response_model=SandBoxChatGPTExamplesResponse, responses=error_responses)
+@router.get(f"/{ENDPOINT_NAME}-{EXAMPLES_ENDPOINT_POSTFIX}", response_model=SandBoxChatGPTExamplesResponse, responses=ERROR_RESPONSES)
 async def sandbox_chatgpt_examples() -> SandBoxChatGPTExamplesResponse:
     """
     Get examples for sandbox-chatgpt.
@@ -109,7 +119,7 @@ async def sandbox_chatgpt_examples() -> SandBoxChatGPTExamplesResponse:
     )
 
 
-def load_sandbox_chat_history(user_uuid: UUID, conversation_uuid: UUID) -> GPTChatHistory:
+def load_sandbox_chat_history(user_uuid: UUID, conversation_uuid: UUID) -> GPTTurboChatSession:
     """
     Load the chat history for a sandbox-chatgpt session.
 
@@ -124,8 +134,8 @@ def load_sandbox_chat_history(user_uuid: UUID, conversation_uuid: UUID) -> GPTCh
     if chat_history:
         chat_history = GPTChatHistory(**chat_history)
         if chat_history.conversation_uuid == conversation_uuid:
-            return chat_history
-    return GPTChatHistory(conversation_uuid=conversation_uuid)
+            return GPTTurboChatSession(**chat_history.dict())
+    return GPTTurboChatSession()
 
 def save_sandbox_chat_history(user_uuid: UUID, sandbox_chat_history: GPTChatHistory) -> None:
     """
@@ -143,7 +153,7 @@ def save_sandbox_chat_history(user_uuid: UUID, sandbox_chat_history: GPTChatHist
     )
 
 
-@router.post(f"/{ENDPOINT_NAME}", response_model=SandBoxChatGPTResponse, responses=error_responses)
+@router.post(f"/{ENDPOINT_NAME}", response_model=SandBoxChatGPTResponse, responses=ERROR_RESPONSES)
 def sandbox_chatgpt(sandbox_chatgpt_request: SandBoxChatGPTRequest, request: Request) -> SandBoxChatGPTResponse:
     """
     Get response from openAI Turbo GPT-3 model.
@@ -154,33 +164,35 @@ def sandbox_chatgpt(sandbox_chatgpt_request: SandBoxChatGPTRequest, request: Req
     Returns:
         gpt_response: Response from openAI Turbo GPT-3 model.
     """
-    uuid = request.headers.get(UUID_HEADER_NAME)
-    logger.info("uuid: %s", uuid)
+    logger.info(f"Received request for sandbox-chatgpt endpoint: {sandbox_chatgpt_request}")
+    runtime_settings = RuntimeSettings()
+    uuid = runtime_settings.uuid
     chat_session = load_sandbox_chat_history(user_uuid=uuid, conversation_uuid=sandbox_chatgpt_request.conversation_uuid)
-    logger.info("chat_session before response: %s", chat_session)
-    chat_session = chat_session.add_message(GPTTurboChat(role=Role.USER, content=sandbox_chatgpt_request.user_message))
-    try:
-        chat_session = get_gpt_turbo_response(
-            system_prompt=SYSTEM_PROMPT,
-            chat_session=chat_session,
-            frequency_penalty=0.9,
-            presence_penalty=0.5,
-            temperature=0.9,
-            uuid=uuid,
-            max_tokens=400,
-            override_model_context_window=1300,
-        )
-    except TokensExhaustedException as e:
-        if e.login:
-            return TOKENS_EXHAUSTED_LOGIN_JSON_RESPONSE
-        return TOKENS_EXHAUSTED_FOR_DAY_JSON_RESPONSE
-    logger.info("chat_session after response: %s", chat_session)
+    if len(chat_session.messages) == 0:
+        ai_message = random.choice(FIRST_RESPONSES)
+        chat_session = chat_session.add_message(GPTTurboChat(role=Role.ASSISTANT, content=ai_message))
+    else:
+        chat_session = chat_session.add_message(GPTTurboChat(role=Role.USER, content=sandbox_chatgpt_request.user_message))
+        try:
+            chat_session = get_gpt_turbo_response(
+                system_prompt=SYSTEM_PROMPT,
+                chat_session=chat_session,
+                frequency_penalty=0.9,
+                presence_penalty=0.5,
+                temperature=0.9,
+                max_tokens=400,
+                override_model_context_window=1300,
+            )
+        except TokensExhaustedException as e:
+            if e.login:
+                return TOKENS_EXHAUSTED_LOGIN_JSON_RESPONSE
+            return TOKENS_EXHAUSTED_FOR_DAY_JSON_RESPONSE
     chat_history = GPTChatHistory(**chat_session.dict(), conversation_uuid=sandbox_chatgpt_request.conversation_uuid)
     save_sandbox_chat_history(user_uuid=uuid, sandbox_chat_history=chat_history)
 
     latest_gpt_chat_model = chat_session.messages[-1]
     latest_message = latest_gpt_chat_model.content
-    return SandBoxChatGPTResponse(gpt_response=latest_message)
+    return SandBoxChatGPTResponse(gpt_response=latest_message, response=latest_message)
 
 
 
