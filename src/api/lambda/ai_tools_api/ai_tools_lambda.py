@@ -2,10 +2,8 @@ import logging
 import os
 import sys
 import traceback
-from enum import Enum
 from uuid import UUID
 from pathlib import Path
-from pydantic import BaseModel
 from openai.error import RateLimitError
 from mangum import Mangum
 from fastapi import FastAPI, APIRouter, Request, status , Response
