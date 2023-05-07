@@ -5,11 +5,11 @@ from enum import Enum
 from typing import Optional
 from fastapi import APIRouter, status
 from pydantic import conint, constr, Field
-from template_utils import AITemplateModel, get_ai_tool_response
 
 sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), "../utils"))
 sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), "../gpt_turbo"))
 sys.path.append(Path(__file__).parent / "../text_examples")
+from template_utils import AITemplateModel, get_ai_tool_response
 from text_examples import SPELLING_ERRORS_EXAMPLE, BADLY_WRITTEN_TRAVEL_BLOG, ARTICLE_EXAMPLE
 from utils import (
     map_value_between_range,
@@ -67,12 +67,13 @@ class TextRevisorRequest(TextRevisorInstructions):
     )
 
 
-@docstring_parameter(ENDPOINT_NAME)
+
 class TextRevisorExamplesResponse(ExamplesResponse):
 
     examples: list[TextRevisorRequest]
 
 
+@docstring_parameter(ENDPOINT_NAME)
 @router.get(f"/{ENDPOINT_NAME}-{EXAMPLES_ENDPOINT_POSTFIX}", response_model=TextRevisorExamplesResponse, status_code=status.HTTP_200_OK)
 async def text_revisor_examples():
     """
