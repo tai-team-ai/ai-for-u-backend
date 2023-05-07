@@ -27,6 +27,7 @@ ENDPOINT_NAME = AIToolsEndpointName.COVER_LETTER_WRITER.value
 
 
 class CoverLetterWriterInstructions(BaseAIInstructionModel):
+
     job_posting: constr(min_length=1, max_length=10000) = Field(
         ...,
         title="Job Posting",
@@ -58,10 +59,8 @@ class CoverLetterWriterRequest(CoverLetterWriterInstructions):
     )
 
 
-
 class CoverLetterWriterExamplesResponse(ExamplesResponse):
 
-    __doc__ += ExamplesResponse.__doc__
     examples: list[CoverLetterWriterRequest]
 
 

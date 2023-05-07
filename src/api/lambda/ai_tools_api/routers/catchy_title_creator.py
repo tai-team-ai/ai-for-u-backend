@@ -1,9 +1,9 @@
-from pydantic import constr, conint, Field
-from fastapi import APIRouter, Response, status, Request
-from typing import Optional, List
-from pathlib import Path
 import sys
 import os
+from typing import Optional, List
+from pathlib import Path
+from pydantic import constr, conint, Field
+from fastapi import APIRouter, status
 from template_utils import AITemplateModel, get_ai_tool_response
 
 sys.path.append(Path(__file__).parent / "../utils")
@@ -28,6 +28,7 @@ ENDPOINT_NAME = AIToolsEndpointName.CATCHY_TITLE_CREATOR.value
 
 
 class CatchyTitleCreatorInstructions(BaseAIInstructionModel):
+
     type_of_title: Optional[constr(min_length=1, max_length=50)] = Field(
         ...,
         title="What's the Titles/Names For?",
@@ -62,7 +63,6 @@ class CatchyTitleCreatorInstructions(BaseAIInstructionModel):
 
 class CatchyTitleCreatorRequest(CatchyTitleCreatorInstructions):
 
-    __doc__ += BaseAIInstructionModel.__doc__
     text_or_description: constr(min_length=1, max_length=10000) = Field(
         ...,
         title="Text or Description",
@@ -73,7 +73,6 @@ class CatchyTitleCreatorRequest(CatchyTitleCreatorInstructions):
 
 class CatchyTitleCreatorExamplesResponse(ExamplesResponse):
 
-    __doc__ += ExamplesResponse.__doc__
     examples: list[CatchyTitleCreatorRequest]
 
 
