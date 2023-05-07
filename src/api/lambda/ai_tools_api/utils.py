@@ -49,7 +49,7 @@ class TokensExhaustedException(Exception):
         super().__init__(self.message)
 
 
-error_responses = {
+ERROR_RESPONSES = {
     status.HTTP_429_TOO_MANY_REQUESTS: {
         "model": TokensExhaustedResponse,
     },

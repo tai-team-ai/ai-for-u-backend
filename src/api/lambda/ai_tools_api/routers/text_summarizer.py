@@ -20,7 +20,7 @@ from utils import (
     EXAMPLES_ENDPOINT_POSTFIX,
     ExamplesResponse,
     BASE_USER_PROMPT_PREFIX,
-    error_responses,
+    ERROR_RESPONSES,
     TOKENS_EXHAUSTED_LOGIN_JSON_RESPONSE,
     TOKENS_EXHAUSTED_FOR_DAY_JSON_RESPONSE,
     TokensExhaustedException,
@@ -129,7 +129,7 @@ async def sandbox_chatgpt_examples() -> TextSummarizerExampleResponse:
     )
     return response
 
-@router.post(f"/{ENDPOINT_NAME}", response_model=AIToolResponse, responses=error_responses)
+@router.post(f"/{ENDPOINT_NAME}", response_model=AIToolResponse, responses=ERROR_RESPONSES)
 async def text_summarizer(text_summarizer_request: TextSummarizerRequest, request: Request):
     """**Summarize text using GPT-3.**"""
     logger.info(f"Received request: {text_summarizer_request}")

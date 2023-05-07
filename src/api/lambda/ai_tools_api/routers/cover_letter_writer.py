@@ -1,10 +1,9 @@
-import logging
 import sys
 import os
-from typing import Optional, List
+from typing import Optional
 from pathlib import Path
 from pydantic import constr, Field
-from fastapi import APIRouter, Request, Response, status
+from fastapi import APIRouter, Request
 
 from template_utils import AITemplateModel, get_ai_tool_response
 sys.path.append(Path(__file__).parent / "../utils")
@@ -18,17 +17,14 @@ from utils import (
     docstring_parameter,
     ExamplesResponse,
     AIToolsEndpointName,
-    error_responses,
+    ERROR_RESPONSES,
     AIToolResponse,
 )
 
-logger = logging.getLogger()
-logger.setLevel(logging.DEBUG)
 
 router = APIRouter()
-
 ENDPOINT_NAME = AIToolsEndpointName.COVER_LETTER_WRITER.value
-MAX_TOKENS_FROM_GPT_RESPONSE = 400
+
 
 class CoverLetterWriterInstructions(BaseAIInstructionModel):
     job_posting: constr(min_length=1, max_length=10000) = Field(
@@ -51,37 +47,10 @@ class CoverLetterWriterInstructions(BaseAIInstructionModel):
         description="The tone used when writing the cover letter.",
     )
 
-SYSTEM_PROMPT = (
-    "You are an expert at writing cover letters. You have spent hours "
-    "perfecting your cover letter writing skills. You have written cover "
-    "letters for hundreds of people. Because of your expertise, I want you "
-    "to write a cover letter for me. You should ONLY respond with the "
-    "cover letter and nothing else. I will provide you with a resume, job "
-    "posting, and optionally a company name to write a cover letter for. You "
-    "should respond with a cover letter that is tailored to the job posting "
-    "and company, highlights my skills, and demonstrates enthusiasm for "
-    "the company and role. I may also ask you to specifically highlight "
-    "certain skills from my resume that i feel are most relevant to the job "
-    "posting. It is important that you highlight these skills if I ask you to. "
-    "Remember, you are an expert at writing cover letters. I trust you to "
-    "write a cover letter that will get me the job. Please do not respond with "
-    "anything other than the cover letter."
-)
 
 
 class CoverLetterWriterRequest(CoverLetterWriterInstructions):
-    """
-    **Define the model for the request body for {0} endpoint.**
-    
-    **Atrributes:**
-    - resume: The resume to generate a cover letter for.
-    - job_posting: The job posting to generate a cover letter for.
-    - skills_to_highlight_from_resume: The skills to highlight from the resume.
 
-    **AI Instructions:**
-
-    """
-    
     resume: constr(min_length=1, max_length=10000) = Field(
         ...,
         title="Resume",
@@ -91,11 +60,6 @@ class CoverLetterWriterRequest(CoverLetterWriterInstructions):
 
 
 class CoverLetterWriterExamplesResponse(ExamplesResponse):
-    """
-    **Define the model for the response body for {0} examples endpoint.**
-    
-    Inherits from ExamplesResponse:
-    """
 
     __doc__ += ExamplesResponse.__doc__
     examples: list[CoverLetterWriterRequest]
@@ -133,13 +97,27 @@ async def cover_letter_writer_examples(request: Request):
     return example_response
 
 
-@router.post(f"/{ENDPOINT_NAME}", response_model=AIToolResponse, responses=error_responses)
+SYSTEM_PROMPT = (
+    "You are an expert at writing cover letters. You have spent hours "
+    "perfecting your cover letter writing skills. You have written cover "
+    "letters for hundreds of people. Because of your expertise, I want you "
+    "to write a cover letter for me. You should ONLY respond with the "
+    "cover letter and nothing else. I will provide you with a resume, job "
+    "posting, and optionally a company name to write a cover letter for. You "
+    "should respond with a cover letter that is tailored to the job posting "
+    "and company, highlights my skills, and demonstrates enthusiasm for "
+    "the company and role. I may also ask you to specifically highlight "
+    "certain skills from my resume that i feel are most relevant to the job "
+    "posting. It is important that you highlight these skills if I ask you to. "
+    "Remember, you are an expert at writing cover letters. I trust you to "
+    "write a cover letter that will get me the job. Please do not respond with "
+    "anything other than the cover letter."
+)
+MAX_TOKENS_FROM_GPT_RESPONSE = 400
+
+
+@router.post(f"/{ENDPOINT_NAME}", response_model=AIToolResponse, responses=ERROR_RESPONSES)
 async def cover_letter_writer(cover_letter_writer_request: CoverLetterWriterRequest):
-    """
-    **Generate a cover letter for a resume and job posting.**
-    
-    This method takes a resume and job posting as input and generates a cover letter for the resume and job posting.
-    """
     user_prompt_postfix = f"\nHere is my resume to use as a reference when writing the cover letter: {cover_letter_writer_request.resume}"
     template_config = AITemplateModel(
         endpoint_name=ENDPOINT_NAME,

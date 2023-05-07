@@ -23,7 +23,7 @@ from utils import (
     append_field_prompts_to_prompt,
     BASE_USER_PROMPT_PREFIX,
     Tone,
-    error_responses,
+    ERROR_RESPONSES,
     TOKENS_EXHAUSTED_LOGIN_JSON_RESPONSE,
     TOKENS_EXHAUSTED_FOR_DAY_JSON_RESPONSE,
     TokensExhaustedException,
@@ -123,7 +123,7 @@ class TextRevisorExamplesResponse(ExamplesResponse):
     examples: list[TextRevisorRequest]
 
 
-@router.get(f"/{ENDPOINT_NAME}-{EXAMPLES_ENDPOINT_POSTFIX}", response_model=TextRevisorExamplesResponse, responses=error_responses)
+@router.get(f"/{ENDPOINT_NAME}-{EXAMPLES_ENDPOINT_POSTFIX}", response_model=TextRevisorExamplesResponse, responses=ERROR_RESPONSES)
 async def text_revisor_examples():
     """
     **Get examples for the {0} endpoint.**

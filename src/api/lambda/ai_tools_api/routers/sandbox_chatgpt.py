@@ -18,7 +18,7 @@ from utils import (
     EXAMPLES_ENDPOINT_POSTFIX,
     AIToolsEndpointName,
     RuntimeSettings,
-    error_responses,
+    ERROR_RESPONSES,
     TokensExhaustedException,
     TOKENS_EXHAUSTED_LOGIN_JSON_RESPONSE,
     TOKENS_EXHAUSTED_FOR_DAY_JSON_RESPONSE,
@@ -99,7 +99,7 @@ class SandBoxChatGPTExamplesResponse(AIToolModel):
     examples: list[str]
 
 
-@router.get(f"/{ENDPOINT_NAME}-{EXAMPLES_ENDPOINT_POSTFIX}", response_model=SandBoxChatGPTExamplesResponse, responses=error_responses)
+@router.get(f"/{ENDPOINT_NAME}-{EXAMPLES_ENDPOINT_POSTFIX}", response_model=SandBoxChatGPTExamplesResponse, responses=ERROR_RESPONSES)
 async def sandbox_chatgpt_examples() -> SandBoxChatGPTExamplesResponse:
     """
     Get examples for sandbox-chatgpt.
@@ -153,7 +153,7 @@ def save_sandbox_chat_history(user_uuid: UUID, sandbox_chat_history: GPTChatHist
     )
 
 
-@router.post(f"/{ENDPOINT_NAME}", response_model=SandBoxChatGPTResponse, responses=error_responses)
+@router.post(f"/{ENDPOINT_NAME}", response_model=SandBoxChatGPTResponse, responses=ERROR_RESPONSES)
 def sandbox_chatgpt(sandbox_chatgpt_request: SandBoxChatGPTRequest, request: Request) -> SandBoxChatGPTResponse:
     """
     Get response from openAI Turbo GPT-3 model.
